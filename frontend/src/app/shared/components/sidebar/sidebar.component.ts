@@ -1,0 +1,245 @@
+// Import Angular core utilities: Component decorator, inject for DI, OnInit lifecycle hook, signal for reactive state
+import { Component, inject, OnInit, signal } from '@angular/core';
+// RouterLink creates navigable links; RouterLinkActive adds the "active" CSS class to the current route link
+import { RouterLink, RouterLinkActive } from '@angular/router';
+// AsyncPipe subscribes to observables directly in templates (used for categories$ BehaviorSubject)
+import { AsyncPipe } from '@angular/common';
+// AuthService provides the current user signal and logout functionality
+import { AuthService } from '../../../core/services/auth.service';
+// ThemeService provides the current theme signal and toggle method
+import { ThemeService } from '../../../core/services/theme.service';
+// CategoryService provides the categories$ observable for listing user-defined categories
+import { CategoryService } from '../../../features/categories/category.service';
+// CategoryManagerComponent is the popup form for creating and deleting categories
+import { CategoryManagerComponent } from '../category-manager/category-manager.component';
+
+// SidebarComponent is the persistent left navigation panel visible on all authenticated pages.
+// It contains: app logo, navigation links (Today, My Plans, Calendar, Goals, Buy List),
+// a categories section with a popup manager, a theme toggle button, and a user info block.
+@Component({
+  selector: 'app-sidebar', // Placed inside the LayoutComponent template
+  standalone: true, // Angular 19 standalone component
+  imports: [RouterLink, RouterLinkActive, AsyncPipe, CategoryManagerComponent], // Dependencies used in template
+  template: `
+    <!-- Sidebar container — fixed-width dark panel on the left side of the layout -->
+    <aside class="sidebar">
+      <!-- Top section: scrollable area containing logo, nav links, and categories -->
+      <div class="sidebar-top">
+        <!-- App branding: green gradient icon + app name -->
+        <div class="sidebar-logo">
+          <div class="logo-icon">
+            <!-- Inline SVG calendar icon rendered inside the green gradient box -->
+            <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <span class="logo-text">Daily Organizer</span>
+        </div>
+
+        <!-- Main navigation links — each uses routerLinkActive to highlight the current page -->
+        <nav class="sidebar-nav">
+          <!-- "Overview" section label for the first group of nav links -->
+          <span class="nav-section">Overview</span>
+          <!-- Dashboard link — shows today's schedule, stats, and active goals -->
+          <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>Today</span>
+          </a>
+          <!-- Tasks link — lists all plans (tasks, trips, meetings, etc.) -->
+          <a routerLink="/tasks" routerLinkActive="active" class="nav-link">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span>My Plans</span>
+          </a>
+          <!-- Calendar link — monthly grid view with tasks plotted on dates -->
+          <a routerLink="/calendar" routerLinkActive="active" class="nav-link">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+            <span>Calendar</span>
+          </a>
+
+          <!-- "Trackers" section label for goals and wishlist -->
+          <span class="nav-section">Trackers</span>
+          <!-- Goals link — lists all goals with progress tracking -->
+          <a routerLink="/goals" routerLinkActive="active" class="nav-link">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            <span>Goals</span>
+          </a>
+          <!-- Wishlist link — shows the buy list with product cards -->
+          <a routerLink="/wishlist" routerLinkActive="active" class="nav-link">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+            <span>Buy List</span>
+          </a>
+        </nav>
+
+        <!-- Categories section — shows user-defined categories as colored dots -->
+        <div class="sidebar-categories">
+          <div class="cat-header">
+            <span class="nav-section">Categories</span>
+            <!-- Toggle button to show/hide the category manager popup -->
+            <button class="cat-add-btn" (click)="showCatManager.set(!showCatManager())" title="Manage categories">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+          </div>
+          <!-- Iterate over user's categories from the CategoryService observable -->
+          @for (cat of categories$ | async; track cat.id) {
+            <div class="cat-item">
+              <!-- Colored dot indicator matching the category's assigned color -->
+              <span class="cat-dot" [style.background]="cat.color"></span>
+              <span>{{ cat.name }}</span>
+            </div>
+          } @empty {
+            <!-- Show a dashed "Add category" button when no categories exist yet -->
+            <button class="cat-empty-btn" (click)="showCatManager.set(true)">+ Add category</button>
+          }
+        </div>
+
+        <!-- Category manager popup — shown as a floating panel next to the sidebar -->
+        @if (showCatManager()) {
+          <!-- Semi-transparent overlay to catch clicks outside the popup and close it -->
+          <div class="cat-overlay" (click)="showCatManager.set(false)"></div>
+          <!-- The actual popup containing the CategoryManagerComponent -->
+          <div class="cat-popup">
+            <app-category-manager (closed)="showCatManager.set(false)" />
+          </div>
+        }
+      </div>
+
+      <!-- Bottom section: theme toggle and user profile block (always visible, never scrolls) -->
+      <div class="sidebar-bottom">
+        <!-- Theme toggle button — switches between dark and light modes -->
+        <button class="theme-btn" (click)="themeService.toggle()">
+          @if (themeService.theme() === 'light') {
+            <!-- Moon icon shown in light mode — clicking switches to dark mode -->
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+            <span>Dark mode</span>
+          } @else {
+            <!-- Sun icon shown in dark mode — clicking switches to light mode -->
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>
+            <span>Light mode</span>
+          }
+        </button>
+
+        <!-- User profile block showing avatar initial, name, email, and logout button -->
+        <div class="user-block">
+          <!-- Circular avatar with the user's first initial on a green gradient background -->
+          <div class="user-avatar">{{ getUserInitial() }}</div>
+          <div class="user-info">
+            <!-- User's display name (or username as fallback) -->
+            <span class="user-name">{{ getUserName() }}</span>
+            <!-- User's email address shown in smaller, muted text -->
+            <span class="user-email">{{ auth.currentUser()?.email ?? '' }}</span>
+          </div>
+          <!-- Logout button — calls auth.logout() which clears tokens and redirects to login -->
+          <button class="logout-icon" (click)="auth.logout()" title="Sign out">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </button>
+        </div>
+      </div>
+    </aside>
+  `,
+  styles: [`
+    /* Host element: full viewport height, no shrinking in the flex layout */
+    :host { display: flex; height: 100vh; flex-shrink: 0;
+      /* Sidebar-specific CSS custom properties — light theme defaults */
+      --sidebar-bg: #111318; --sidebar-border: rgba(255,255,255,0.06); --sidebar-text: #b0b4bc;
+      --sidebar-text-dim: #6b7280; --sidebar-hover: rgba(255,255,255,0.05);
+      --sidebar-active-bg: rgba(16,185,129,0.12); --sidebar-active-text: #34d399;
+    }
+    /* Dark theme overrides for sidebar-specific custom properties */
+    :host-context([data-theme="dark"]) {
+      --sidebar-bg: #09090b; --sidebar-border: #1a1a1e; --sidebar-text: #a1a1aa;
+      --sidebar-text-dim: #52525b; --sidebar-hover: rgba(255,255,255,0.04);
+      --sidebar-active-bg: rgba(52,211,153,0.1); --sidebar-active-text: #6ee7b7;
+    }
+    /* Sidebar panel: fixed 250px width, dark background, full height with hidden overflow */
+    .sidebar { width: 250px; min-width: 250px; height: 100vh; background: var(--sidebar-bg); display: flex; flex-direction: column; border-right: 1px solid var(--sidebar-border); overflow: hidden; }
+    /* Top section: grows to fill space, scrollable if categories list gets long */
+    .sidebar-top { flex: 1; overflow-y: auto; padding: 1.25rem 0.75rem; display: flex; flex-direction: column; gap: 0.25rem; }
+    /* Logo row: flex container for icon + text with bottom padding for spacing */
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 4px 8px 20px; }
+    /* Green gradient square with rounded corners — houses the calendar SVG icon */
+    .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(16,185,129,0.35); }
+    /* App name text in white, bold weight for brand emphasis */
+    .logo-text { color: #fff; font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; }
+    /* Navigation links container: vertical stack with minimal gap */
+    .sidebar-nav { display: flex; flex-direction: column; gap: 2px; }
+    /* Section labels (e.g., "Overview", "Trackers") — small, uppercase, dim text */
+    .nav-section { display: block; color: var(--sidebar-text-dim); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 12px 12px 6px; }
+    /* Individual nav link: horizontal flex with icon + text, rounded hover/active states */
+    .nav-link { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; color: var(--sidebar-text); font-size: 0.875rem; font-weight: 500; text-decoration: none; transition: all 0.15s; cursor: pointer; position: relative; }
+    /* Hover state: subtle white overlay background and brighter text */
+    .nav-link:hover { background: var(--sidebar-hover); color: #fff; }
+    /* Active state: green-tinted background and green text for the current page link */
+    .nav-link.active { background: var(--sidebar-active-bg); color: var(--sidebar-active-text); font-weight: 600; }
+    /* Active indicator bar: small green vertical bar on the left edge of the active link */
+    .nav-link.active::before { content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px; background: var(--sidebar-active-text); border-radius: 0 3px 3px 0; }
+    /* Categories list container with a small top margin separating it from nav links */
+    .sidebar-categories { display: flex; flex-direction: column; gap: 2px; margin-top: 0.5rem; }
+    /* Categories header row: label on the left, add button on the right */
+    .cat-header { display: flex; align-items: center; justify-content: space-between; padding-right: 8px; }
+    /* Plus button to open the category manager popup */
+    .cat-add-btn { background: none; border: none; cursor: pointer; color: var(--sidebar-text-dim); padding: 4px; border-radius: 6px; display: flex; transition: all 0.15s; }
+    .cat-add-btn:hover { background: var(--sidebar-hover); color: var(--sidebar-active-text); }
+    /* Individual category row: colored dot + category name */
+    .cat-item { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 6px; color: var(--sidebar-text); font-size: 0.82rem; cursor: pointer; transition: background 0.1s; }
+    .cat-item:hover { background: var(--sidebar-hover); }
+    /* Small colored circle representing the category's assigned color */
+    .cat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    /* Dashed button shown when no categories exist — invites the user to create one */
+    .cat-empty-btn { background: none; border: 1px dashed var(--sidebar-border); border-radius: 8px; color: var(--sidebar-text-dim); font-size: 0.78rem; padding: 8px 12px; cursor: pointer; width: 100%; text-align: left; font-family: inherit; transition: all 0.15s; }
+    .cat-empty-btn:hover { border-color: var(--sidebar-active-text); color: var(--sidebar-active-text); }
+    /* Full-screen semi-transparent overlay behind the category manager popup — click to dismiss */
+    .cat-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 999; }
+    /* Category manager popup positioned to the right of the sidebar */
+    .cat-popup { position: fixed; top: 50%; left: 250px; transform: translateY(-50%); z-index: 1000; margin-left: 12px; }
+    /* Bottom section: bordered top, contains theme toggle and user block */
+    .sidebar-bottom { padding: 0.75rem; border-top: 1px solid var(--sidebar-border); display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+    /* Theme toggle button: full-width with subtle background */
+    .theme-btn { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 8px; color: var(--sidebar-text); font-size: 0.82rem; background: var(--sidebar-hover); border: none; cursor: pointer; width: 100%; transition: all 0.15s; font-family: inherit; }
+    .theme-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    /* User profile block: avatar, name/email, and logout button in a compact row */
+    .user-block { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 10px; background: var(--sidebar-hover); }
+    /* Circular avatar with green gradient background showing the user's initial */
+    .user-avatar { width: 36px; height: 36px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+    /* User info column: name and email stacked vertically with text truncation */
+    .user-info { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .user-name { color: #fff; font-size: 0.82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-email { color: var(--sidebar-text-dim); font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    /* Logout button: dim by default, turns red on hover to signal destructive action */
+    .logout-icon { background: none; border: none; color: var(--sidebar-text-dim); cursor: pointer; padding: 6px; border-radius: 6px; display: flex; transition: all 0.15s; flex-shrink: 0; }
+    .logout-icon:hover { background: rgba(239,68,68,0.1); color: #ef4444; }
+  `],
+})
+export class SidebarComponent implements OnInit {
+  // Expose AuthService publicly so the template can access currentUser() and logout()
+  auth = inject(AuthService);
+  // Expose ThemeService publicly so the template can call toggle() and read theme()
+  themeService = inject(ThemeService);
+  // CategoryService is private — only the observable is exposed to the template
+  private catService = inject(CategoryService);
+  // Observable stream of user's categories — used in the template with async pipe
+  categories$ = this.catService.categories$;
+  // Signal controlling the visibility of the category manager popup
+  showCatManager = signal(false);
+
+  // On initialization, load the user's categories from the backend.
+  // Also ensure the current user profile is loaded if the user signal is empty
+  // (handles the case where the sidebar renders before AppComponent finishes loading the user).
+  ngOnInit() {
+    this.catService.loadAll().subscribe(); // Fetch categories and populate the BehaviorSubject
+    if (this.auth.isLoggedIn() && !this.auth.currentUser()) {
+      this.auth.loadCurrentUser().subscribe(); // Fetch user profile if not yet loaded
+    }
+  }
+
+  // Get the first letter of the user's display name (or username, or "U" as fallback)
+  // for display in the circular avatar widget.
+  getUserInitial(): string {
+    const user = this.auth.currentUser();
+    return (user?.displayName ?? user?.username ?? 'U')[0].toUpperCase();
+  }
+
+  // Get the user's display name for the sidebar user block.
+  // Falls back to username, then to the generic "User" string.
+  getUserName(): string {
+    const user = this.auth.currentUser();
+    return user?.displayName ?? user?.username ?? 'User';
+  }
+}

@@ -1,0 +1,344 @@
+/* Import the Inter font family from Google Fonts — used as the app's primary typeface.
+   Weights 300-800 are loaded to support various text hierarchies (labels, body, headings). */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* ═══════════════════════════════════════════════════════════════════
+   LIGHT THEME — Default color scheme using CSS custom properties.
+   These variables are referenced throughout all component styles via var().
+   The light theme uses white backgrounds, dark text, and green (#10b981) as the accent color.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --bg-primary: #ffffff; /* Main page background (used by html/body) */
+  --bg-secondary: #f5f7fa; /* Slightly tinted background for layout areas and inset sections */
+  --bg-tertiary: #eef1f5; /* Third-level background for deeply nested elements */
+  --bg-sidebar: #111318; /* Dark sidebar background (sidebar has its own dark scheme in both themes) */
+  --bg-card: #ffffff; /* Card surface color — same as primary in light mode */
+  --bg-input: #f5f7fa; /* Input field background — slightly off-white for visual distinction */
+  --bg-hover: #f0f2f5; /* Hover state background for interactive rows and buttons */
+
+  --text-primary: #111827; /* Main body text — near-black for readability */
+  --text-secondary: #6b7280; /* Secondary text (descriptions, metadata) — medium gray */
+  --text-muted: #9ca3af; /* Muted text (labels, timestamps, placeholders) — light gray */
+  --text-sidebar: #a1a7b4; /* Sidebar text color — slightly blue-gray to contrast the dark sidebar bg */
+
+  --border: #e5e7eb; /* Primary border color used on cards, inputs, and dividers */
+  --border-light: #f0f1f3; /* Lighter border variant for subtle separators */
+
+  --accent: #10b981; /* Primary accent color (emerald green) — used for buttons, links, active states */
+  --accent-hover: #059669; /* Darker green for hover states on accent buttons */
+  --accent-light: #ecfdf5; /* Very light green tint for badge backgrounds and subtle highlights */
+  --accent-subtle: rgba(16, 185, 129, 0.1); /* Semi-transparent green for task chips and overlays */
+  --accent-glow: rgba(16, 185, 129, 0.4); /* Green glow effect used on button hover box-shadows */
+
+  --red: #ef4444; /* Semantic red for errors, danger buttons, and high-priority indicators */
+  --orange: #f59e0b; /* Semantic amber for warnings and medium-priority indicators */
+  --green: #10b981; /* Semantic green for success states and low-priority indicators */
+  --blue: #3b82f6; /* Semantic blue for info toasts and certain task type indicators */
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05); /* Subtle shadow for cards */
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05); /* Medium shadow for elevated elements */
+  --shadow-lg: 0 10px 25px -5px rgb(0 0 0 / 0.1); /* Large shadow for modals and toasts */
+  --radius: 12px; /* Default border radius for cards and large containers */
+  --radius-sm: 8px; /* Smaller radius for buttons and inputs */
+  --radius-xs: 6px; /* Smallest radius for icon buttons and badges */
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DARK THEME — Applied when the <html> element has data-theme="dark".
+   The ThemeService toggles this attribute. Uses true-black/dark-gray backgrounds
+   with lighter green (#34d399) accent for better contrast on dark surfaces.
+   ═══════════════════════════════════════════════════════════════════ */
+[data-theme="dark"] {
+  --bg-primary: #09090b; /* Near-black main background */
+  --bg-secondary: #111113; /* Slightly lighter dark gray for layout areas */
+  --bg-tertiary: #1a1a1e; /* Third-level background */
+  --bg-sidebar: #09090b; /* Sidebar matches the main dark background */
+  --bg-card: #131316; /* Card surfaces: slightly lifted from the background */
+  --bg-input: #1a1a1e; /* Input backgrounds: distinguishable from cards */
+  --bg-hover: #1e1e22; /* Hover state: subtle lighter gray */
+
+  --text-primary: #f4f4f5; /* Main text: near-white for dark backgrounds */
+  --text-secondary: #a1a1aa; /* Secondary text: medium gray */
+  --text-muted: #71717a; /* Muted text: darker gray (still readable on dark bg) */
+  --text-sidebar: #a1a1aa; /* Sidebar text */
+
+  --border: #27272a; /* Dark borders: subtle dark gray */
+  --border-light: #1e1e22; /* Even subtler border */
+
+  --accent: #34d399; /* Lighter green accent for better visibility on dark backgrounds */
+  --accent-hover: #10b981; /* Slightly darker green for hover states */
+  --accent-light: #022c22; /* Very dark green for badge backgrounds */
+  --accent-subtle: rgba(52, 211, 153, 0.1); /* Semi-transparent green for chips */
+  --accent-glow: rgba(52, 211, 153, 0.3); /* Green glow for button hover shadows */
+
+  /* Shadows are stronger in dark mode because they need to be visible against dark backgrounds */
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 10px 25px -5px rgb(0 0 0 / 0.5);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESET & BASE — Global CSS reset and base typography.
+   Ensures consistent box-sizing, removes default margins/padding,
+   and sets the Inter font stack as the default typeface.
+   ═══════════════════════════════════════════════════════════════════ */
+/* Universal box-sizing: border-box includes padding and border in element dimensions */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Base body styles: full height, Inter font, themed background/text with smooth theme transitions */
+html, body {
+  height: 100%;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-primary); /* Uses the theme's primary background color */
+  color: var(--text-primary); /* Uses the theme's primary text color */
+  transition: background 0.25s ease, color 0.25s ease; /* Smooth color transition when theme changes */
+  font-size: 14px; /* Base font size — all rem units scale from this */
+  -webkit-font-smoothing: antialiased; /* Smoother font rendering on WebKit browsers */
+  line-height: 1.5; /* Comfortable line height for readability */
+}
+
+/* Reset anchor styles: inherit color from parent, no default underline */
+a { color: inherit; text-decoration: none; }
+/* Images: responsive by default, block display removes bottom spacing */
+img { max-width: 100%; display: block; }
+
+/* Custom scrollbar styling: thin and subtle to not distract from content */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* Focus-visible outline: green ring for keyboard navigation accessibility */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   CARD — Base card component used throughout the app.
+   Provides a bordered, rounded, elevated surface for content groups
+   (task lists, goal cards, filter bars, stats, etc.).
+   ═══════════════════════════════════════════════════════════════════ */
+.card {
+  background: var(--bg-card); /* Theme-aware card background */
+  border: 1px solid var(--border); /* Subtle border for definition */
+  border-radius: var(--radius); /* 12px rounded corners */
+  box-shadow: var(--shadow-sm); /* Slight elevation shadow */
+  transition: background 0.25s, border-color 0.25s; /* Smooth theme transition */
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BUTTONS — Three button variants used across the app:
+   1. btn-primary: Green accent, used for main CTAs (Add Plan, Save, etc.)
+   2. btn-ghost: Transparent with border, used for secondary actions (Cancel, Reset)
+   3. btn-danger: Red, used for destructive actions (Stop Timer)
+   Plus icon-btn for small icon-only action buttons.
+   ═══════════════════════════════════════════════════════════════════ */
+/* Primary button: green background, white text, hover lift effect with green glow */
+.btn-primary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  background: var(--accent); color: #fff;
+  border-radius: var(--radius-sm); padding: 10px 20px;
+  font: 600 0.875rem/1.4 'Inter', sans-serif;
+  border: none; cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.1);
+}
+/* Hover: darker green, slight upward lift, green glow shadow */
+.btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 4px 14px var(--accent-glow); }
+/* Active: cancel the lift for a "pressed" feel */
+.btn-primary:active { transform: translateY(0); }
+/* Disabled: faded appearance, no hover effects */
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* Ghost button: transparent background with visible border, used for secondary actions */
+.btn-ghost {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  background: transparent; color: var(--text-secondary);
+  border-radius: var(--radius-sm); padding: 9px 16px;
+  font: 500 0.875rem/1.4 'Inter', sans-serif;
+  border: 1px solid var(--border); cursor: pointer;
+  transition: all 0.15s ease;
+}
+/* Hover: subtle background fill and darker text */
+.btn-ghost:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--text-muted); }
+
+/* Danger button: red background, white text, used for destructive actions like stopping timers */
+.btn-danger {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  background: var(--red); color: #fff;
+  border-radius: var(--radius-sm); padding: 10px 20px;
+  font: 600 0.875rem/1.4 'Inter', sans-serif;
+  border: none; cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-danger:hover { background: #dc2626; } /* Darker red on hover */
+
+/* Icon button: small, transparent, for edit/delete/close actions */
+.icon-btn {
+  background: transparent; border: none; padding: 6px; border-radius: var(--radius-xs);
+  cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.icon-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+/* Danger variant for icon buttons: red tint on hover */
+.icon-btn.danger:hover { background: #fef2f2; color: var(--red); }
+/* Dark theme override for danger icon buttons */
+[data-theme="dark"] .icon-btn.danger:hover { background: #1c1917; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   INPUTS — Styled form inputs used across all forms in the app.
+   Includes text inputs, textareas, selects, and labels.
+   All inputs use theme-aware colors and a green focus ring.
+   ═══════════════════════════════════════════════════════════════════ */
+/* Base input styling: used for text, email, password, number, date, time inputs */
+.input {
+  background: var(--bg-input); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 14px;
+  color: var(--text-primary); width: 100%;
+  font: 400 0.9rem/1.4 'Inter', sans-serif;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+/* Focus state: green border with a subtle green ring for visual feedback */
+.input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-subtle); }
+/* Placeholder text: muted color */
+.input::placeholder { color: var(--text-muted); }
+/* Select inputs: custom dropdown arrow via background-image SVG, native appearance removed */
+select.input {
+  appearance: none; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px;
+}
+/* Textarea: vertical resize only with minimum height */
+textarea.input { resize: vertical; min-height: 80px; }
+
+/* Form labels: small uppercase text above input fields */
+.label {
+  display: block; font-size: 0.72rem; font-weight: 600;
+  color: var(--text-secondary); margin-bottom: 6px;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BADGES — Small pill-shaped indicators used for priority and status.
+   Color-coded for quick visual scanning: red=high/error, amber=medium/warning,
+   green=low/success, blue=in-progress, gray=todo.
+   ═══════════════════════════════════════════════════════════════════ */
+/* Base badge: inline-flex pill with small text */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 9999px; /* Fully rounded pill shape */
+  font-size: 0.7rem; font-weight: 600; letter-spacing: 0.02em; white-space: nowrap;
+}
+/* Priority badges: light tinted background with saturated text */
+.badge-high    { background: #fef2f2; color: #dc2626; } /* Red — urgent */
+.badge-medium  { background: #fffbeb; color: #d97706; } /* Amber — moderate */
+.badge-low     { background: #ecfdf5; color: #059669; } /* Green — relaxed */
+/* Status badges: distinct colors for each task status */
+.badge-todo    { background: var(--bg-tertiary); color: var(--text-secondary); } /* Gray — not started */
+.badge-in-progress { background: #eff6ff; color: #2563eb; } /* Blue — active work */
+.badge-done    { background: #ecfdf5; color: #059669; } /* Green — completed */
+.badge-cancelled { background: #fef2f2; color: #b91c1c; } /* Red — cancelled */
+
+/* Dark theme overrides for badges: darker tinted backgrounds with lighter text */
+[data-theme="dark"] .badge-high     { background: #2a1215; color: #fca5a5; }
+[data-theme="dark"] .badge-medium   { background: #2a1d0e; color: #fcd34d; }
+[data-theme="dark"] .badge-low      { background: #0a2618; color: #6ee7b7; }
+[data-theme="dark"] .badge-todo     { background: #1a1a1e; color: #a1a1aa; }
+[data-theme="dark"] .badge-in-progress { background: #0f1a2e; color: #93c5fd; }
+[data-theme="dark"] .badge-done     { background: #0a2618; color: #6ee7b7; }
+[data-theme="dark"] .badge-cancelled { background: #2a1215; color: #fca5a5; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   NAV LINKS — Sidebar navigation link styling.
+   These styles are defined globally to ensure consistent nav appearance.
+   Active state uses a green left-border accent and tinted background.
+   ═══════════════════════════════════════════════════════════════════ */
+/* Base nav link: horizontal flex with icon + text */
+.nav-link {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: var(--radius-sm);
+  color: var(--text-sidebar); font-size: 0.875rem; font-weight: 500;
+  text-decoration: none; transition: all 0.15s; cursor: pointer;
+}
+/* Hover: subtle white overlay on the dark sidebar */
+.nav-link:hover { background: rgba(255,255,255,0.06); color: #fff; }
+/* Active: green-tinted background with inset left border for the current page */
+.nav-link.active {
+  background: var(--accent-subtle); color: var(--accent); font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--accent); /* Green left-edge indicator */
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FORM UTILITIES — Reusable layout classes for form structures.
+   Used across task-form, goal-form, wishlist-form, and category-manager.
+   ═══════════════════════════════════════════════════════════════════ */
+/* Form group: vertical stack for label + input */
+.form-group { display: flex; flex-direction: column; }
+/* Form row: two-column grid for placing fields side by side */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+/* Form actions: right-aligned button row at the bottom of forms */
+.form-actions { display: flex; gap: 10px; justify-content: flex-end; padding-top: 8px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   PAGE HEADER — Consistent header layout used at the top of feature pages.
+   Title + subtitle on the left, action button(s) on the right.
+   ═══════════════════════════════════════════════════════════════════ */
+/* Page container: vertical flex with consistent spacing between sections */
+.page { display: flex; flex-direction: column; gap: 1.5rem; }
+/* Page header: space-between layout for title area and action buttons */
+.page-header { display: flex; justify-content: space-between; align-items: flex-start; }
+/* Page title: large bold heading */
+.page-header h2 { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+/* Page subtitle: smaller secondary text */
+.page-header p { font-size: 0.875rem; color: var(--text-secondary); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   EMPTY STATE — Centered message shown when a list has no items.
+   Used by task list, goal list, wishlist, and dashboard timeline.
+   ═══════════════════════════════════════════════════════════════════ */
+.empty {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 3rem 1.5rem; color: var(--text-muted); font-size: 0.9rem; text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ANIMATIONS — Keyframe animations used for page transitions and toasts.
+   Components apply these via the .animate-in class.
+   ═══════════════════════════════════════════════════════════════════ */
+/* fadeIn: used by .animate-in for page content entering the viewport */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+/* Apply the fadeIn animation to any element with this class */
+.animate-in { animation: fadeIn 0.3s ease forwards; }
+/* slideUp: used by toast notifications entering from the bottom */
+@keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ═══════════════════════════════════════════════════════════════════
+   TOASTS — Notification popups displayed in the bottom-right corner.
+   Managed by ToastService and rendered by ToastContainerComponent.
+   Each toast has a colored left border indicating its type.
+   ═══════════════════════════════════════════════════════════════════ */
+/* Container: fixed position in the bottom-right, stacks toasts vertically */
+.toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; }
+/* Individual toast: card-like appearance with slide-up entrance animation */
+.toast {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 18px; border-radius: 10px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg); min-width: 280px;
+  animation: slideUp 0.25s ease forwards; cursor: pointer; /* Click to dismiss */
+}
+/* Type-specific left borders: colored accent strip for visual identification */
+.toast-success { border-left: 4px solid var(--green); } /* Green left border for success */
+.toast-error   { border-left: 4px solid var(--red); } /* Red left border for errors */
+.toast-info    { border-left: 4px solid var(--blue); } /* Blue left border for info */
+.toast-warning { border-left: 4px solid var(--orange); } /* Amber left border for warnings */
+
+/* ═══════════════════════════════════════════════════════════════════
+   STATUS SELECT — Inline dropdown used in the task list rows for
+   quick status changes without opening the detail page.
+   Compact styling to fit within the plan row layout.
+   ═══════════════════════════════════════════════════════════════════ */
+.status-select {
+  background: var(--bg-input); border: 1px solid var(--border);
+  border-radius: var(--radius-xs); padding: 4px 8px;
+  font: 500 0.8rem 'Inter', sans-serif; color: var(--text-primary);
+  cursor: pointer; appearance: none; /* Remove native select styling */
+}
