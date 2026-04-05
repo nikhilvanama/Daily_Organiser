@@ -16,6 +16,7 @@ import { TaskFormComponent } from '../task-form/task-form.component';
 import { ToastService } from '../../../core/services/toast.service';
 // Task model and PLAN_TYPES for type-specific icons and colors
 import { Task, PLAN_TYPES } from '../../../core/models/task.model';
+import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 // TaskListComponent ("My Plans" page) displays all the user's tasks/plans with filtering
 // by plan type (chips), status, and priority. Each plan row shows type icon, title, metadata,
@@ -23,7 +24,7 @@ import { Task, PLAN_TYPES } from '../../../core/models/task.model';
 @Component({
   selector: 'app-task-list', // Loaded by the router at /tasks
   standalone: true, // Angular 19 standalone component
-  imports: [RouterLink, AsyncPipe, DatePipe, ReactiveFormsModule, ModalComponent, TaskFormComponent],
+  imports: [RouterLink, AsyncPipe, DatePipe, ReactiveFormsModule, ModalComponent, TaskFormComponent, ConfirmDialogComponent],
   template: `
     <!-- Page container with fade-in animation -->
     <div class="page animate-in">
@@ -118,7 +119,7 @@ import { Task, PLAN_TYPES } from '../../../core/models/task.model';
                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                   </button>
                   <!-- Delete button: asks for confirmation, then removes the task -->
-                  <button class="icon-btn danger" (click)="deletePlan(plan.id)">
+                  <button class="icon-btn danger" (click)="deletePlan(plan)">
                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
                   </button>
                 </div>
@@ -131,9 +132,17 @@ import { Task, PLAN_TYPES } from '../../../core/models/task.model';
 
     <!-- Modal for creating or editing a plan -->
     <app-modal [isOpen]="showForm" [title]="editingTask ? 'Edit Plan' : 'Add Plan'" (close)="closeForm()" maxWidth="560px">
-      <!-- Pass the editing task (if any) so the form pre-fills with existing data -->
       <app-task-form [task]="editingTask" (saved)="onSaved()" (cancelled)="closeForm()" />
     </app-modal>
+
+    <app-confirm-dialog
+      [isOpen]="showDeleteConfirm"
+      title="Delete Plan"
+      [message]="'Are you sure you want to delete &quot;' + (deletingPlanTitle) + '&quot;? This cannot be undone.'"
+      confirmText="Delete"
+      (confirmed)="confirmDelete()"
+      (cancelled)="showDeleteConfirm = false"
+    />
   `,
   styles: [`
     /* Plan type filter chips: horizontal wrapping row */
@@ -234,10 +243,19 @@ export class TaskListComponent implements OnInit {
   // Open the edit modal pre-filled with the selected task's data
   editPlan(task: Task) { this.editingTask = task; this.showForm = true; }
 
-  // Delete a task after user confirmation
-  deletePlan(id: string) {
-    if (!confirm('Delete this plan?')) return; // Confirm before destructive action
-    this.taskService.delete(id).subscribe({ next: () => this.toast.success('Deleted') });
+  showDeleteConfirm = false;
+  deletingPlanId = '';
+  deletingPlanTitle = '';
+
+  deletePlan(plan: any) {
+    this.deletingPlanId = plan.id;
+    this.deletingPlanTitle = plan.title;
+    this.showDeleteConfirm = true;
+  }
+
+  confirmDelete() {
+    this.taskService.delete(this.deletingPlanId).subscribe({ next: () => this.toast.success('Deleted') });
+    this.showDeleteConfirm = false;
   }
 
   // Called when the form saves successfully — close modal, show toast, reload list
