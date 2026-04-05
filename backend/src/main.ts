@@ -22,12 +22,13 @@ async function bootstrap() {
     }),
   );
 
-  // Enable CORS — allow both local dev and production frontend origins
+  // Enable CORS — allow local dev, production, and any Vercel preview deployments
   app.enableCors({
     origin: [
-      'http://localhost:4200',                     // Local development
-      process.env.FRONTEND_URL || '',              // Production frontend URL (set in Render/Vercel env)
-    ].filter(Boolean),
+      'http://localhost:4200',
+      'https://daily-organiser-two.vercel.app',
+      process.env.FRONTEND_URL,
+    ].filter(Boolean) as string[],
     credentials: true,
   });
 
