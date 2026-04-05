@@ -1,5 +1,5 @@
 // Import Angular decorators and utilities: Component, EventEmitter for outputs, inject for DI, Input/Output for bindings, OnInit lifecycle
-import { Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, inject, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 // FormBuilder creates the reactive form; ReactiveFormsModule enables [formGroup]; Validators for field validation
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 // GoalService provides create() and update() methods for saving goals
@@ -57,7 +57,7 @@ import { Goal } from '../../../core/models/goal.model';
   // Compact inline styles for the form layout (minified for brevity)
   styles: [`.goal-form{display:flex;flex-direction:column;gap:1rem}.form-group{display:flex;flex-direction:column;gap:.25rem}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}textarea.input{resize:vertical}.form-actions{display:flex;gap:.75rem;justify-content:flex-end;padding-top:.5rem}`],
 })
-export class GoalFormComponent implements OnInit {
+export class GoalFormComponent implements OnInit, OnChanges {
   // Optional input: when provided, the form operates in edit mode with pre-filled values
   @Input() goal: Goal | null = null;
   // Emitted when the goal is successfully saved (created or updated)
@@ -79,19 +79,25 @@ export class GoalFormComponent implements OnInit {
     targetDate: [''], // Optional target completion date
   });
 
-  // On init, if an existing goal was passed, pre-fill the form with its current values
-  ngOnInit() {
+  ngOnInit() { this.fillForm(); }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['goal']) this.fillForm();
+  }
+
+  private fillForm() {
     if (this.goal) {
       this.form.patchValue({
         title: this.goal.title,
         description: this.goal.description ?? '',
         status: this.goal.status,
-        targetDate: this.goal.targetDate ? this.goal.targetDate.split('T')[0] : '', // Extract date from ISO string
+        targetDate: this.goal.targetDate ? this.goal.targetDate.split('T')[0] : '',
       });
+    } else {
+      this.form.reset({ title: '', description: '', status: 'ACTIVE', targetDate: '' });
     }
   }
 
-  // Handle form submission — build DTO, call create or update, emit saved event
   submit() {
     if (this.form.invalid) return; // Guard against invalid form state
     this.loading = true;
@@ -107,7 +113,11 @@ export class GoalFormComponent implements OnInit {
     // Choose create or update based on whether an existing goal was provided
     const req = this.goal ? this.goalService.update(this.goal.id, dto) : this.goalService.create(dto);
     req.subscribe({
-      next: () => { this.loading = false; this.saved.emit(); }, // Success: notify parent
+      next: () => {
+        this.loading = false;
+        this.form.reset({ title: '', description: '', status: 'ACTIVE', targetDate: '' });
+        this.saved.emit();
+      },
       error: () => { this.loading = false; }, // Failure: re-enable the button
     });
   }
