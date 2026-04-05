@@ -38,7 +38,14 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
   imports: [RouterLink, DatePipe, DecimalPipe, FormsModule, ModalComponent, TaskFormComponent], // Template dependencies
   template: `
     <!-- Page container with fade-in animation (defined in global styles.css) -->
-    <div class="page animate-in">
+    @if (loading()) {
+      <div class="loading-screen">
+        <div class="loading-spinner"></div>
+        <p>Loading your plans...</p>
+        <span class="loading-hint">First load may take ~30s if the server was sleeping</span>
+      </div>
+    }
+    <div class="page animate-in" [style.display]="loading() ? 'none' : ''">
       <!-- Header row: personalized greeting on the left, "Add Plan" button on the right -->
       <div class="today-header">
         <div>
@@ -249,6 +256,12 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
 
     /* Empty state: centered message with icon */
     .empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 3rem 1.5rem; color: var(--text-muted); font-size: 0.9rem; text-align: center; }
+
+    .loading-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 4rem 2rem; }
+    .loading-spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-screen p { font-size: 0.95rem; font-weight: 500; color: var(--text-primary); }
+    .loading-hint { font-size: 0.78rem; color: var(--text-muted); }
   `],
 })
 export class DashboardComponent implements OnInit {
@@ -290,23 +303,39 @@ export class DashboardComponent implements OnInit {
   }
 
   // Fetch stats, today's tasks, and active goals in parallel
+  loading = signal(true);
+
   loadAll() {
-    // Fetch aggregate stats from the dedicated dashboard endpoint
-    this.http.get<Stats>(`${environment.apiUrl}/dashboard/stats`).subscribe((s) => this.stats.set(s));
-    // Fetch today's tasks and sort them by start time (tasks without a time go to the end)
-    this.taskService.getToday().subscribe((t) => {
-      const sorted = t.sort((a, b) => {
-        if (!a.startTime && !b.startTime) return 0; // Both have no time — keep original order
-        if (!a.startTime) return 1; // No time goes after timed tasks
-        if (!b.startTime) return -1; // Timed tasks come first
-        return a.startTime.localeCompare(b.startTime); // Sort by time string (HH:mm format)
-      });
-      this.todayPlans.set(sorted);
+    this.loading.set(true);
+    let loaded = 0;
+    const checkDone = () => { loaded++; if (loaded >= 3) this.loading.set(false); };
+
+    this.http.get<Stats>(`${environment.apiUrl}/dashboard/stats`).subscribe({
+      next: (s) => { this.stats.set(s); checkDone(); },
+      error: () => { checkDone(); this.retryOnce(); },
     });
-    // Fetch all goals and filter to only active ones, showing at most 4 in the dashboard
-    this.goalService.loadAll().subscribe((goals) => {
-      this.activeGoals.set(goals.filter((g: Goal) => g.status === 'ACTIVE').slice(0, 4));
+    this.taskService.getToday().subscribe({
+      next: (t) => {
+        const sorted = t.sort((a, b) => {
+          if (!a.startTime && !b.startTime) return 0;
+          if (!a.startTime) return 1;
+          if (!b.startTime) return -1;
+          return a.startTime.localeCompare(b.startTime);
+        });
+        this.todayPlans.set(sorted);
+        checkDone();
+      },
+      error: () => checkDone(),
     });
+    this.goalService.loadAll().subscribe({
+      next: (goals) => { this.activeGoals.set(goals.filter((g: Goal) => g.status === 'ACTIVE').slice(0, 4)); checkDone(); },
+      error: () => checkDone(),
+    });
+  }
+
+  // Retry once after 3 seconds if first load fails (handles Render cold start)
+  private retryOnce() {
+    setTimeout(() => this.loadAll(), 3000);
   }
 
   // Called when a new plan is saved via the modal — close the modal and refresh all data
