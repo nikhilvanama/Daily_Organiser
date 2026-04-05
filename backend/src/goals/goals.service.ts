@@ -96,17 +96,20 @@ export class GoalsService {
   async addMilestone(userId: string, goalId: string, dto: CreateMilestoneDto) {
     // Verify the parent goal exists and belongs to the authenticated user
     await this.ensureOwnership(userId, goalId);
-    // Generate a unique UUID for the new milestone
     const id = randomUUID();
-    // Build the complete milestone record with defaults for optional fields
+
+    // Set order to be last: find the highest existing order and add 1
+    const existing = await this.getMilestones(goalId);
+    const maxOrder = existing.length > 0 ? Math.max(...existing.map((m: any) => m.order ?? 0)) : -1;
+
     const milestone = {
-      id, // Unique milestone identifier
-      title: dto.title, // Milestone title (required)
-      description: dto.description ?? null, // Optional description of what this milestone entails
-      status: 'PENDING', // Initial status; changes to COMPLETED when the milestone is marked done
-      dueDate: dto.dueDate ?? null, // Optional due date for this milestone
-      completedAt: null, // Timestamp set when the milestone is completed; null until then
-      order: dto.order ?? 0, // Display order for sorting milestones within a goal
+      id,
+      title: dto.title,
+      description: dto.description ?? null,
+      status: 'PENDING',
+      dueDate: dto.dueDate ?? null,
+      completedAt: null,
+      order: dto.order ?? maxOrder + 1, // New milestones go to the end
       goalId, // Foreign key linking this milestone to its parent goal
       createdAt: new Date().toISOString(), // Timestamp when the milestone was created
       updatedAt: new Date().toISOString(), // Timestamp of the last modification
