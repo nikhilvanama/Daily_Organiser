@@ -272,27 +272,14 @@ export class GoalDetailComponent implements OnInit {
   }
 
   // Mark a milestone as completed (only if not already completed)
-  completeMilestone(m: GoalMilestone) {
-    // Optimistic update — toggle UI instantly
-    const newStatus = m.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED';
-    this.goal.update((g) => {
-      if (!g) return g;
-      const milestones = g.milestones.map((ms) =>
-        ms.id === m.id ? { ...ms, status: newStatus as any, completedAt: newStatus === 'COMPLETED' ? new Date().toISOString() : null } : ms
-      );
-      const completed = milestones.filter((ms) => ms.status === 'COMPLETED').length;
-      const progress = milestones.length > 0 ? (completed / milestones.length) * 100 : 0;
-      return { ...g, milestones, progress };
-    });
+  loadingMilestone: string | null = null;
 
-    // Sync with backend in background
+  completeMilestone(m: GoalMilestone) {
+    if (this.loadingMilestone) return; // Prevent double-click
+    this.loadingMilestone = m.id;
     this.goalService.completeMilestone(this.goal()!.id, m.id).subscribe({
-      next: (g) => this.goal.set(g), // Replace with server truth
-      error: () => {
-        this.toast.error('Failed to update');
-        // Revert on error
-        this.goalService.getOne(this.goal()!.id).subscribe((g) => this.goal.set(g));
-      },
+      next: (g) => { this.goal.set(g); this.loadingMilestone = null; },
+      error: () => { this.toast.error('Failed to update'); this.loadingMilestone = null; },
     });
   }
 
@@ -327,26 +314,14 @@ export class GoalDetailComponent implements OnInit {
   }
 
   // Toggle a mini-goal between PENDING and COMPLETED
-  toggleMiniGoal(miniGoalId: string) {
-    // Optimistic update — toggle UI instantly
-    this.goal.update((g) => {
-      if (!g) return g;
-      const milestones = g.milestones.map((ms) => ({
-        ...ms,
-        miniGoals: ms.miniGoals.map((mg) =>
-          mg.id === miniGoalId ? { ...mg, status: (mg.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED') as any } : mg
-        ),
-      }));
-      return { ...g, milestones };
-    });
+  loadingMiniGoal: string | null = null;
 
-    // Sync with backend
+  toggleMiniGoal(miniGoalId: string) {
+    if (this.loadingMiniGoal) return; // Prevent double-click
+    this.loadingMiniGoal = miniGoalId;
     this.goalService.toggleMiniGoal(this.goal()!.id, miniGoalId).subscribe({
-      next: (g) => this.goal.set(g),
-      error: () => {
-        this.toast.error('Failed to update');
-        this.goalService.getOne(this.goal()!.id).subscribe((g) => this.goal.set(g));
-      },
+      next: (g) => { this.goal.set(g); this.loadingMiniGoal = null; },
+      error: () => { this.toast.error('Failed to update'); this.loadingMiniGoal = null; },
     });
   }
 

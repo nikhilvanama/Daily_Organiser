@@ -111,9 +111,14 @@ export class GoalsService {
       createdAt: new Date().toISOString(), // Timestamp when the milestone was created
       updatedAt: new Date().toISOString(), // Timestamp of the last modification
     };
-    // Write the milestone record to Firebase at milestones/{id}
     await this.firebase.ref(`milestones/${id}`).set(milestone);
-    // Fetch the parent goal and return it with all milestones (including the new one) attached
+
+    // Recalculate progress since adding a new PENDING milestone changes the ratio
+    const allMilestones = await this.getMilestones(goalId);
+    const completed = allMilestones.filter((m: any) => m.status === 'COMPLETED').length;
+    const progress = allMilestones.length > 0 ? (completed / allMilestones.length) * 100 : 0;
+    await this.firebase.update(`goals/${goalId}`, { progress });
+
     const goal = await this.firebase.get<any>(`goals/${goalId}`);
     return this.attachMilestones(goal);
   }
