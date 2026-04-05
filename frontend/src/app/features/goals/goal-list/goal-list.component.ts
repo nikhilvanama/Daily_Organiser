@@ -10,6 +10,7 @@ import { GoalService } from '../goal.service';
 import { ModalComponent } from '../../../shared/components/modal/modal.component';
 // GoalFormComponent renders the goal creation/edit form inside the modal
 import { GoalFormComponent } from '../goal-form/goal-form.component';
+import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 // ToastService shows success/error feedback after goal operations
 import { ToastService } from '../../../core/services/toast.service';
 // Goal model interface for typing
@@ -21,7 +22,7 @@ import { Goal } from '../../../core/models/goal.model';
 @Component({
   selector: 'app-goal-list', // Loaded by the router at /goals
   standalone: true, // Angular 19 standalone component
-  imports: [RouterLink, AsyncPipe, DecimalPipe, ModalComponent, GoalFormComponent],
+  imports: [RouterLink, AsyncPipe, DecimalPipe, ModalComponent, GoalFormComponent, ConfirmDialogComponent],
   template: `
     <!-- Page container with fade-in animation -->
     <div class="page animate-in">
@@ -74,7 +75,7 @@ import { Goal } from '../../../core/models/goal.model';
                   <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </button>
                 <!-- Delete button: asks for confirmation before removing the goal -->
-                <button class="icon-btn danger" (click)="deleteGoal(goal.id)" title="Delete">
+                <button class="icon-btn danger" (click)="deleteGoal(goal)" title="Delete">
                   <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
                 </button>
               </div>
@@ -95,6 +96,15 @@ import { Goal } from '../../../core/models/goal.model';
     <app-modal [isOpen]="showForm" [title]="editingGoal ? 'Edit Goal' : 'New Goal'" (close)="closeForm()">
       <app-goal-form [goal]="editingGoal" (saved)="onSaved()" (cancelled)="closeForm()" />
     </app-modal>
+
+    <app-confirm-dialog
+      [isOpen]="showDeleteConfirm"
+      title="Delete Goal"
+      [message]="'Delete &quot;' + deletingGoalTitle + '&quot; and all its milestones? This cannot be undone.'"
+      confirmText="Delete"
+      (confirmed)="confirmDelete()"
+      (cancelled)="showDeleteConfirm = false"
+    />
   `,
   styles: [`
     /* Page layout: vertical flex with spacing */
@@ -159,13 +169,22 @@ export class GoalListComponent implements OnInit {
   // Open the edit modal pre-filled with the selected goal's data
   editGoal(goal: Goal) { this.editingGoal = goal; this.showForm = true; }
 
-  // Delete a goal after user confirmation
-  deleteGoal(id: string) {
-    if (!confirm('Delete this goal?')) return; // Confirm before destructive action
-    this.goalService.delete(id).subscribe({
+  showDeleteConfirm = false;
+  deletingGoalId = '';
+  deletingGoalTitle = '';
+
+  deleteGoal(goal: Goal) {
+    this.deletingGoalId = goal.id;
+    this.deletingGoalTitle = goal.title;
+    this.showDeleteConfirm = true;
+  }
+
+  confirmDelete() {
+    this.goalService.delete(this.deletingGoalId).subscribe({
       next: () => this.toast.success('Goal deleted'),
       error: () => this.toast.error('Failed to delete goal'),
     });
+    this.showDeleteConfirm = false;
   }
 
   // Called when the form saves — close modal and show appropriate success message
