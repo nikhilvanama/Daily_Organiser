@@ -288,13 +288,11 @@ export class GoalDetailComponent implements OnInit {
   loadingMilestones = new Set<string>();
 
   completeMilestone(m: GoalMilestone) {
-    if (this.loadingMilestone) return;
-    this.loadingMilestone = m.id;
+    if (this.loadingMilestones.has(m.id)) return;
+    this.loadingMilestones.add(m.id);
 
-    const wasCompleted = m.status === 'COMPLETED';
-    const newStatus = wasCompleted ? 'PENDING' : 'COMPLETED';
+    const newStatus = m.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED';
 
-    // Instant UI: toggle checkbox + recalculate progress bar immediately
     this.goal.update((g) => {
       if (!g) return g;
       const milestones = g.milestones.map((ms) =>
@@ -306,14 +304,12 @@ export class GoalDetailComponent implements OnInit {
       return { ...g, milestones, progress: milestones.length > 0 ? (done / milestones.length) * 100 : 0 };
     });
 
-    // Sync with backend
     this.goalService.completeMilestone(this.goal()!.id, m.id).subscribe({
-      next: (g) => { this.goal.set(g); this.loadingMilestone = null; },
+      next: (g) => { this.goal.set(g); this.loadingMilestones.delete(m.id); },
       error: () => {
-        // Revert everything on error
         this.goalService.getOne(this.goal()!.id).subscribe({
-          next: (g) => { this.goal.set(g); this.loadingMilestone = null; },
-          error: () => { this.loadingMilestone = null; },
+          next: (g) => { this.goal.set(g); this.loadingMilestones.delete(m.id); },
+          error: () => { this.loadingMilestones.delete(m.id); },
         });
         this.toast.error('Failed to update');
       },
