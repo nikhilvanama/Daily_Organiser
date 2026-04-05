@@ -38,9 +38,12 @@
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05); /* Subtle shadow for cards */
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05); /* Medium shadow for elevated elements */
   --shadow-lg: 0 10px 25px -5px rgb(0 0 0 / 0.1); /* Large shadow for modals and toasts */
-  --radius: 12px; /* Default border radius for cards and large containers */
-  --radius-sm: 8px; /* Smaller radius for buttons and inputs */
-  --radius-xs: 6px; /* Smallest radius for icon buttons and badges */
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+
+  --weekend-bg: #f3f4f6;
+  --weekend-bg-dim: #eaebee;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -71,7 +74,9 @@
   --accent-subtle: rgba(52, 211, 153, 0.1); /* Semi-transparent green for chips */
   --accent-glow: rgba(52, 211, 153, 0.3); /* Green glow for button hover shadows */
 
-  /* Shadows are stronger in dark mode because they need to be visible against dark backgrounds */
+  --weekend-bg: #1e1e22;
+  --weekend-bg-dim: #151517;
+
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
   --shadow-lg: 0 10px 25px -5px rgb(0 0 0 / 0.5);

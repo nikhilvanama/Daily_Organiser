@@ -199,11 +199,9 @@ interface CalendarDay {
     /* Overflow indicator for days with more than 3 tasks */
     .cal-more { font-size: 0.65rem; color: var(--text-muted); padding: 1px 4px; }
 
-    /* Weekend cells */
-    .cal-cell.weekend { background: #f3f4f6; }
-    .cal-cell.weekend.other-month { background: #eaebee; }
-    [data-theme="dark"] .cal-cell.weekend { background: #0a0a0c; }
-    [data-theme="dark"] .cal-cell.weekend.other-month { background: #070709; }
+    /* Weekend cells — uses CSS variables that change with theme */
+    .cal-cell.weekend { background: var(--weekend-bg, #f3f4f6); }
+    .cal-cell.weekend.other-month { background: var(--weekend-bg-dim, #eaebee); }
     .cal-cell.weekend .cal-date { color: var(--accent); font-weight: 600; }
     .weekend-label { color: var(--accent) !important; font-weight: 700 !important; }
 
