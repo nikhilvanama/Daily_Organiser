@@ -2,12 +2,16 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { TaskService } from '../task.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { Task, PLAN_TYPES } from '../../../core/models/task.model';
+import { ModalComponent } from '../../../shared/components/modal/modal.component';
+import { TaskFormComponent } from '../task-form/task-form.component';
+import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-task-detail',
   standalone: true,
-  imports: [RouterLink, DatePipe],
+  imports: [RouterLink, DatePipe, ModalComponent, TaskFormComponent, ConfirmDialogComponent],
   template: `
     <div class="page animate-in">
       <a routerLink="/tasks" class="back-link">← Back to My Plans</a>
@@ -26,8 +30,20 @@ import { Task, PLAN_TYPES } from '../../../core/models/task.model';
             }
           </div>
 
-          <!-- Title -->
-          <h1 [class.done]="task()!.status === 'DONE'">{{ task()!.title }}</h1>
+          <!-- Title + Actions -->
+          <div class="title-row">
+            <h1 [class.done]="task()!.status === 'DONE'">{{ task()!.title }}</h1>
+            <div class="detail-actions">
+              <button class="btn-ghost action-btn" (click)="showEdit = true">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Edit
+              </button>
+              <button class="btn-del action-btn" (click)="showDeleteConfirm = true">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                Delete
+              </button>
+            </div>
+          </div>
 
           <!-- Description -->
           @if (task()!.description) {
@@ -137,6 +153,19 @@ import { Task, PLAN_TYPES } from '../../../core/models/task.model';
         <div class="loading">Loading...</div>
       }
     </div>
+
+    <app-modal [isOpen]="showEdit" title="Edit Plan" (close)="showEdit = false" maxWidth="560px">
+      <app-task-form [task]="task()" (saved)="onEdited()" (cancelled)="showEdit = false" />
+    </app-modal>
+
+    <app-confirm-dialog
+      [isOpen]="showDeleteConfirm"
+      title="Delete Plan"
+      [message]="'Delete &quot;' + (task()?.title ?? '') + '&quot;? This cannot be undone.'"
+      confirmText="Delete"
+      (confirmed)="onDelete()"
+      (cancelled)="showDeleteConfirm = false"
+    />
   `,
   styles: [`
     .back-link { color: var(--accent); text-decoration: none; font-size: 0.875rem; }
@@ -173,6 +202,18 @@ import { Task, PLAN_TYPES } from '../../../core/models/task.model';
       border-radius: 8px; width: fit-content;
     }
 
+    .title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+    .title-row h1 { flex: 1; }
+    .detail-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .action-btn { font-size: 0.82rem; padding: 8px 14px; gap: 6px; }
+    .btn-del {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      background: transparent; color: var(--text-muted); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 8px 14px; font-size: 0.82rem;
+      font-family: inherit; font-weight: 500; cursor: pointer; transition: all 0.15s;
+    }
+    .btn-del:hover { background: rgba(239,68,68,0.1); color: #ef4444; border-color: rgba(239,68,68,0.3); }
+
     .loading { text-align: center; padding: 3rem; color: var(--text-muted); }
   `],
 })
@@ -180,15 +221,37 @@ export class TaskDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private taskService = inject(TaskService);
+  private toast = inject(ToastService);
 
   task = signal<Task | null>(null);
   planTypes = PLAN_TYPES;
+  showEdit = false;
+  showDeleteConfirm = false;
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id')!;
     this.taskService.getOne(id).subscribe({
       next: (t) => this.task.set(t),
       error: () => this.router.navigate(['/tasks']),
+    });
+  }
+
+  onEdited() {
+    this.showEdit = false;
+    this.toast.success('Plan updated');
+    // Reload the task to show updated data
+    this.taskService.getOne(this.task()!.id).subscribe({
+      next: (t) => this.task.set(t),
+    });
+  }
+
+  onDelete() {
+    this.showDeleteConfirm = false;
+    this.taskService.delete(this.task()!.id).subscribe({
+      next: () => {
+        this.toast.success('Plan deleted');
+        this.router.navigate(['/tasks']);
+      },
     });
   }
 
