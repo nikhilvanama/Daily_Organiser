@@ -272,16 +272,15 @@ export class GoalDetailComponent implements OnInit {
   }
 
   // Mark a milestone as completed (only if not already completed)
-  loadingMilestone: string | null = null;
+  loadingMilestones = new Set<string>();
 
   completeMilestone(m: GoalMilestone) {
-    if (this.loadingMilestone) return;
-    this.loadingMilestone = m.id;
+    if (this.loadingMilestones.has(m.id)) return; // Only block THIS milestone
+    this.loadingMilestones.add(m.id);
 
-    const wasCompleted = m.status === 'COMPLETED';
-    const newStatus = wasCompleted ? 'PENDING' : 'COMPLETED';
+    const newStatus = m.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED';
 
-    // Instant UI: toggle checkbox + recalculate progress bar immediately
+    // Instant UI: toggle checkbox + recalculate progress
     this.goal.update((g) => {
       if (!g) return g;
       const milestones = g.milestones.map((ms) =>
@@ -293,16 +292,14 @@ export class GoalDetailComponent implements OnInit {
       return { ...g, milestones, progress: milestones.length > 0 ? (done / milestones.length) * 100 : 0 };
     });
 
-    // Sync with backend
     this.goalService.completeMilestone(this.goal()!.id, m.id).subscribe({
-      next: (g) => { this.goal.set(g); this.loadingMilestone = null; },
+      next: (g) => { this.goal.set(g); this.loadingMilestones.delete(m.id); },
       error: () => {
-        // Revert everything on error
-        this.goalService.getOne(this.goal()!.id).subscribe({
-          next: (g) => { this.goal.set(g); this.loadingMilestone = null; },
-          error: () => { this.loadingMilestone = null; },
-        });
         this.toast.error('Failed to update');
+        this.goalService.getOne(this.goal()!.id).subscribe({
+          next: (g) => this.goal.set(g),
+        });
+        this.loadingMilestones.delete(m.id);
       },
     });
   }
@@ -338,14 +335,27 @@ export class GoalDetailComponent implements OnInit {
   }
 
   // Toggle a mini-goal between PENDING and COMPLETED
-  loadingMiniGoal: string | null = null;
+  loadingMiniGoals = new Set<string>();
 
   toggleMiniGoal(miniGoalId: string) {
-    if (this.loadingMiniGoal) return; // Prevent double-click
-    this.loadingMiniGoal = miniGoalId;
+    if (this.loadingMiniGoals.has(miniGoalId)) return;
+    this.loadingMiniGoals.add(miniGoalId);
+
+    // Instant UI toggle
+    this.goal.update((g) => {
+      if (!g) return g;
+      const milestones = g.milestones.map((ms) => ({
+        ...ms,
+        miniGoals: ms.miniGoals.map((mg) =>
+          mg.id === miniGoalId ? { ...mg, status: (mg.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED') as any } : mg
+        ),
+      }));
+      return { ...g, milestones };
+    });
+
     this.goalService.toggleMiniGoal(this.goal()!.id, miniGoalId).subscribe({
-      next: (g) => { this.goal.set(g); this.loadingMiniGoal = null; },
-      error: () => { this.toast.error('Failed to update'); this.loadingMiniGoal = null; },
+      next: (g) => { this.goal.set(g); this.loadingMiniGoals.delete(miniGoalId); },
+      error: () => { this.toast.error('Failed to update'); this.loadingMiniGoals.delete(miniGoalId); },
     });
   }
 
