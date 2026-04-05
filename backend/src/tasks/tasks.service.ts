@@ -172,7 +172,15 @@ export class TasksService {
     if (categoryId) tasks = tasks.filter((t: any) => t.categoryId === categoryId);
     // Apply optional type filter (e.g., task, trip, train, dinner, meeting) if provided in the query string
     if (type) tasks = tasks.filter((t: any) => t.type === type);
-    // Attach the full category object to each task and return the enriched list
+
+    // Sort by dueDate: earliest first, tasks without dates go to the end
+    tasks.sort((a: any, b: any) => {
+      if (!a.dueDate && !b.dueDate) return 0;
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    });
+
     return this.withCategories(tasks);
   }
 
