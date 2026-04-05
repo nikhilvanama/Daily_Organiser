@@ -19,8 +19,9 @@ export class TasksService {
     private gcalService: GoogleCalendarService,
   ) {}
 
-  // Auto-complete tasks whose date/time has passed
-  // Called before returning task lists so the UI always shows accurate status
+  // Auto-update task status based on current date/time:
+  // - TODO → IN_PROGRESS when the plan's start date/time arrives
+  // - IN_PROGRESS → DONE when the plan's end date/time passes
   private async autoCompleteExpired(userId: string): Promise<void> {
     const now = new Date();
     const allTasks = await this.firebase.getList<any>('tasks');
@@ -29,13 +30,64 @@ export class TasksService {
     );
 
     for (const task of userTasks) {
-      const taskEndDateTime = this.getTaskEndDateTime(task);
-      if (taskEndDateTime && taskEndDateTime < now) {
+      const startDateTime = this.getTaskStartDateTime(task);
+      const endDateTime = this.getTaskEndDateTime(task);
+
+      if (endDateTime && endDateTime < now) {
+        // Plan has ended → mark as DONE
         await this.firebase.update(`tasks/${task.id}`, {
           status: 'DONE',
-          completedAt: taskEndDateTime.toISOString(),
+          completedAt: endDateTime.toISOString(),
+        });
+      } else if (task.status === 'TODO' && startDateTime && startDateTime <= now) {
+        // Plan has started but not ended → mark as IN_PROGRESS
+        await this.firebase.update(`tasks/${task.id}`, {
+          status: 'IN_PROGRESS',
         });
       }
+    }
+  }
+
+  // Calculate when a task/plan STARTS based on its type
+  private getTaskStartDateTime(task: any): Date | null {
+    if (!task.dueDate) return null;
+    const date = task.dueDate.split('T')[0];
+
+    switch (task.type) {
+      case 'trip':
+        // Trip starts at beginning of start date
+        return new Date(date + 'T00:00:00');
+
+      case 'train':
+        // Train starts at departure time
+        if (task.departureTime) return new Date(date + 'T' + task.departureTime + ':00');
+        return new Date(date + 'T00:00:00');
+
+      case 'dinner':
+        // Dinner starts at the reserved time
+        if (task.startTime) return new Date(date + 'T' + task.startTime + ':00');
+        return new Date(date + 'T18:00:00'); // default 6 PM
+
+      case 'meeting':
+        // Meeting starts at start time
+        if (task.startTime) return new Date(date + 'T' + task.startTime + ':00');
+        return new Date(date + 'T00:00:00');
+
+      case 'event':
+        // Event starts at start time
+        if (task.startTime) return new Date(date + 'T' + task.startTime + ':00');
+        return new Date(date + 'T00:00:00');
+
+      case 'reminder':
+        // Reminder triggers at the set time
+        if (task.startTime) return new Date(date + 'T' + task.startTime + ':00');
+        return new Date(date + 'T00:00:00');
+
+      case 'task':
+      default:
+        // Task starts at start time or beginning of day
+        if (task.startTime) return new Date(date + 'T' + task.startTime + ':00');
+        return new Date(date + 'T00:00:00');
     }
   }
 
