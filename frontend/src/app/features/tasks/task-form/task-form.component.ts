@@ -129,9 +129,6 @@ import { Task, PLAN_TYPES, PlanType } from '../../../core/models/task.model';
               <option value="Bus">Bus</option>
               <option value="Flight">Flight</option>
               <option value="Car">Car</option>
-              <option value="Cab">Cab</option>
-              <option value="Auto">Auto</option>
-              <option value="Metro">Metro</option>
             </select>
           </div>
           <div class="form-group">
