@@ -84,7 +84,7 @@ import { Goal, GoalMilestone } from '../../../core/models/goal.model';
                   <!-- Milestone row: checkbox, title, due date, add mini-goal button, delete button -->
                   <div class="milestone-row" [class.completed]="m.status === 'COMPLETED'">
                     <!-- Circular checkbox: click to mark the milestone as completed -->
-                    <button class="milestone-check" (click)="completeMilestone(m)" [disabled]="m.status === 'COMPLETED'">
+                    <button class="milestone-check" (click)="completeMilestone(m)">
                       @if (m.status === 'COMPLETED') {
                         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                       }
@@ -273,10 +273,12 @@ export class GoalDetailComponent implements OnInit {
 
   // Mark a milestone as completed (only if not already completed)
   completeMilestone(m: GoalMilestone) {
-    if (m.status === 'COMPLETED') return; // Guard: already completed
     this.goalService.completeMilestone(this.goal()!.id, m.id).subscribe({
-      next: (g) => { this.goal.set(g); this.toast.success('Milestone completed!'); },
-      error: () => this.toast.error('Failed to complete milestone'),
+      next: (g) => {
+        this.goal.set(g);
+        this.toast.success(m.status === 'COMPLETED' ? 'Milestone reopened' : 'Milestone completed!');
+      },
+      error: () => this.toast.error('Failed to update milestone'),
     });
   }
 

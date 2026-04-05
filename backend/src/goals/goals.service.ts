@@ -130,12 +130,14 @@ export class GoalsService {
 
   // Marks a milestone as completed and recalculates the parent goal's progress percentage
   async completeMilestone(userId: string, goalId: string, milestoneId: string) {
-    // Verify the parent goal exists and belongs to the authenticated user
     await this.ensureOwnership(userId, goalId);
-    // Update the milestone's status to COMPLETED and record the completion timestamp
+
+    // Toggle: if COMPLETED → PENDING, if PENDING → COMPLETED
+    const milestone = await this.firebase.get<any>(`milestones/${milestoneId}`);
+    const newStatus = milestone?.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED';
     await this.firebase.update(`milestones/${milestoneId}`, {
-      status: 'COMPLETED',
-      completedAt: new Date().toISOString(),
+      status: newStatus,
+      completedAt: newStatus === 'COMPLETED' ? new Date().toISOString() : null,
     });
 
     // Recalculate progress
