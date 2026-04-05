@@ -275,11 +275,23 @@ export class GoalDetailComponent implements OnInit {
   loadingMilestone: string | null = null;
 
   completeMilestone(m: GoalMilestone) {
-    if (this.loadingMilestone) return; // Prevent double-click
+    if (this.loadingMilestone) return;
     this.loadingMilestone = m.id;
+
+    // Instant UI toggle for THIS milestone only
+    const wasCompleted = m.status === 'COMPLETED';
+    m.status = wasCompleted ? 'PENDING' : 'COMPLETED';
+    m.completedAt = wasCompleted ? null : new Date().toISOString();
+
     this.goalService.completeMilestone(this.goal()!.id, m.id).subscribe({
       next: (g) => { this.goal.set(g); this.loadingMilestone = null; },
-      error: () => { this.toast.error('Failed to update'); this.loadingMilestone = null; },
+      error: () => {
+        // Revert on error
+        m.status = wasCompleted ? 'COMPLETED' : 'PENDING';
+        m.completedAt = wasCompleted ? new Date().toISOString() : null;
+        this.toast.error('Failed to update');
+        this.loadingMilestone = null;
+      },
     });
   }
 

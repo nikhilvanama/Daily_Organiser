@@ -133,31 +133,36 @@ export class GoalsService {
     return this.firebase.get(`milestones/${milestoneId}`);
   }
 
-  // Marks a milestone as completed and recalculates the parent goal's progress percentage
   async completeMilestone(userId: string, goalId: string, milestoneId: string) {
-    await this.ensureOwnership(userId, goalId);
+    // Read goal + milestone in parallel (2 reads instead of 3)
+    const [goal, milestone] = await Promise.all([
+      this.firebase.get<any>(`goals/${goalId}`),
+      this.firebase.get<any>(`milestones/${milestoneId}`),
+    ]);
+    if (!goal || goal.userId !== userId) throw new ForbiddenException();
+    if (!milestone) throw new NotFoundException('Milestone not found');
 
-    // Toggle: if COMPLETED → PENDING, if PENDING → COMPLETED
-    const milestone = await this.firebase.get<any>(`milestones/${milestoneId}`);
-    const newStatus = milestone?.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED';
-    await this.firebase.update(`milestones/${milestoneId}`, {
+    // Toggle status
+    const newStatus = milestone.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED';
+
+    // Update milestone + fetch all milestones in parallel
+    await this.firebase.ref(`milestones/${milestoneId}`).update({
       status: newStatus,
       completedAt: newStatus === 'COMPLETED' ? new Date().toISOString() : null,
+      updatedAt: new Date().toISOString(),
     });
 
-    // Recalculate progress
-    // Fetch all milestones for this goal to calculate the new progress percentage
     const milestones = await this.getMilestones(goalId);
-    // Count how many milestones have been completed
     const completed = milestones.filter((m: any) => m.status === 'COMPLETED').length;
-    // Calculate progress as a percentage (0-100) based on the ratio of completed to total milestones
     const progress = milestones.length > 0 ? (completed / milestones.length) * 100 : 0;
-    // Update the parent goal's progress field in Firebase
-    await this.firebase.update(`goals/${goalId}`, { progress });
+    await this.firebase.ref(`goals/${goalId}`).update({ progress, updatedAt: new Date().toISOString() });
 
-    // Fetch the updated goal and return it with all milestones and mini-goals attached
-    const goal = await this.firebase.get<any>(`goals/${goalId}`);
-    return this.attachMilestones(goal);
+    goal.progress = progress;
+    goal.milestones = milestones;
+    for (const m of goal.milestones) {
+      m.miniGoals = await this.getMiniGoals(m.id);
+    }
+    return goal;
   }
 
   // Deletes a milestone and all its associated mini-goals from the database
