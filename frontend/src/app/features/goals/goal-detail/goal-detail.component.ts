@@ -10,8 +10,8 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 // GoalService provides CRUD operations for goals, milestones, and mini-goals
 import { GoalService } from '../goal.service';
-// ToastService shows success/error feedback
 import { ToastService } from '../../../core/services/toast.service';
+import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 // Goal and GoalMilestone model interfaces for typing
 import { Goal, GoalMilestone } from '../../../core/models/goal.model';
 
@@ -23,7 +23,7 @@ import { Goal, GoalMilestone } from '../../../core/models/goal.model';
 @Component({
   selector: 'app-goal-detail', // Loaded by the router at /goals/:id
   standalone: true, // Angular 19 standalone component
-  imports: [RouterLink, DatePipe, DecimalPipe, ReactiveFormsModule, FormsModule],
+  imports: [RouterLink, DatePipe, DecimalPipe, ReactiveFormsModule, FormsModule, ConfirmDialogComponent],
   template: `
     <!-- Page container with fade-in animation -->
     <div class="page animate-in">
@@ -73,7 +73,9 @@ import { Goal, GoalMilestone } from '../../../core/models/goal.model';
               <form [formGroup]="milestoneForm" (ngSubmit)="addMilestone()" class="milestone-form">
                 <input class="input" formControlName="title" placeholder="Milestone title" />
                 <input class="input" type="date" formControlName="dueDate" />
-                <button class="btn-primary sm" type="submit" [disabled]="milestoneForm.invalid">Add</button>
+                <button class="btn-primary sm" type="submit" [disabled]="milestoneForm.invalid || addingMilestone">
+                  {{ addingMilestone ? 'Adding...' : 'Add' }}
+                </button>
               </form>
             }
 
@@ -98,7 +100,7 @@ import { Goal, GoalMilestone } from '../../../core/models/goal.model';
                       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     </button>
                     <!-- Delete milestone button -->
-                    <button class="icon-btn danger" (click)="deleteMilestone(m.id)">
+                    <button class="icon-btn danger" (click)="showDeleteMilestone(m)">
                       <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
                   </div>
@@ -129,7 +131,9 @@ import { Goal, GoalMilestone } from '../../../core/models/goal.model';
                     <div class="mini-add-form">
                       <!-- Text input with Enter key binding for quick addition -->
                       <input class="input mini-input" [(ngModel)]="miniGoalTitle" placeholder="Mini-goal title..." (keydown.enter)="addMiniGoal(m.id)" />
-                      <button class="btn-primary mini-btn" (click)="addMiniGoal(m.id)" [disabled]="!miniGoalTitle.trim()">Add</button>
+                      <button class="btn-primary mini-btn" (click)="addMiniGoal(m.id)" [disabled]="!miniGoalTitle.trim() || addingMini">
+                        {{ addingMini ? 'Adding...' : 'Add' }}
+                      </button>
                     </div>
                   }
                 </div>
@@ -141,10 +145,18 @@ import { Goal, GoalMilestone } from '../../../core/models/goal.model';
           </div>
         </div>
       } @else {
-        <!-- Loading state while the goal data is being fetched -->
         <div class="loading">Loading...</div>
       }
     </div>
+
+    <app-confirm-dialog
+      [isOpen]="deleteConfirmOpen"
+      title="Delete Milestone"
+      [message]="'Delete &quot;' + deletingMilestoneTitle + '&quot; and its mini-goals? This cannot be undone.'"
+      confirmText="Delete"
+      (confirmed)="confirmDeleteMilestone()"
+      (cancelled)="deleteConfirmOpen = false"
+    />
   `,
   styles: [`
     /* Back link styled as an accent-colored text link */
@@ -261,18 +273,19 @@ export class GoalDetailComponent implements OnInit {
     });
   }
 
-  // Add a new milestone to the current goal
+  addingMilestone = false;
+
   addMilestone() {
-    if (this.milestoneForm.invalid) return;
+    if (this.milestoneForm.invalid || this.addingMilestone) return;
+    this.addingMilestone = true;
     const v = this.milestoneForm.value;
     this.goalService.addMilestone(this.goal()!.id, { title: v.title!, dueDate: v.dueDate || undefined }).subscribe({
-      next: (g) => { this.goal.set(g); this.milestoneForm.reset(); this.showAddForm = false; },
-      error: () => this.toast.error('Failed to add milestone'),
+      next: (g) => { this.goal.set(g); this.milestoneForm.reset(); this.showAddForm = false; this.addingMilestone = false; },
+      error: () => { this.toast.error('Failed to add milestone'); this.addingMilestone = false; },
     });
   }
 
-  // Mark a milestone as completed (only if not already completed)
-  loadingMilestone: string | null = null;
+  loadingMilestones = new Set<string>();
 
   completeMilestone(m: GoalMilestone) {
     if (this.loadingMilestone) return;
@@ -307,33 +320,41 @@ export class GoalDetailComponent implements OnInit {
     });
   }
 
-  // Delete a milestone and all its mini-goals after confirmation
-  deleteMilestone(milestoneId: string) {
-    if (!confirm('Delete milestone and its mini-goals?')) return;
-    this.goalService.deleteMilestone(this.goal()!.id, milestoneId).subscribe({
+  // Delete milestone — confirm dialog
+  deleteConfirmOpen = false;
+  deletingMilestoneId = '';
+  deletingMilestoneTitle = '';
+
+  showDeleteMilestone(m: GoalMilestone) {
+    this.deletingMilestoneId = m.id;
+    this.deletingMilestoneTitle = m.title;
+    this.deleteConfirmOpen = true;
+  }
+
+  confirmDeleteMilestone() {
+    this.deleteConfirmOpen = false;
+    this.goalService.deleteMilestone(this.goal()!.id, this.deletingMilestoneId).subscribe({
       next: () => {
-        // Manually remove the milestone from the local signal since the API may not return the full goal
-        this.goal.update((g) => g ? { ...g, milestones: g.milestones.filter((m) => m.id !== milestoneId) } : g);
+        this.goal.update((g) => g ? { ...g, milestones: g.milestones.filter((m) => m.id !== this.deletingMilestoneId) } : g);
         this.toast.success('Milestone deleted');
       },
       error: () => this.toast.error('Failed to delete milestone'),
     });
   }
 
-  // --- Mini-goal operations ---
-
-  // Toggle the mini-goal add form for a specific milestone
   toggleMiniForm(milestoneId: string) {
     this.activeMiniForm = this.activeMiniForm === milestoneId ? null : milestoneId;
-    this.miniGoalTitle = ''; // Reset the input when toggling
+    this.miniGoalTitle = '';
   }
 
-  // Add a new mini-goal to a specific milestone
+  addingMini = false;
+
   addMiniGoal(milestoneId: string) {
-    if (!this.miniGoalTitle.trim()) return; // Guard against empty titles
+    if (!this.miniGoalTitle.trim() || this.addingMini) return;
+    this.addingMini = true;
     this.goalService.addMiniGoal(this.goal()!.id, milestoneId, this.miniGoalTitle.trim()).subscribe({
-      next: (g) => { this.goal.set(g); this.miniGoalTitle = ''; this.activeMiniForm = null; },
-      error: () => this.toast.error('Failed to add mini-goal'),
+      next: (g) => { this.goal.set(g); this.miniGoalTitle = ''; this.activeMiniForm = null; this.addingMini = false; },
+      error: () => { this.toast.error('Failed to add mini-goal'); this.addingMini = false; },
     });
   }
 
