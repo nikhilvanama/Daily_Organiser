@@ -177,7 +177,16 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
     .today-header p { color: var(--text-secondary); font-size: 0.9rem; }
 
     /* Quick stats row: four equal-width cards */
-    .quick-stats { display: flex; gap: 1rem; }
+    .quick-stats { display: flex; gap: 1rem; flex-wrap: wrap; }
+    @media (max-width: 768px) {
+      .quick-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+      .qs-num { font-size: 1.25rem; }
+      .today-header { flex-direction: column; gap: 10px; }
+      .today-header h1 { font-size: 1.2rem; }
+      .panels { grid-template-columns: 1fr; }
+      .tl-time { width: 45px; }
+      .tl-hour { font-size: 0.75rem; }
+    }
     .qs-item { flex: 1; padding: 1rem 1.25rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-direction: column; }
     /* Large number display for the stat value */
     .qs-num { font-size: 1.75rem; font-weight: 800; color: var(--text-primary); line-height: 1; }

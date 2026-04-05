@@ -198,6 +198,18 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
     /* Action buttons container */
     .plan-actions { display: flex; gap: 2px; }
 
+    @media (max-width: 768px) {
+      .type-filters { gap: 4px; }
+      .chip { padding: 5px 10px; font-size: 0.72rem; }
+      .plan-row { flex-wrap: wrap; gap: 8px; padding: 10px; }
+      .plan-type-icon { width: 30px; height: 30px; font-size: 0.85rem; }
+      .plan-title { font-size: 0.82rem; }
+      .plan-meta { font-size: 0.68rem; }
+      .status-select { font-size: 0.72rem; padding: 3px 6px; }
+      .filter-bar { flex-direction: column; }
+      .filter-input { width: 100%; min-width: auto; }
+    }
+
     /* Empty state centered message */
     .empty { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
   `],

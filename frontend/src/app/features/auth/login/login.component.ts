@@ -67,8 +67,8 @@ import { ToastService } from '../../../core/services/toast.service';
       min-height: 100vh; display: flex; align-items: center; justify-content: center;
       background: var(--bg-secondary); padding: 2rem;
     }
-    /* Auth card: constrained width with generous padding */
     .auth-card { width: 100%; max-width: 400px; padding: 2.5rem; }
+    @media (max-width: 480px) { .auth-card { padding: 1.5rem; } .auth-page { padding: 1rem; } }
     /* Centered header with bottom margin for spacing */
     .header { text-align: center; margin-bottom: 2rem; }
     /* Logo row: inline-flex to center the icon + text pair */

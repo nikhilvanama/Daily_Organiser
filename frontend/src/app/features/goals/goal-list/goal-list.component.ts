@@ -102,8 +102,8 @@ import { Goal } from '../../../core/models/goal.model';
     .page-header { display: flex; justify-content: space-between; align-items: flex-start; }
     .page-header h2 { font-size: 1.375rem; font-weight: 700; margin: 0 0 0.25rem; color: var(--text-primary); }
     .page-header p { margin: 0; font-size: 0.875rem; color: var(--text-secondary); }
-    /* Responsive card grid: auto-fill columns, minimum 300px each */
     .goals-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+    @media (max-width: 768px) { .goals-grid { grid-template-columns: 1fr; gap: 0.75rem; } }
     /* Goal card: padded flex column */
     .goal-card { padding: 1.25rem; display: flex; flex-direction: column; gap: 0.875rem; }
     .goal-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }

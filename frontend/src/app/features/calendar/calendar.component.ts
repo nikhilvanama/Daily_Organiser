@@ -252,6 +252,18 @@ interface CalendarDay {
     /* Icon button for the close button */
     .icon-btn { background: transparent; border: none; padding: 6px; border-radius: 6px; cursor: pointer; color: var(--text-muted); display: flex; }
     .icon-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+    @media (max-width: 768px) {
+      .cal-header h2 { font-size: 1rem; min-width: 120px; }
+      .cal-cell { min-height: 70px; padding: 4px; }
+      .cal-date { font-size: 0.7rem; width: 20px; height: 20px; }
+      .cal-label { padding: 6px 2px; font-size: 0.6rem; }
+      .cal-task-chip { font-size: 0.55rem; padding: 1px 3px; }
+      .chip-time { display: none; }
+      .cal-more { font-size: 0.55rem; }
+      .day-panel { width: 100%; }
+      .cal-cell.today .cal-date { width: 22px; height: 18px; font-size: 0.7rem; border-radius: 6px; }
+    }
   `],
 })
 export class CalendarComponent implements OnInit {

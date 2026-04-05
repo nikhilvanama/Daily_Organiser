@@ -347,3 +347,26 @@ textarea.input { resize: vertical; min-height: 80px; }
   font: 500 0.8rem 'Inter', sans-serif; color: var(--text-primary);
   cursor: pointer; appearance: none; /* Remove native select styling */
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE — Breakpoints and layout adjustments for
+   screens smaller than 768px (tablets and phones).
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Form rows stack vertically on mobile */
+  .form-row { grid-template-columns: 1fr; }
+
+  /* Page headers stack vertically */
+  .page-header { flex-direction: column; gap: 10px; }
+  .page-header h2 { font-size: 1.25rem; }
+
+  /* Reduce page padding */
+  .page { gap: 1rem; }
+
+  /* Toast notifications: full width at bottom */
+  .toast-container { left: 1rem; right: 1rem; bottom: 1rem; }
+  .toast { min-width: auto; }
+
+  /* Buttons: slightly smaller */
+  .btn-primary, .btn-ghost, .btn-danger { padding: 8px 14px; font-size: 0.82rem; }
+}
