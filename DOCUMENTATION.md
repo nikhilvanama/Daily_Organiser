@@ -24,6 +24,16 @@
 18. [Clickable Dashboard Stat Cards](#18-clickable-dashboard-stat-cards)
 19. [Production Deployment](#19-production-deployment)
 20. [Form Reset Fix](#20-form-reset-fix)
+21. [Train to Journey Rename](#21-train-to-journey-rename)
+22. [Journey Arrival Time & Date](#22-journey-arrival-time--date)
+23. [Milestone Toggle (Revert)](#23-milestone-toggle-revert)
+24. [Optimistic UI for Milestones & Mini-goals](#24-optimistic-ui-for-milestones--mini-goals)
+25. [Progress Recalculation Fixes](#25-progress-recalculation-fixes)
+26. [Goal Form Pre-fill Fix](#26-goal-form-pre-fill-fix)
+27. [Goal Delete Popup](#27-goal-delete-popup)
+28. [Category Creation Fix](#28-category-creation-fix)
+29. [Calendar Day Panel — Clickable Titles](#29-calendar-day-panel--clickable-titles)
+30. [Task Detail — Journey Time Fix](#30-task-detail--journey-time-fix)
 
 ---
 
@@ -1770,10 +1780,12 @@ Data loading: Calls `GET /api/dashboard/calendar?year=YYYY&month=MM` when the co
 | `categoryId` | `string \| null` | `null` | Optional category reference |
 | `category` | `Category \| null` | (populated) | Joined category object |
 | `endDate` | `string \| null` | `null` | End date for multi-day plans (e.g., trip end date) |
-| `boardingStation` | `string \| null` | `null` | Train boarding station |
-| `destinationStation` | `string \| null` | `null` | Train destination station |
-| `trainNumber` | `string \| null` | `null` | Train number or name |
-| `departureTime` | `string \| null` | `null` | Train departure time (HH:mm) |
+| `boardingStation` | `string \| null` | `null` | Journey origin (formerly "boarding station") |
+| `destinationStation` | `string \| null` | `null` | Journey destination |
+| `trainNumber` | `string \| null` | `null` | Travel type — Train, Bus, Flight, or Car |
+| `departureTime` | `string \| null` | `null` | Journey departure time (HH:mm) |
+| `arrivalTime` | `string \| null` | `null` | Journey arrival time (HH:mm) |
+| `arrivalDate` | `string \| null` | `null` | Journey arrival date (ISO date, for overnight travel) |
 | `meetingLink` | `string \| null` | `null` | Meeting video call URL |
 | `googleEventId` | `string \| null` | `null` | Google Calendar event ID (set when synced) |
 | `createdAt` | `string` | (auto) | ISO timestamp |
@@ -2555,6 +2567,145 @@ The `angular.json` build configuration includes a `fileReplacements` entry for p
 ### Overview
 
 After saving a plan (create or edit), the form now resets all fields to their default values. Previously, stale data from the last edited plan could persist in the form when it was reopened, leading to confusion and potential data errors. The fix ensures a clean form state every time the user opens the plan creation or editing dialog.
+
+---
+
+## 21. Train to Journey Rename
+
+### Overview
+
+The plan type previously labeled "Train" has been renamed to "Journey" throughout the UI, with a bus icon (🚌) replacing the old train icon. The internal data value remains `train` for backward compatibility with existing records in the database.
+
+### What Changed
+
+- **Display label**: "Train" → "Journey" in the task type selector, task list, detail page, and calendar
+- **Icon**: Updated to 🚌 (bus) to represent general travel
+- **Travel type dropdown**: The `trainNumber` field is now presented as a "Travel Type" dropdown with four options: Train, Bus, Flight, Car
+- **Form labels**: "Boarding Station" → "From", "Destination Station" → "To", "Train Number" → "Travel Type"
+- **Backward compatibility**: The `type` field value in the database remains `'train'` so existing journey records continue to work without migration
+
+---
+
+## 22. Journey Arrival Time & Date
+
+### Overview
+
+Journey-type plans now support arrival time and arrival date fields in addition to the existing departure time. This allows users to track the full travel window, including overnight journeys where the arrival date differs from the departure date.
+
+### Form Fields
+
+The journey form now shows four time/date fields:
+
+- **Journey Date** (departure date) — the existing `dueDate` field
+- **Arrival Date** — new `arrivalDate` field for overnight or multi-day travel
+- **Departure Time** — the existing `departureTime` field
+- **Arrival Time** — new `arrivalTime` field
+
+### Display Behavior
+
+- **Task list**: Shows departure and arrival times in the format `🕐 17:45 → 06:00`
+- **Detail page**: Shows "Departure → Arrival: 17:45 → 06:00" in a single row
+- **Calendar day panel**: Uses a smart `getTaskTime()` helper — returns `departureTime` for journey-type tasks and `startTime` for all other types, ensuring the calendar always shows the most relevant time
+
+### Backend Changes
+
+The calendar endpoint now returns `departureTime`, `boardingStation`, and `destinationStation` fields in its response so the calendar day panel can display journey-specific information.
+
+---
+
+## 23. Milestone Toggle (Revert)
+
+### Overview
+
+Milestones can now be toggled in both directions: marking a completed milestone will revert it to PENDING status. Previously, completing a milestone was a one-way operation.
+
+### What Changed
+
+- **Backend**: The `completeMilestone` endpoint now acts as a toggle — if the milestone is already COMPLETED, it sets it back to PENDING and clears the `completedAt` timestamp
+- **Frontend**: Removed the `[disabled]` attribute on completed milestone checkboxes so users can click them again
+- **Toast feedback**: Shows "Milestone reopened" when reverting, or "Milestone completed!" when completing
+
+---
+
+## 24. Optimistic UI for Milestones & Mini-goals
+
+### Overview
+
+Milestone and mini-goal checkbox toggles now update the UI instantly without waiting for the backend response. This makes the goal detail page feel significantly more responsive.
+
+### How It Works
+
+1. **Instant toggle**: When a checkbox is clicked, the UI immediately flips the item's status (PENDING ↔ COMPLETED)
+2. **Instant progress**: The progress bar recalculates immediately using the optimistic state
+3. **Per-item locking**: A `Set<string>` tracks which items have in-flight requests — users can click multiple milestones without waiting for each one to resolve
+4. **Server reconciliation**: When the backend responds, the optimistic state is replaced with the server's authoritative data
+5. **Error rollback**: If the backend request fails, the UI reverts the item to its previous state
+
+---
+
+## 25. Progress Recalculation Fixes
+
+### Overview
+
+Goal progress now recalculates correctly in all mutation scenarios, not just on toggle.
+
+### Scenarios Fixed
+
+- **Milestone deleted**: Progress recalculates after deletion. If all milestones are removed, progress resets to 0%
+- **Milestone added**: Progress recalculates after a new milestone is created (e.g., adding a 3rd milestone to a goal with 1/2 completed changes progress from 50% to 33%)
+- **Milestone toggled**: Progress recalculates in both directions (complete and revert)
+
+---
+
+## 26. Goal Form Pre-fill Fix
+
+### Overview
+
+Applied the same `OnChanges` fix that was used for the task form (documented in section 20). The goal form now correctly resets all fields after saving, preventing stale data from the last edited goal from persisting in the form when it is reopened.
+
+---
+
+## 27. Goal Delete Popup
+
+### Overview
+
+Replaced the browser's native `confirm()` dialog with the styled `ConfirmDialogComponent` for goal deletion. The confirmation popup now shows the goal's title in the message, consistent with how delete confirmations work elsewhere in the application.
+
+---
+
+## 28. Category Creation Fix
+
+### Overview
+
+Fixed a bug where creating a new category would fail with an "Internal server error" response. The root cause was the `@IsHexColor()` validation decorator on the category color DTO field, which was rejecting valid color values. The fix replaces `@IsHexColor()` with `@IsString()` in the category creation DTO.
+
+---
+
+## 29. Calendar Day Panel — Clickable Titles
+
+### Overview
+
+Task titles displayed in the calendar's day-detail side panel are now clickable links that navigate to the plan's detail page.
+
+### What Changed
+
+- Added `RouterLink` import to `CalendarComponent`
+- Each task title in the day panel is wrapped in a router link pointing to `/plans/:id`
+- Clicking a title closes the day panel and navigates to the detail page
+
+---
+
+## 30. Task Detail — Journey Time Fix
+
+### Overview
+
+Fixed a bug where journey-type tasks would display a duplicate TIME row on the detail page — one for `startTime`/`endTime` and another for `departureTime`/`arrivalTime`.
+
+### Logic
+
+- If the task has a `departureTime`, the detail page shows a single "Departure → Arrival" row with `departureTime → arrivalTime`
+- If the task does not have a `departureTime`, it shows the standard "Time" row with `startTime`/`endTime`
+- The two rows are mutually exclusive — they never both appear
 
 ---
 
