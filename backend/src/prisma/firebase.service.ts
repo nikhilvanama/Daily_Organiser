@@ -15,20 +15,23 @@ export class FirebaseService implements OnModuleInit {
   // Holds the Firebase Realtime Database instance used for all CRUD operations across the Daily Organizer app
   private _db: admin.database.Database;
 
-  // Called automatically by NestJS when the module initializes; sets up Firebase Admin SDK with service account credentials
   onModuleInit() {
-    // Resolve the absolute path to the Firebase service account key file located two directories up from the compiled output
-    const serviceAccountPath = path.resolve(__dirname, '../../serviceAccountKey.json');
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    // Load the service account JSON credentials file which contains the private key for authenticating with Firebase
-    const serviceAccount = require(serviceAccountPath);
+    let serviceAccount: any;
 
-    // Initialize the Firebase Admin app with the service account credentials and the Realtime Database URL for this project
+    // In production (Render), the service account key is stored as a JSON string in an env variable
+    // In development, it's loaded from a local file
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+      serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    } else {
+      const serviceAccountPath = path.resolve(__dirname, '../../serviceAccountKey.json');
+      serviceAccount = require(serviceAccountPath);
+    }
+
+    const dbUrl = process.env.FIREBASE_DATABASE_URL || 'https://taskmanagement-ce2c2-default-rtdb.firebaseio.com';
+
     this.app = admin.initializeApp({
-      // Use the service account certificate to authenticate server-to-server communication with Firebase
       credential: admin.credential.cert(serviceAccount),
-      // The Firebase Realtime Database URL where all Daily Organizer data (users, tasks, goals, wishlist, categories, milestones, minigoals) is stored
-      databaseURL: 'https://taskmanagement-ce2c2-default-rtdb.firebaseio.com',
+      databaseURL: dbUrl,
     });
 
     // Get a reference to the Firebase Realtime Database from the initialized app

@@ -22,10 +22,13 @@ async function bootstrap() {
     }),
   );
 
-  // Enable CORS so the Angular frontend (running on port 4200) can call the API
+  // Enable CORS — allow both local dev and production frontend origins
   app.enableCors({
-    origin: 'http://localhost:4200', // Only allow requests from our Angular frontend
-    credentials: true,               // Allow cookies and auth headers to be sent
+    origin: [
+      'http://localhost:4200',                     // Local development
+      process.env.FRONTEND_URL || '',              // Production frontend URL (set in Render/Vercel env)
+    ].filter(Boolean),
+    credentials: true,
   });
 
   // Read the port from environment variables or default to 3000

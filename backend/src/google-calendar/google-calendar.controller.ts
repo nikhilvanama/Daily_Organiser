@@ -26,8 +26,9 @@ export class GoogleCalendarController {
     @Res() res: Response,
   ) {
     await this.gcalService.handleCallback(code, state);
-    // Redirect back to the frontend dashboard with a success indicator
-    res.redirect('http://localhost:4200/dashboard?gcal=connected');
+    // Redirect back to the frontend — use env var in production, localhost in dev
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
+    res.redirect(`${frontendUrl}/dashboard?gcal=connected`);
   }
 
   // GET /api/google/status — Check if user has connected Google Calendar
