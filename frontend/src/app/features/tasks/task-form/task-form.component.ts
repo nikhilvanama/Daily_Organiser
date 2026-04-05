@@ -112,18 +112,18 @@ import { Task, PLAN_TYPES, PlanType } from '../../../core/models/task.model';
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label class="label">Boarding Station</label>
-            <input class="input" formControlName="boardingStation" placeholder="e.g. Secunderabad" />
+            <label class="label">From</label>
+            <input class="input" formControlName="boardingStation" placeholder="e.g. Secunderabad, MGBS" />
           </div>
           <div class="form-group">
-            <label class="label">Destination Station</label>
-            <input class="input" formControlName="destinationStation" placeholder="e.g. Haridwar" />
+            <label class="label">To</label>
+            <input class="input" formControlName="destinationStation" placeholder="e.g. Haridwar, Ameerpet" />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label class="label">Train Number / Name</label>
-            <input class="input" formControlName="trainNumber" placeholder="e.g. 12760 Charminar Exp" />
+            <label class="label">Vehicle / Route</label>
+            <input class="input" formControlName="trainNumber" placeholder="e.g. 12760 Charminar Exp, Bus 47C" />
           </div>
           <div class="form-group">
             <label class="label">Priority</label>
@@ -316,7 +316,7 @@ export class TaskFormComponent implements OnInit, OnChanges {
     const map: Record<string, string> = {
       task: "What's the plan?",
       trip: 'Trip name (e.g. Kedarnath Trip)',
-      train: 'Journey name (e.g. Train to Delhi)',
+      train: 'Journey name (e.g. Train to Delhi, Bus to Office)',
       dinner: 'Dinner plan (e.g. Dinner at Paradise)',
       meeting: 'Meeting title (e.g. Sprint Review)',
       event: 'Event name (e.g. Tech Conference)',
@@ -329,7 +329,7 @@ export class TaskFormComponent implements OnInit, OnChanges {
     const map: Record<string, string> = {
       task: 'Optional details...',
       trip: 'Trip details, who is going, budget...',
-      train: 'PNR, seat number, coach...',
+      train: 'PNR, seat number, ticket details...',
       dinner: 'With whom, special occasion...',
       meeting: 'Agenda, topics to discuss...',
       event: 'Event details, tickets, dress code...',
