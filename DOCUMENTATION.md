@@ -19,6 +19,11 @@
 13. [Google Calendar Integration](#13-google-calendar-integration)
 14. [Auto Status Updates](#14-auto-status-updates)
 15. [Future Scope & Enhancements](#15-future-scope--enhancements)
+16. [Mobile Responsive Design](#16-mobile-responsive-design)
+17. [Loading Screen for Cold Start](#17-loading-screen-for-cold-start)
+18. [Clickable Dashboard Stat Cards](#18-clickable-dashboard-stat-cards)
+19. [Production Deployment](#19-production-deployment)
+20. [Form Reset Fix](#20-form-reset-fix)
 
 ---
 
@@ -2404,7 +2409,7 @@ The current architecture is single-user (each resource has one `userId`). Future
 
 ### Mobile Responsive Design
 
-While the current CSS uses some responsive techniques, the application is primarily designed for desktop browsers. A dedicated mobile layout with a collapsible sidebar, touch-optimized buttons, and a simplified calendar view would improve the mobile experience.
+**Implemented.** See [Section 16 -- Mobile Responsive Design](#16-mobile-responsive-design) for full details.
 
 ### PWA Support
 
@@ -2432,6 +2437,124 @@ The current implementation uses custom JWT authentication with passwords stored 
 - Reduced backend complexity (no password hashing, no token generation)
 
 However, this would introduce a dependency on Firebase's authentication service and reduce control over the auth flow.
+
+---
+
+## 16. Mobile Responsive Design
+
+### Overview
+
+The application is fully responsive with a mobile-first breakpoint at **768px**. All feature pages adapt their layout, typography, and spacing for smaller screens, ensuring a usable experience on phones and tablets.
+
+### Collapsible Sidebar
+
+On screens narrower than 768px, the desktop sidebar is hidden by default. A **mobile top bar** is displayed instead, containing:
+
+- **Hamburger menu button** (left) -- Toggles the sidebar as a slide-in overlay
+- **"Daily Organizer" title** (center) -- App branding
+- **Dark/Light theme toggle** (right) -- Quick access to theme switching
+
+When the sidebar overlay is open, clicking any navigation link automatically closes it, providing a smooth single-action navigation experience.
+
+### Safe Area Support
+
+The sidebar bottom uses `env(safe-area-inset-bottom)` to account for the iPhone notch and home indicator area, ensuring no content is obscured on modern iOS devices.
+
+### Per-Page Responsive Behavior
+
+| Page | Mobile Adaptation |
+|---|---|
+| **Dashboard** | Stats displayed in a 2x2 grid; panels stack vertically; smaller font sizes |
+| **Task List** | Plan rows wrap content; filters stack vertically; smaller type chips |
+| **Calendar** | Compact cells (70px height); full-width day detail panel; time prefix hidden on chips |
+| **Goals** | Single-column card grid instead of multi-column |
+| **Auth Pages** | Reduced padding on small screens |
+| **Forms** | Two-column field rows collapse to single column |
+| **Toasts** | Full width, positioned at the bottom of the screen |
+
+### File Changes
+
+| File | Change |
+|---|---|
+| `frontend/src/app/shared/components/sidebar/layout.component.ts` | Added hamburger menu button, mobile top bar, and overlay toggle logic |
+| `frontend/src/styles.css` | Added responsive utility classes and global media queries |
+| All feature components | Added `@media (max-width: 768px)` queries for page-specific layout adjustments |
+
+---
+
+## 17. Loading Screen for Cold Start
+
+### Overview
+
+The dashboard displays a **loading spinner** with a "Loading your plans..." message during the initial data fetch. This addresses the user experience on the Render free tier, where the backend may take up to 50 seconds to respond after being idle.
+
+### Behavior
+
+- A hint message is shown below the spinner: *"First load may take ~30s if the server was sleeping"*
+- **Auto-retry**: If the first API call fails (e.g., due to a cold-starting server), the dashboard automatically retries after **3 seconds**
+- Dashboard content (stats, today's tasks, goal summaries) remains hidden until all three API calls complete successfully
+
+### Render Free Tier Note
+
+The backend is deployed on Render's free tier, which has the following characteristics:
+
+| Behavior | Detail |
+|---|---|
+| **Spin-down** | Service spins down after 15 minutes of inactivity |
+| **Cold start** | First request after idle takes approximately 50 seconds |
+| **Data safety** | All data is stored in Firebase, not on the Render instance -- no data is lost during spin-down |
+| **Keep-alive recommendation** | Use [UptimeRobot](https://uptimerobot.com/) (free tier) to ping the backend health endpoint every 14 minutes to prevent spin-down |
+
+---
+
+## 18. Clickable Dashboard Stat Cards
+
+### Overview
+
+All four dashboard stat cards are now interactive links that navigate the user to the relevant feature page.
+
+### Card Routing
+
+| Stat Card | Navigates To |
+|---|---|
+| Active Plans | `/tasks` |
+| Done Today | `/tasks` |
+| Goals | `/goals` |
+| To Buy | `/wishlist` |
+
+### Hover Effect
+
+Each card responds to hover with:
+
+- A **green border** highlight
+- A slight **lift** effect (`translateY(-2px)`)
+- A subtle **box shadow** for depth
+
+The cards are rendered as `<a>` elements with `routerLink`, ensuring proper accessibility and native link behavior (right-click to open in new tab, etc.).
+
+---
+
+## 19. Production Deployment
+
+### Environment File Replacement
+
+The `angular.json` build configuration includes a `fileReplacements` entry for production builds. This ensures that the production environment file (containing the Render backend URL) is used instead of the development environment file (which points to `localhost:3000`).
+
+**Without this configuration**, the production build would attempt to call `localhost:3000` for all API requests, causing authentication and all API calls to fail on deployed/mobile clients.
+
+### File Changed
+
+| File | Change |
+|---|---|
+| `angular.json` | Added `fileReplacements` under `configurations.production` to swap the environment file for production builds |
+
+---
+
+## 20. Form Reset Fix
+
+### Overview
+
+After saving a plan (create or edit), the form now resets all fields to their default values. Previously, stale data from the last edited plan could persist in the form when it was reopened, leading to confusion and potential data errors. The fix ensures a clean form state every time the user opens the plan creation or editing dialog.
 
 ---
 
