@@ -211,7 +211,7 @@ import { ToastService } from '../../../core/services/toast.service';
     /* Category manager popup positioned to the right of the sidebar */
     .cat-popup { position: fixed; top: 50%; left: 250px; transform: translateY(-50%); z-index: 1000; margin-left: 12px; }
     /* Bottom section: bordered top, contains theme toggle and user block */
-    .sidebar-bottom { padding: 0.75rem; border-top: 1px solid var(--sidebar-border); display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+    .sidebar-bottom { padding: 0.75rem; padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); border-top: 1px solid var(--sidebar-border); display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
     /* Theme toggle button: full-width with subtle background */
     .theme-btn { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 8px; color: var(--sidebar-text); font-size: 0.82rem; background: var(--sidebar-hover); border: none; cursor: pointer; width: 100%; transition: all 0.15s; font-family: inherit; }
     .theme-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
