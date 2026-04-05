@@ -63,22 +63,22 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
 
       <!-- Quick stats row: four cards showing key metrics at a glance -->
       <div class="quick-stats">
-        <div class="qs-item">
+        <a routerLink="/tasks" class="qs-item">
           <span class="qs-num">{{ stats()?.activeTasks ?? 0 }}</span>
           <span class="qs-label">Active Plans</span>
-        </div>
-        <div class="qs-item">
+        </a>
+        <a routerLink="/tasks" class="qs-item">
           <span class="qs-num">{{ stats()?.completedToday ?? 0 }}</span>
           <span class="qs-label">Done Today</span>
-        </div>
-        <div class="qs-item">
+        </a>
+        <a routerLink="/goals" class="qs-item">
           <span class="qs-num">{{ stats()?.activeGoals ?? 0 }}</span>
           <span class="qs-label">Goals</span>
-        </div>
-        <div class="qs-item">
+        </a>
+        <a routerLink="/wishlist" class="qs-item">
           <span class="qs-num">{{ stats()?.wishlistCount ?? 0 }}</span>
           <span class="qs-label">To Buy</span>
-        </div>
+        </a>
       </div>
 
       <!-- Today's Schedule: timeline of tasks/plans due today, sorted by start time -->
@@ -194,7 +194,8 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
       .tl-time { width: 45px; }
       .tl-hour { font-size: 0.75rem; }
     }
-    .qs-item { flex: 1; padding: 1rem 1.25rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-direction: column; }
+    .qs-item { flex: 1; padding: 1rem 1.25rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-direction: column; text-decoration: none; cursor: pointer; transition: all 0.15s; }
+    .qs-item:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow-md); }
     /* Large number display for the stat value */
     .qs-num { font-size: 1.75rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
     /* Small label below the number */
