@@ -166,7 +166,13 @@ export class GoalsService {
     }
     // Delete the milestone itself from the milestones collection
     await this.firebase.remove(`milestones/${milestoneId}`);
-    // Return a confirmation object indicating successful deletion
+
+    // Recalculate progress after deletion
+    const remaining = await this.getMilestones(goalId);
+    const completed = remaining.filter((m: any) => m.status === 'COMPLETED').length;
+    const progress = remaining.length > 0 ? (completed / remaining.length) * 100 : 0;
+    await this.firebase.update(`goals/${goalId}`, { progress });
+
     return { deleted: true };
   }
 
