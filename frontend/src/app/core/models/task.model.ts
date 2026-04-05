@@ -33,6 +33,7 @@ export interface Task {
   userId: string; // Foreign key to the owning user
   categoryId: string | null; // Optional foreign key to a user-defined category
   category: Category | null; // Populated category object (included via backend JOIN)
+  googleEventId: string | null; // Google Calendar event ID (present when synced)
   createdAt: string; // ISO timestamp of task creation
   updatedAt: string; // ISO timestamp of last modification
 }

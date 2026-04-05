@@ -10,12 +10,14 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 // Import randomUUID to generate unique task IDs since Firebase Realtime Database doesn't auto-generate UUIDs
 import { randomUUID } from 'crypto';
+import { GoogleCalendarService } from '../google-calendar/google-calendar.service';
 
-// @Injectable() marks this class as a NestJS service that can be injected into TasksController
 @Injectable()
 export class TasksService {
-  // Inject FirebaseService to perform database operations on the 'tasks' and 'categories' collections
-  constructor(private firebase: FirebaseService) {}
+  constructor(
+    private firebase: FirebaseService,
+    private gcalService: GoogleCalendarService,
+  ) {}
 
   // Retrieves all tasks for the authenticated user, with optional filtering by status, priority, categoryId, and type
   async findAll(userId: string, query: Record<string, string>) {
@@ -109,9 +111,24 @@ export class TasksService {
       createdAt: new Date().toISOString(), // Timestamp when the task was created
       updatedAt: new Date().toISOString(), // Timestamp of the last modification to this task
     };
-    // Write the complete task record to Firebase at tasks/{id}
     await this.firebase.ref(`tasks/${id}`).set(task);
-    // Attach the category object (if categoryId is set) and return the enriched task
+
+    // Sync to Google Calendar if user is connected and task has a dueDate
+    if (task.dueDate) {
+      try {
+        const connected = await this.gcalService.isConnected(userId);
+        if (connected) {
+          const googleEventId = await this.gcalService.createEvent(userId, task);
+          if (googleEventId) {
+            await this.firebase.update(`tasks/${id}`, { googleEventId });
+            (task as any).googleEventId = googleEventId;
+          }
+        }
+      } catch (err: any) {
+        console.error('Google Calendar sync failed on create:', err.message);
+      }
+    }
+
     return this.withCategory(task);
   }
 
@@ -127,17 +144,49 @@ export class TasksService {
     else if (dto.status) data['completedAt'] = null;
     // Apply the partial update to the task in Firebase
     await this.firebase.update(`tasks/${id}`, data);
-    // Fetch the fully updated task record from Firebase
     const updated = await this.firebase.get<any>(`tasks/${id}`);
-    // Attach the category and return the enriched updated task
+
+    // Sync to Google Calendar
+    try {
+      const connected = await this.gcalService.isConnected(userId);
+      if (connected) {
+        if (updated.googleEventId && updated.dueDate) {
+          // Task has a linked event and still has a date — update the event
+          await this.gcalService.updateEvent(userId, updated.googleEventId, updated);
+        } else if (updated.googleEventId && !updated.dueDate) {
+          // Date was removed — delete the calendar event
+          await this.gcalService.deleteEvent(userId, updated.googleEventId);
+          await this.firebase.update(`tasks/${id}`, { googleEventId: null });
+        } else if (!updated.googleEventId && updated.dueDate) {
+          // Date was added — create a new calendar event
+          const googleEventId = await this.gcalService.createEvent(userId, updated);
+          if (googleEventId) {
+            await this.firebase.update(`tasks/${id}`, { googleEventId });
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error('Google Calendar sync failed on update:', err.message);
+    }
+
     return this.withCategory(updated);
   }
 
-  // Deletes a task from the database after verifying ownership
   async remove(userId: string, id: string) {
-    // Verify the task exists and belongs to the authenticated user before deletion
-    await this.ensureOwnership(userId, id);
-    // Remove the task record from Firebase permanently
+    const task = await this.ensureOwnership(userId, id);
+
+    // Delete from Google Calendar if synced
+    if (task.googleEventId) {
+      try {
+        const connected = await this.gcalService.isConnected(userId);
+        if (connected) {
+          await this.gcalService.deleteEvent(userId, task.googleEventId);
+        }
+      } catch (err: any) {
+        console.error('Google Calendar sync failed on delete:', err.message);
+      }
+    }
+
     await this.firebase.remove(`tasks/${id}`);
     // Return a confirmation object indicating successful deletion
     return { deleted: true };

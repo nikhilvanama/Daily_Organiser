@@ -12,6 +12,8 @@ import { ThemeService } from '../../../core/services/theme.service';
 import { CategoryService } from '../../../features/categories/category.service';
 // CategoryManagerComponent is the popup form for creating and deleting categories
 import { CategoryManagerComponent } from '../category-manager/category-manager.component';
+import { GoogleCalendarService } from '../../../core/services/google-calendar.service';
+import { ToastService } from '../../../core/services/toast.service';
 
 // SidebarComponent is the persistent left navigation panel visible on all authenticated pages.
 // It contains: app logo, navigation links (Today, My Plans, Calendar, Goals, Buy List),
@@ -116,7 +118,18 @@ import { CategoryManagerComponent } from '../category-manager/category-manager.c
           }
         </button>
 
-        <!-- User profile block showing avatar initial, name, email, and logout button -->
+        <!-- Google Calendar connection button -->
+        <button class="gcal-btn" (click)="handleGoogleCalendar()">
+          @if (gcalService.connected()) {
+            <svg width="16" height="16" fill="none" stroke="#10b981" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            <span class="gcal-text">Calendar Synced</span>
+          } @else {
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span class="gcal-text">Connect Google Calendar</span>
+          }
+        </button>
+
+        <!-- User profile block -->
         <div class="user-block">
           <!-- Circular avatar with the user's first initial on a green gradient background -->
           <div class="user-avatar">{{ getUserInitial() }}</div>
@@ -205,6 +218,16 @@ import { CategoryManagerComponent } from '../category-manager/category-manager.c
     /* Logout button: dim by default, turns red on hover to signal destructive action */
     .logout-icon { background: none; border: none; color: var(--sidebar-text-dim); cursor: pointer; padding: 6px; border-radius: 6px; display: flex; transition: all 0.15s; flex-shrink: 0; }
     .logout-icon:hover { background: rgba(239,68,68,0.1); color: #ef4444; }
+
+    .gcal-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 12px; border-radius: 8px;
+      color: var(--sidebar-text); font-size: 0.82rem;
+      background: transparent; border: 1px dashed var(--sidebar-border);
+      cursor: pointer; width: 100%; transition: all 0.15s; font-family: inherit;
+    }
+    .gcal-btn:hover { border-color: var(--sidebar-active-text); color: var(--sidebar-active-text); background: var(--sidebar-hover); }
+    .gcal-text { flex: 1; text-align: left; }
   `],
 })
 export class SidebarComponent implements OnInit {
@@ -216,16 +239,28 @@ export class SidebarComponent implements OnInit {
   private catService = inject(CategoryService);
   // Observable stream of user's categories — used in the template with async pipe
   categories$ = this.catService.categories$;
-  // Signal controlling the visibility of the category manager popup
+  gcalService = inject(GoogleCalendarService);
+  private toast = inject(ToastService);
   showCatManager = signal(false);
 
-  // On initialization, load the user's categories from the backend.
-  // Also ensure the current user profile is loaded if the user signal is empty
-  // (handles the case where the sidebar renders before AppComponent finishes loading the user).
   ngOnInit() {
-    this.catService.loadAll().subscribe(); // Fetch categories and populate the BehaviorSubject
+    this.catService.loadAll().subscribe();
     if (this.auth.isLoggedIn() && !this.auth.currentUser()) {
-      this.auth.loadCurrentUser().subscribe(); // Fetch user profile if not yet loaded
+      this.auth.loadCurrentUser().subscribe();
+    }
+    // Check Google Calendar connection status
+    this.gcalService.checkStatus().subscribe();
+  }
+
+  handleGoogleCalendar() {
+    if (this.gcalService.connected()) {
+      if (confirm('Disconnect Google Calendar?')) {
+        this.gcalService.disconnect().subscribe({
+          next: () => this.toast.success('Google Calendar disconnected'),
+        });
+      }
+    } else {
+      this.gcalService.connect();
     }
   }
 

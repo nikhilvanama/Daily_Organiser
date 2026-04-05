@@ -18,6 +18,8 @@ import { WishlistModule } from './wishlist/wishlist.module';
 import { CategoriesModule } from './categories/categories.module';
 // DashboardModule — provides aggregate stats, today's plans, calendar data, and activity feed
 import { DashboardModule } from './dashboard/dashboard.module';
+// GoogleCalendarModule — OAuth flow + Calendar API sync for pushing tasks to Google Calendar
+import { GoogleCalendarModule } from './google-calendar/google-calendar.module';
 // PrismaModule — provides the FirebaseService globally (connects to Firebase Realtime Database)
 import { PrismaModule } from './prisma/prisma.module';
 // JwtAuthGuard — the guard that checks JWT tokens on every request (unless marked @Public())
@@ -38,6 +40,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     WishlistModule,   // /api/wishlist/* — buy list items
     CategoriesModule, // /api/categories/* — user categories
     DashboardModule,  // /api/dashboard/* — stats, activity, calendar data
+    GoogleCalendarModule, // /api/google/* — Google Calendar OAuth + sync
   ],
   providers: [
     {

@@ -3,7 +3,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 // HttpClient for making direct API calls to the dashboard stats endpoint
 import { HttpClient } from '@angular/common/http';
 // RouterLink creates navigable links to the tasks and goals pages
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 // DatePipe formats dates; DecimalPipe formats the goal progress percentage
 import { DatePipe, DecimalPipe } from '@angular/common';
 // FormsModule is imported for potential future use (not currently used in this template)
@@ -21,6 +21,7 @@ import { Task, PLAN_TYPES } from '../../core/models/task.model';
 // Goal model for typing the active goals signal
 import { Goal } from '../../core/models/goal.model';
 // ModalComponent for the "Add Plan" dialog
+import { ToastService } from '../../core/services/toast.service';
 import { ModalComponent } from '../../shared/components/modal/modal.component';
 // TaskFormComponent renders the task creation form inside the modal
 import { TaskFormComponent } from '../tasks/task-form/task-form.component';
@@ -250,8 +251,10 @@ export class DashboardComponent implements OnInit {
   private taskService = inject(TaskService);
   // GoalService for fetching active goals for the progress section
   private goalService = inject(GoalService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private toast = inject(ToastService);
 
-  // Reactive signal holding dashboard statistics from the backend
   stats = signal<Stats | null>(null);
   // Reactive signal holding today's tasks sorted by start time
   todayPlans = signal<Task[]>([]);
@@ -268,7 +271,14 @@ export class DashboardComponent implements OnInit {
   get greeting() { const h = new Date().getHours(); return h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening'; }
 
   // Load all dashboard data on component initialization
-  ngOnInit() { this.loadAll(); }
+  ngOnInit() {
+    this.loadAll();
+    // Handle Google Calendar OAuth callback redirect
+    if (this.route.snapshot.queryParams['gcal'] === 'connected') {
+      this.toast.success('Google Calendar connected! Your plans will now sync automatically.');
+      this.router.navigate([], { queryParams: {}, replaceUrl: true });
+    }
+  }
 
   // Fetch stats, today's tasks, and active goals in parallel
   loadAll() {
