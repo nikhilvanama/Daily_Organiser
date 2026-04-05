@@ -19,11 +19,96 @@ export class TasksService {
     private gcalService: GoogleCalendarService,
   ) {}
 
-  // Retrieves all tasks for the authenticated user, with optional filtering by status, priority, categoryId, and type
+  // Auto-complete tasks whose date/time has passed
+  // Called before returning task lists so the UI always shows accurate status
+  private async autoCompleteExpired(userId: string): Promise<void> {
+    const now = new Date();
+    const allTasks = await this.firebase.getList<any>('tasks');
+    const userTasks = allTasks.filter(
+      (t: any) => t.userId === userId && t.status !== 'DONE' && t.status !== 'CANCELLED' && t.dueDate,
+    );
+
+    for (const task of userTasks) {
+      const taskEndDateTime = this.getTaskEndDateTime(task);
+      if (taskEndDateTime && taskEndDateTime < now) {
+        await this.firebase.update(`tasks/${task.id}`, {
+          status: 'DONE',
+          completedAt: taskEndDateTime.toISOString(),
+        });
+      }
+    }
+  }
+
+  // Calculate the effective end date/time for a task based on its type
+  private getTaskEndDateTime(task: any): Date | null {
+    if (!task.dueDate) return null;
+    const date = task.dueDate.split('T')[0]; // YYYY-MM-DD
+
+    switch (task.type) {
+      case 'trip':
+        // Trip: use endDate if available, otherwise dueDate end of day
+        if (task.endDate) return new Date(task.endDate.split('T')[0] + 'T23:59:59');
+        return new Date(date + 'T23:59:59');
+
+      case 'train':
+        // Train: use departureTime + 30min buffer, or dueDate end of day
+        if (task.departureTime) {
+          const dt = new Date(date + 'T' + task.departureTime + ':00');
+          dt.setMinutes(dt.getMinutes() + 30); // 30min after departure
+          return dt;
+        }
+        return new Date(date + 'T23:59:59');
+
+      case 'dinner':
+        // Dinner: use startTime + 2 hours, or end of day
+        if (task.startTime) {
+          const dt = new Date(date + 'T' + task.startTime + ':00');
+          dt.setHours(dt.getHours() + 2); // 2 hours for dinner
+          return dt;
+        }
+        return new Date(date + 'T23:59:59');
+
+      case 'meeting':
+        // Meeting: use endTime, or startTime + 1 hour, or end of day
+        if (task.endTime) return new Date(date + 'T' + task.endTime + ':00');
+        if (task.startTime) {
+          const dt = new Date(date + 'T' + task.startTime + ':00');
+          dt.setHours(dt.getHours() + 1);
+          return dt;
+        }
+        return new Date(date + 'T23:59:59');
+
+      case 'event':
+        // Event: use startTime + 3 hours, or end of day
+        if (task.startTime) {
+          const dt = new Date(date + 'T' + task.startTime + ':00');
+          dt.setHours(dt.getHours() + 3);
+          return dt;
+        }
+        return new Date(date + 'T23:59:59');
+
+      case 'reminder':
+        // Reminder: use startTime exactly, or end of day
+        if (task.startTime) return new Date(date + 'T' + task.startTime + ':00');
+        return new Date(date + 'T23:59:59');
+
+      case 'task':
+      default:
+        // Task: use endTime, or startTime + 1h, or end of day
+        if (task.endTime) return new Date(date + 'T' + task.endTime + ':00');
+        if (task.startTime) {
+          const dt = new Date(date + 'T' + task.startTime + ':00');
+          dt.setHours(dt.getHours() + 1);
+          return dt;
+        }
+        return new Date(date + 'T23:59:59');
+    }
+  }
+
   async findAll(userId: string, query: Record<string, string>) {
-    // Destructure optional filter parameters from the query string
+    // Auto-complete expired tasks before fetching
+    await this.autoCompleteExpired(userId);
     const { status, priority, categoryId, type } = query;
-    // Fetch all tasks from the 'tasks' collection in Firebase
     let tasks = await this.firebase.getList<any>('tasks');
     // Filter to only include tasks belonging to the authenticated user
     tasks = tasks.filter((t: any) => t.userId === userId);
@@ -39,11 +124,9 @@ export class TasksService {
     return this.withCategories(tasks);
   }
 
-  // Retrieves all tasks for the authenticated user that are due today (used for the daily plan view)
   async findToday(userId: string) {
-    // Get today's date as a YYYY-MM-DD string for prefix matching against task dueDates
+    await this.autoCompleteExpired(userId);
     const today = new Date().toISOString().split('T')[0];
-    // Fetch all tasks from Firebase
     let tasks = await this.firebase.getList<any>('tasks');
     // Filter to only include tasks that belong to the user AND have a dueDate starting with today's date
     tasks = tasks.filter((t: any) => t.userId === userId && t.dueDate && t.dueDate.startsWith(today));
