@@ -2,7 +2,7 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 // HttpClient for fetching calendar tasks directly from the dashboard endpoint
 import { HttpClient } from '@angular/common/http';
-// DatePipe formats dates in the template
+import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 // FormsModule enables [(ngModel)] for the day notes textarea
 import { FormsModule } from '@angular/forms';
@@ -32,7 +32,7 @@ interface CalendarDay {
 @Component({
   selector: 'app-calendar', // Loaded by the router at /calendar
   standalone: true, // Angular 19 standalone component
-  imports: [DatePipe, FormsModule, ModalComponent, TaskFormComponent],
+  imports: [DatePipe, FormsModule, RouterLink, ModalComponent, TaskFormComponent],
   template: `
     <!-- Page container with fade-in animation -->
     <div class="page animate-in">
@@ -119,21 +119,18 @@ interface CalendarDay {
             <!-- Task list within the day panel -->
             @for (task of selectedDay()!.tasks; track task.id) {
               <div class="day-task-row" [class.done]="task.status === 'DONE'">
-                <div class="day-task-left">
-                  <!-- Priority dot: color-coded (red=HIGH, amber=MEDIUM, green=LOW) -->
+                <a class="day-task-left" [routerLink]="['/tasks', task.id]" (click)="closeDay()">
                   <span class="dot dot-{{ task.priority.toLowerCase() }}"></span>
                   <div class="day-task-info">
                     <span class="day-task-title">{{ task.title }}</span>
-                    <!-- Time range if available -->
-                    @if (task.startTime || task.endTime) {
+                    @if (getTaskTime(task)) {
                       <span class="day-task-time">
                         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        {{ task.startTime ?? '?' }} - {{ task.endTime ?? '?' }}
+                        {{ getTaskTime(task) }}
                       </span>
                     }
                   </div>
-                </div>
-                <!-- Status badge -->
+                </a>
                 <span class="badge badge-{{ task.status.toLowerCase().replace('_', '-') }}">{{ task.status.replace('_', ' ') }}</span>
               </div>
             }
@@ -367,6 +364,18 @@ export class CalendarComponent implements OnInit {
   }
 
   // Fetch all tasks for the currently viewed month from the backend calendar endpoint
+  getTaskTime(task: any): string {
+    // Train: show departure → arrival
+    if (task.departureTime) {
+      return task.endTime ? `${task.departureTime} → ${task.endTime}` : task.departureTime;
+    }
+    // Others: show startTime - endTime
+    if (task.startTime) {
+      return task.endTime ? `${task.startTime} - ${task.endTime}` : task.startTime;
+    }
+    return '';
+  }
+
   private loadTasks() {
     const d = this.viewDate();
     this.http.get<Task[]>(`${environment.apiUrl}/dashboard/calendar`, {

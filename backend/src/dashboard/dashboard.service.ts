@@ -110,6 +110,9 @@ export class DashboardService {
         endDate: t.endDate ?? null,
         startTime: t.startTime ?? null,
         endTime: t.endTime ?? null,
+        departureTime: t.departureTime ?? null,
+        boardingStation: t.boardingStation ?? null,
+        destinationStation: t.destinationStation ?? null,
         location: t.location ?? null,
         category: null,
       }));
