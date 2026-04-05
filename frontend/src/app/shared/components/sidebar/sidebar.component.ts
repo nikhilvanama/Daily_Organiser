@@ -118,16 +118,24 @@ import { ToastService } from '../../../core/services/toast.service';
           }
         </button>
 
-        <!-- Google Calendar connection button -->
-        <button class="gcal-btn" (click)="handleGoogleCalendar()">
-          @if (gcalService.connected()) {
-            <svg width="16" height="16" fill="none" stroke="#10b981" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-            <span class="gcal-text">Calendar Synced</span>
-          } @else {
+        <!-- Google Calendar connection -->
+        @if (gcalService.connected()) {
+          <div class="gcal-connected">
+            <button class="gcal-btn connected" (click)="syncAllToCalendar()">
+              <svg width="16" height="16" fill="none" stroke="#10b981" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              <span class="gcal-text">{{ syncing ? 'Syncing...' : 'Google Calendar' }}</span>
+              <span class="gcal-sync-hint">Sync All</span>
+            </button>
+            <button class="gcal-disconnect" (click)="handleGoogleCalendar()" title="Disconnect">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        } @else {
+          <button class="gcal-btn" (click)="handleGoogleCalendar()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             <span class="gcal-text">Connect Google Calendar</span>
-          }
-        </button>
+          </button>
+        }
 
         <!-- User profile block -->
         <div class="user-block">
@@ -227,7 +235,18 @@ import { ToastService } from '../../../core/services/toast.service';
       cursor: pointer; width: 100%; transition: all 0.15s; font-family: inherit;
     }
     .gcal-btn:hover { border-color: var(--sidebar-active-text); color: var(--sidebar-active-text); background: var(--sidebar-hover); }
+    .gcal-btn.connected { border-style: solid; border-color: rgba(16,185,129,0.3); }
     .gcal-text { flex: 1; text-align: left; }
+    .gcal-sync-hint { font-size: 0.65rem; color: var(--sidebar-text-dim); opacity: 0; transition: opacity 0.15s; }
+    .gcal-btn:hover .gcal-sync-hint { opacity: 1; }
+    .gcal-connected { display: flex; gap: 4px; }
+    .gcal-connected .gcal-btn { flex: 1; }
+    .gcal-disconnect {
+      background: transparent; border: 1px solid var(--sidebar-border); border-radius: 8px;
+      color: var(--sidebar-text-dim); cursor: pointer; padding: 4px 6px; display: flex;
+      align-items: center; justify-content: center; transition: all 0.15s;
+    }
+    .gcal-disconnect:hover { background: rgba(239,68,68,0.1); color: #ef4444; border-color: rgba(239,68,68,0.3); }
   `],
 })
 export class SidebarComponent implements OnInit {
@@ -252,6 +271,8 @@ export class SidebarComponent implements OnInit {
     this.gcalService.checkStatus().subscribe();
   }
 
+  syncing = false;
+
   handleGoogleCalendar() {
     if (this.gcalService.connected()) {
       if (confirm('Disconnect Google Calendar?')) {
@@ -262,6 +283,22 @@ export class SidebarComponent implements OnInit {
     } else {
       this.gcalService.connect();
     }
+  }
+
+  syncAllToCalendar() {
+    if (this.syncing) return;
+    this.syncing = true;
+    this.gcalService.syncAll().subscribe({
+      next: (res) => {
+        this.syncing = false;
+        if (res.synced > 0) {
+          this.toast.success(`Synced ${res.synced} plan(s) to Google Calendar`);
+        } else {
+          this.toast.info('All plans are already synced');
+        }
+      },
+      error: () => { this.syncing = false; this.toast.error('Sync failed'); },
+    });
   }
 
   // Get the first letter of the user's display name (or username, or "U" as fallback)

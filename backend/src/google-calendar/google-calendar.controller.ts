@@ -43,4 +43,11 @@ export class GoogleCalendarController {
     await this.gcalService.disconnect(userId);
     return { disconnected: true };
   }
+
+  // POST /api/google/sync-all — Push all existing tasks (with dueDate) to Google Calendar
+  @Post('sync-all')
+  async syncAll(@CurrentUser('id') userId: string) {
+    const result = await this.gcalService.syncAllTasks(userId);
+    return result;
+  }
 }

@@ -1,5 +1,5 @@
 // Import Angular decorators: Component, EventEmitter for outputs, inject for DI, Input/Output for bindings, OnInit lifecycle
-import { Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, inject, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 // FormBuilder creates the reactive form; ReactiveFormsModule enables [formGroup]; Validators for field validation
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 // AsyncPipe subscribes to the categories$ observable for the category dropdown
@@ -140,7 +140,7 @@ import { Task, PLAN_TYPES } from '../../../core/models/task.model';
     .form-actions { display: flex; gap: 10px; justify-content: flex-end; padding-top: 4px; }
   `],
 })
-export class TaskFormComponent implements OnInit {
+export class TaskFormComponent implements OnInit, OnChanges {
   // Optional input: when provided, the form operates in edit mode with pre-filled values
   @Input() task: Task | null = null;
   // Emitted when the task is successfully saved (created or updated)
@@ -172,20 +172,34 @@ export class TaskFormComponent implements OnInit {
     categoryId: [''], // Optional category assignment
   });
 
-  // On init, if an existing task was passed, pre-fill the form with its current values
   ngOnInit() {
+    this.fillForm();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['task']) {
+      this.fillForm();
+    }
+  }
+
+  private fillForm() {
     if (this.task) {
       this.form.patchValue({
         title: this.task.title,
         description: this.task.description ?? '',
-        type: (this.task as any).type ?? 'task', // Fallback to 'task' if type is missing
+        type: this.task.type ?? 'task',
         priority: this.task.priority,
         status: this.task.status,
-        dueDate: this.task.dueDate ? this.task.dueDate.split('T')[0] : '', // Extract date portion from ISO string
+        dueDate: this.task.dueDate ? this.task.dueDate.split('T')[0] : '',
         startTime: this.task.startTime ?? '',
         endTime: this.task.endTime ?? '',
         location: this.task.location ?? '',
         categoryId: this.task.categoryId ?? '',
+      });
+    } else {
+      this.form.reset({
+        title: '', description: '', type: 'task', priority: 'MEDIUM',
+        status: 'TODO', dueDate: '', startTime: '', endTime: '', location: '', categoryId: '',
       });
     }
   }

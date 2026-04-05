@@ -174,6 +174,38 @@ export class GoogleCalendarService {
     }
   }
 
+  // Sync ALL existing tasks (with dueDate and no googleEventId) to Google Calendar
+  async syncAllTasks(userId: string): Promise<{ synced: number; failed: number }> {
+    const connected = await this.isConnected(userId);
+    if (!connected) return { synced: 0, failed: 0 };
+
+    const allTasks = await this.firebase.getList<any>('tasks');
+    const userTasks = allTasks.filter(
+      (t: any) => t.userId === userId && t.dueDate && !t.googleEventId,
+    );
+
+    let synced = 0;
+    let failed = 0;
+
+    for (const task of userTasks) {
+      try {
+        const googleEventId = await this.createEvent(userId, task);
+        if (googleEventId) {
+          await this.firebase.update(`tasks/${task.id}`, { googleEventId });
+          synced++;
+        } else {
+          failed++;
+        }
+      } catch (err: any) {
+        console.error(`Sync failed for task ${task.id}:`, err.message);
+        failed++;
+      }
+    }
+
+    console.log(`Google Calendar: Synced ${synced} tasks, ${failed} failed for user ${userId}`);
+    return { synced, failed };
+  }
+
   // Delete a Google Calendar event
   async deleteEvent(userId: string, googleEventId: string): Promise<void> {
     try {

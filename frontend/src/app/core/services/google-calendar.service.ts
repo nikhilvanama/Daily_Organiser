@@ -27,4 +27,8 @@ export class GoogleCalendarService {
       tap(() => this.connected.set(false)),
     );
   }
+
+  syncAll() {
+    return this.http.post<{ synced: number; failed: number }>(`${this.base}/sync-all`, {});
+  }
 }

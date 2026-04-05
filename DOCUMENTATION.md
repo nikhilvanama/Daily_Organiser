@@ -16,7 +16,8 @@
 10. [State Management](#10-state-management)
 11. [Key Design Decisions](#11-key-design-decisions)
 12. [Setup & Running Guide](#12-setup--running-guide)
-13. [Future Scope & Enhancements](#13-future-scope--enhancements)
+13. [Google Calendar Integration](#13-google-calendar-integration)
+14. [Future Scope & Enhancements](#14-future-scope--enhancements)
 
 ---
 
@@ -97,6 +98,7 @@ Beyond the three pillars, Daily Organizer includes:
 | class-validator | ^0.15.1 | DTO validation decorators (@IsString, @IsEmail, etc.) |
 | class-transformer | ^0.5.1 | DTO transformation (used with ValidationPipe) |
 | RxJS | ^7.8.1 | Reactive extensions (used internally by NestJS) |
+| googleapis | ^148.0.0 | Google APIs client library (Calendar API, OAuth2) |
 | TypeScript | ^5.7.3 | Type-safe JavaScript superset |
 
 ### Database
@@ -1007,6 +1009,16 @@ All endpoints are prefixed with `/api`. Authentication is required unless noted.
 | `GET` | `/api/dashboard/activity` | JWT | Recent activity feed | None | `ActivityItem[]` (max 10) |
 | `GET` | `/api/dashboard/calendar` | JWT | Monthly calendar data | `year`, `month` (default: current) | `CalendarTask[]` |
 
+#### Google Calendar Endpoints
+
+| Method | Path | Auth | Description | Request Body | Response |
+|---|---|---|---|---|---|
+| `GET` | `/api/google/auth` | JWT | Returns Google OAuth consent URL | None | `{ url: string }` |
+| `GET` | `/api/google/callback` | Public | OAuth callback, stores tokens, redirects to frontend | None | Redirect to `/?gcal=connected` |
+| `GET` | `/api/google/status` | JWT | Check Google Calendar connection status | None | `{ connected: boolean }` |
+| `POST` | `/api/google/disconnect` | JWT | Removes Google tokens from user record | None | `{ disconnected: true }` |
+| `POST` | `/api/google/sync-all` | JWT | Syncs all unsynced tasks (with dueDate, without googleEventId) to Google Calendar | None | `{ synced: number }` |
+
 ---
 
 ## 6. Frontend Deep Dive
@@ -1577,6 +1589,8 @@ Create or edit a plan. Used as a modal or inline form. Contains:
 
 In **create mode**, the form initializes with defaults (type: task, status: TODO, priority: MEDIUM). In **edit mode**, the form is pre-populated with the existing task data.
 
+**Edit mode fix**: The TaskFormComponent uses both `OnInit` AND `OnChanges` lifecycle hooks to pre-fill the form. `OnInit` alone doesn't work because Angular's `@if` directive in the ModalComponent delays input binding. `OnChanges` detects when the `[task]` input changes and calls `fillForm()` which patches all form fields from the existing task data. When `task` is null (create mode), the form resets to defaults.
+
 #### Goals List Page
 
 **Component**: `features/goals/goal-list/goal-list.component.ts`
@@ -1708,6 +1722,7 @@ Data loading: Calls `GET /api/dashboard/calendar?year=YYYY&month=MM` when the co
 | `userId` | `string` | (from JWT) | Owner reference |
 | `categoryId` | `string \| null` | `null` | Optional category reference |
 | `category` | `Category \| null` | (populated) | Joined category object |
+| `googleEventId` | `string \| null` | `null` | Google Calendar event ID (set when synced) |
 | `createdAt` | `string` | (auto) | ISO timestamp |
 | `updatedAt` | `string` | (auto) | ISO timestamp |
 
@@ -2094,9 +2109,16 @@ JWT_REFRESH_EXPIRES_IN="7d"
 
 # Server port
 PORT=3000
+
+# Google Calendar Integration (OAuth 2.0)
+GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
+GOOGLE_REDIRECT_URI="http://localhost:3000/api/google/callback"
 ```
 
 For production, generate strong random secrets (minimum 32 characters) for both `JWT_SECRET` and `JWT_REFRESH_SECRET`. They must be different from each other.
+
+The Google Calendar environment variables are required only if you want to enable Google Calendar integration. See [Section 13: Google Calendar Integration](#13-google-calendar-integration) for setup instructions.
 
 ### Backend Setup
 
@@ -2177,7 +2199,101 @@ npm start
 
 ---
 
-## 13. Future Scope & Enhancements
+## 13. Google Calendar Integration
+
+### Overview
+
+Tasks and plans with a `dueDate` automatically sync to the user's Google Calendar. This provides a seamless bridge between the Daily Organizer app and the user's existing calendar workflow, ensuring all scheduled plans appear alongside other calendar events.
+
+### OAuth 2.0 Flow
+
+The integration uses Google's OAuth 2.0 authorization code flow with the `calendar.events` scope:
+
+1. User clicks **"Connect Google Calendar"** in the sidebar
+2. Backend generates a Google OAuth consent URL with the `calendar.events` scope
+3. User grants permission on Google's consent screen
+4. Google redirects to `/api/google/callback` with an authorization code
+5. Backend exchanges the code for tokens (access token + refresh token)
+6. Tokens are stored in Firebase under `users/{userId}` with the following fields:
+   - `googleAccessToken` -- Short-lived access token for API calls
+   - `googleRefreshToken` -- Long-lived refresh token for obtaining new access tokens
+   - `googleTokenExpiry` -- Expiration timestamp of the current access token
+   - `googleCalendarConnected` -- Boolean flag indicating connection status
+7. User is redirected to the dashboard with `?gcal=connected` query parameter
+8. Dashboard shows a success toast notification confirming the connection
+
+### Auto-Sync Logic
+
+Google Calendar events are automatically managed as part of task CRUD operations:
+
+- **On task CREATE with dueDate** -- Creates a corresponding Google Calendar event and stores the `googleEventId` on the task record
+- **On task UPDATE** -- Updates the existing Google Calendar event. If a dueDate is added, creates a new event. If a dueDate is removed, deletes the existing event.
+- **On task DELETE** -- Deletes the associated Google Calendar event
+
+All sync operations are **best-effort**: they are wrapped in try/catch blocks and never fail the underlying task operation. If Google Calendar is unreachable or the user's token has been revoked, the task operation still succeeds.
+
+### Sync All
+
+`POST /api/google/sync-all` pushes all existing tasks that have a `dueDate` but no `googleEventId` to Google Calendar. This is useful for syncing tasks created before the Google Calendar integration was connected. The endpoint is accessible via a **"Sync All"** button in the sidebar.
+
+### Task-to-Event Mapping
+
+| Task Field | Google Calendar Event Field | Notes |
+|---|---|---|
+| `title` | `summary` | Direct mapping |
+| `description` | `description` | Prefixed with `[TYPE]` (e.g., `[MEETING] Team standup`) |
+| `location` | `location` | Direct mapping |
+| `dueDate` + `startTime` + `endTime` | `start.dateTime` / `end.dateTime` | RFC3339 format, `Asia/Kolkata` timezone |
+| `dueDate` only (no time) | `start.date` / `end.date` | All-day event |
+| `type` | `colorId` | Mapped as follows: task=Blueberry, trip=Sage, train=Banana, dinner=Flamingo, meeting=Grape, event=Peacock, reminder=Tangerine |
+
+### Token Refresh
+
+The `googleapis` OAuth2Client automatically handles expired access tokens. When a token expires, the client uses the stored refresh token to obtain a new access token. New tokens are persisted to Firebase via the `tokens` event listener on the OAuth2Client, ensuring the user never needs to re-authenticate unless they explicitly revoke access.
+
+### New Files
+
+| File | Description |
+|---|---|
+| `backend/src/google-calendar/google-calendar.module.ts` | NestJS module registering the Google Calendar service and controller |
+| `backend/src/google-calendar/google-calendar.service.ts` | OAuth flow, Calendar API CRUD operations, and syncAll logic |
+| `backend/src/google-calendar/google-calendar.controller.ts` | Endpoints: GET /auth, GET /callback, GET /status, POST /disconnect, POST /sync-all |
+| `frontend/src/app/core/services/google-calendar.service.ts` | Frontend service for connect, disconnect, checkStatus, and syncAll API calls |
+
+### Modified Files
+
+| File | Change |
+|---|---|
+| `backend/src/tasks/tasks.service.ts` | GoogleCalendarService injected; sync calls added in create/update/remove methods |
+| `backend/src/tasks/tasks.module.ts` | Imports GoogleCalendarModule |
+| `backend/src/app.module.ts` | Imports GoogleCalendarModule |
+| `frontend/src/app/core/models/task.model.ts` | Added `googleEventId: string \| null` field |
+| `frontend/src/app/shared/components/sidebar/sidebar.component.ts` | Added Connect/Sync All/Disconnect buttons for Google Calendar |
+| `frontend/src/app/features/dashboard/dashboard.component.ts` | Handles `?gcal=connected` redirect and shows success toast |
+
+### Prerequisites
+
+To enable Google Calendar integration, you need to configure a Google Cloud project:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project (or select an existing one)
+3. Navigate to **APIs & Services > Library** and enable the **Google Calendar API**
+4. Navigate to **APIs & Services > Credentials** and create an **OAuth 2.0 Client ID** (Web application)
+5. Add the redirect URI: `http://localhost:3000/api/google/callback` (or your production URL)
+6. Under **OAuth consent screen**, configure the app name, scopes (`calendar.events`), and add test users (required while the app is in "Testing" status)
+7. Copy the **Client ID** and **Client Secret** into your `.env` file
+
+### Environment Variables
+
+| Variable | Description | Example |
+|---|---|---|
+| `GOOGLE_CLIENT_ID` | OAuth 2.0 client ID from Google Cloud Console | `123456789.apps.googleusercontent.com` |
+| `GOOGLE_CLIENT_SECRET` | OAuth 2.0 client secret | `GOCSPX-xxxxxxxxxxxx` |
+| `GOOGLE_REDIRECT_URI` | Callback URL registered in Google Cloud Console | `http://localhost:3000/api/google/callback` |
+
+---
+
+## 14. Future Scope & Enhancements
 
 ### Push Notifications / Reminders
 
