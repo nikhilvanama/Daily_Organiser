@@ -17,7 +17,8 @@
 11. [Key Design Decisions](#11-key-design-decisions)
 12. [Setup & Running Guide](#12-setup--running-guide)
 13. [Google Calendar Integration](#13-google-calendar-integration)
-14. [Future Scope & Enhancements](#14-future-scope--enhancements)
+14. [Auto Status Updates](#14-auto-status-updates)
+15. [Future Scope & Enhancements](#15-future-scope--enhancements)
 
 ---
 
@@ -39,7 +40,7 @@ Most productivity tools force users to shoehorn every type of activity into a "t
 
 The application is organized around three core pillars:
 
-1. **Daily Plans** -- The heart of the app. Create, organize, filter, and track plans across seven types (task, trip, train, dinner, meeting, event, reminder). Each plan supports scheduling with due dates, time ranges, locations, priority levels, status tracking, and a built-in timer for time tracking.
+1. **Daily Plans** -- The heart of the app. Create, organize, filter, and track plans across seven types (task, trip, train, dinner, meeting, event, reminder). Each plan supports scheduling with due dates, time ranges, locations, priority levels, status tracking, and automatic status transitions based on scheduled times. The form dynamically adapts to show context-specific fields for each plan type (e.g., boarding station for trains, meeting link for meetings).
 
 2. **Goal Tracking** -- A three-level hierarchy (Goal > Milestone > Mini-Goal) that lets users break down ambitious objectives into manageable steps. Progress is automatically calculated as milestones are completed, giving a clear visual indicator of how close you are to achieving each goal.
 
@@ -490,6 +491,8 @@ frontend/
             modal.component.ts      # Generic dialog wrapper (backdrop + centered box)
           toast-container/
             toast-container.component.ts # Renders active toast notifications
+          confirm-dialog/
+            confirm-dialog.component.ts # Styled delete confirmation popup (replaces browser confirm())
           category-manager/
             category-manager.component.ts # Popup form for creating/editing categories
 ```
@@ -707,7 +710,7 @@ Every plan in the system has a `type` field that classifies it into one of seven
 | `event` | Calendar | Cyan #06b6d4 | Generic events, parties, conferences |
 | `reminder` | Bell | Orange #f97316 | Reminders, alerts, deadlines |
 
-All seven types share the same data model and API endpoints. The `type` field determines how the plan is displayed in the UI (icon, color, filter chip).
+All seven types share the same data model and API endpoints. The `type` field determines how the plan is displayed in the UI (icon, color, filter chip) and which context-specific form fields are shown. While the underlying data model is shared, each type uses different subsets of fields -- for example, train plans use `boardingStation`, `destinationStation`, `trainNumber`, and `departureTime`, while meeting plans use `meetingLink` and `startTime`/`endTime`.
 
 **CRUD Operations**
 
@@ -1484,6 +1487,21 @@ Reads the `ToastService.toasts` signal and renders each active toast notificatio
 
 Toasts stack vertically with a 0.5rem gap and automatically dismiss after their configured duration.
 
+#### ConfirmDialogComponent
+
+`shared/components/confirm-dialog/confirm-dialog.component.ts`
+
+A styled confirmation dialog that replaces the browser's native `confirm()` prompt. Used for destructive actions like deleting plans, goals, and wishlist items. Features:
+
+- **Red X icon** -- Visual danger indicator at the top of the dialog
+- **Title and message** -- Customizable title (e.g., "Delete Plan") and message that includes the plan name for clarity
+- **Action buttons** -- "Cancel" (ghost style) and "Delete" (danger style) buttons
+- **Smooth animation** -- Fade-in and scale animation on open
+- **Dark overlay backdrop** -- Semi-transparent backdrop that dims the rest of the page
+- **Event emitters** -- Emits `confirmed` or `cancelled` events for the parent component to handle
+
+This component provides a consistent, branded confirmation experience across the app instead of relying on browser-native dialogs that cannot be styled.
+
 #### CategoryManagerComponent
 
 `shared/components/category-manager/category-manager.component.ts`
@@ -1544,16 +1562,20 @@ The central task management interface. Displays:
   - Type icon (colored circle with emoji)
   - Title
   - Due date and time range (if set)
+  - For **trip** plans: date range display showing start and end dates (e.g., "Jun 8 -> Jun 15")
+  - For **train** plans: departure time with clock icon
   - Priority badge
   - Status select dropdown (inline status change without opening detail page)
   - Category tag (if assigned)
   - Delete button
 
+**Sorting**: Tasks are sorted by date with the earliest due dates first. Tasks without a due date appear at the end of the list.
+
 User interactions:
 - Click a plan row to navigate to `/tasks/:id` (detail page)
 - Change status via inline dropdown (triggers `PATCH /api/tasks/:id` immediately)
 - Click "Add Plan" to open the task form in create mode
-- Click delete icon to remove a task (with confirmation)
+- Click delete icon to remove a task (with styled confirm dialog)
 
 #### Task Detail Page
 
@@ -1561,13 +1583,15 @@ User interactions:
 
 Full information view for a single task/plan. Shows:
 
-- **Header** -- Title, type badge, status badge, priority badge
+- **Header** -- Title, type badge, status badge, priority badge, and Google Calendar sync badge (if synced)
 - **Description** -- Full description text (if set)
-- **Details Grid** -- Due date, start/end time, location, category, estimated time, tracked time
-- **Timer Controls** -- Start/Stop timer button. When running, displays elapsed time in real-time. When stopped, shows total tracked minutes.
-- **Edit/Delete Actions** -- Edit button opens the task form in edit mode. Delete button removes the task with confirmation.
+- **Info Grid** -- A clean grid layout with icons showing all relevant fields for the plan type:
+  - Due date, start/end time, location, category
+  - Type-specific fields: end date (trips), boarding/destination stations and train number (trains), departure time (trains), meeting link (meetings)
+- **Edit Button** -- Opens the task form modal in edit mode for inline editing
+- **Delete Button** -- Removes the task with a styled confirm dialog (see Confirm Dialog below)
 
-The timer display updates in real-time using `setInterval` while the timer is active, calculating elapsed time from the `timerStartAt` timestamp.
+The timer feature has been removed from the detail page. Time tracking fields (`trackedMins`, `isTimerActive`, `timerStartAt`) remain in the data model but are no longer surfaced in the UI.
 
 #### Task Form Page
 
@@ -1579,17 +1603,30 @@ Create or edit a plan. Used as a modal or inline form. Contains:
 - **Title Input** -- Required field
 - **Description Textarea** -- Optional
 - **Status Select** -- TODO, IN_PROGRESS, DONE, CANCELLED
-- **Priority Select** -- LOW, MEDIUM, HIGH
-- **Due Date Picker** -- Date input
-- **Start/End Time** -- Two time inputs side by side
-- **Location Input** -- Text field for places
-- **Estimated Minutes** -- Number input
 - **Category Select** -- Dropdown populated from user's categories
 - **Submit Button** -- "Create Plan" or "Update Plan" depending on mode
 
+**Dynamic Form Fields Per Plan Type**
+
+The form dynamically shows context-specific fields based on the selected plan type. When the user selects a type, only the relevant fields are displayed:
+
+| Plan Type | Fields Shown |
+|---|---|
+| **Task** | Date, Priority, Start Time, End Time |
+| **Trip** | Start Date, End Date, Destination/Location, Priority |
+| **Train** | Journey Date, Departure Time, Boarding Station, Destination Station, Train Number, Priority |
+| **Dinner** | Date, Time, Restaurant/Location |
+| **Meeting** | Date, Start Time, End Time, Location, Meeting Link, Priority |
+| **Event** | Date, Time, Venue, Priority |
+| **Reminder** | Date, Time |
+
+This approach ensures the form remains clean and contextually relevant. A train plan prompts for boarding station and departure time rather than showing generic start/end time fields. A dinner plan asks for restaurant/location and time without unnecessary priority or end-time inputs.
+
 In **create mode**, the form initializes with defaults (type: task, status: TODO, priority: MEDIUM). In **edit mode**, the form is pre-populated with the existing task data.
 
-**Edit mode fix**: The TaskFormComponent uses both `OnInit` AND `OnChanges` lifecycle hooks to pre-fill the form. `OnInit` alone doesn't work because Angular's `@if` directive in the ModalComponent delays input binding. `OnChanges` detects when the `[task]` input changes and calls `fillForm()` which patches all form fields from the existing task data. When `task` is null (create mode), the form resets to defaults.
+**Form Reset on Save**: After successfully saving a plan (create or update), the form resets all fields to their defaults. This ensures that reopening the form modal always presents a clean, empty form rather than stale data from the previous entry.
+
+**Edit Mode Pre-fill Fix**: The TaskFormComponent uses both `OnInit` AND `OnChanges` lifecycle hooks to pre-fill the form. `OnInit` alone doesn't work because Angular's `@if` directive in the ModalComponent delays input binding. `OnChanges` detects when the `[task]` input changes and calls `fillForm()` which patches all form fields from the existing task data. When `task` is null (create mode), the form resets to defaults.
 
 #### Goals List Page
 
@@ -1675,6 +1712,11 @@ A monthly calendar view showing tasks plotted on their due dates:
 
 - **Month Navigation** -- Previous/next month arrows with the current month/year display
 - **Day Grid** -- 7-column grid showing each day of the month. Days with tasks show colored dots or chips indicating task types.
+- **Multi-Day Trip Spanning** -- Trip plans with an `endDate` span across all days in their date range. For example, a trip from Jun 8 to Jun 15 appears on all 8 days in the calendar grid, not just the start date.
+- **Weekend Highlighting** -- Saturday and Sunday columns have a visually distinct appearance:
+  - Darker background shade to differentiate from weekdays
+  - Green-tinted date numbers and day labels
+  - Uses CSS variables (`--weekend-bg`) for proper dark mode support, ensuring the weekend colors adapt correctly in both light and dark themes
 - **Day Detail Panel** -- Clicking a day opens a side panel showing all tasks for that date with type icons, titles, time ranges, and statuses.
 - **Add Task from Calendar** -- The day panel includes an "Add Plan" button that opens the task form with the selected date pre-filled.
 
@@ -1722,6 +1764,12 @@ Data loading: Calls `GET /api/dashboard/calendar?year=YYYY&month=MM` when the co
 | `userId` | `string` | (from JWT) | Owner reference |
 | `categoryId` | `string \| null` | `null` | Optional category reference |
 | `category` | `Category \| null` | (populated) | Joined category object |
+| `endDate` | `string \| null` | `null` | End date for multi-day plans (e.g., trip end date) |
+| `boardingStation` | `string \| null` | `null` | Train boarding station |
+| `destinationStation` | `string \| null` | `null` | Train destination station |
+| `trainNumber` | `string \| null` | `null` | Train number or name |
+| `departureTime` | `string \| null` | `null` | Train departure time (HH:mm) |
+| `meetingLink` | `string \| null` | `null` | Meeting video call URL |
 | `googleEventId` | `string \| null` | `null` | Google Calendar event ID (set when synced) |
 | `createdAt` | `string` | (auto) | ISO timestamp |
 | `updatedAt` | `string` | (auto) | ISO timestamp |
@@ -2234,7 +2282,11 @@ All sync operations are **best-effort**: they are wrapped in try/catch blocks an
 
 ### Sync All
 
-`POST /api/google/sync-all` pushes all existing tasks that have a `dueDate` but no `googleEventId` to Google Calendar. This is useful for syncing tasks created before the Google Calendar integration was connected. The endpoint is accessible via a **"Sync All"** button in the sidebar.
+`POST /api/google/sync-all` pushes all existing tasks that have a `dueDate` but no `googleEventId` to Google Calendar. This is useful for syncing tasks created before the Google Calendar integration was connected. The endpoint returns `{ synced: number }` indicating how many tasks were synced.
+
+**Sidebar Controls**: When Google Calendar is connected, the sidebar shows:
+- A **"Sync All"** button to trigger bulk sync of unsynced tasks
+- A **disconnect X button** to remove the Google Calendar connection
 
 ### Task-to-Event Mapping
 
@@ -2293,7 +2345,42 @@ To enable Google Calendar integration, you need to configure a Google Cloud proj
 
 ---
 
-## 14. Future Scope & Enhancements
+## 14. Auto Status Updates
+
+### Overview
+
+Tasks and plans automatically transition between statuses based on their scheduled dates and times. This eliminates the need for users to manually update the status of time-bound plans, keeping the dashboard and task list accurate in real time.
+
+### Status Transitions
+
+| Transition | Trigger |
+|---|---|
+| **TODO -> IN_PROGRESS** | When the plan's start date/time arrives |
+| **IN_PROGRESS -> DONE** | When the plan's end date/time passes |
+
+These transitions are automatic and do not overwrite manually set statuses like CANCELLED.
+
+### Type-Specific Logic
+
+Each plan type has its own rules for determining when a plan starts and ends:
+
+| Plan Type | Starts At | Ends At |
+|---|---|---|
+| **Task** | Start time on due date | End time on due date, or end of day if no end time |
+| **Trip** | Beginning of start date (midnight) | End of endDate (23:59) |
+| **Train** | Departure time on journey date | 30 minutes after departure time |
+| **Dinner** | Scheduled time on date | 2 hours after scheduled time |
+| **Meeting** | Start time on date | End time on date |
+| **Event** | Scheduled time on date | 3 hours after scheduled time |
+| **Reminder** | Scheduled time on date | Triggers immediately at set time |
+
+### Implementation
+
+The auto-status logic runs when tasks are fetched, comparing the current timestamp against each plan's computed start and end times. Plans that have passed their start time but not their end time are moved to IN_PROGRESS. Plans that have passed their end time are moved to DONE. The updated statuses are persisted to Firebase so they remain consistent across sessions.
+
+---
+
+## 15. Future Scope & Enhancements
 
 ### Push Notifications / Reminders
 
