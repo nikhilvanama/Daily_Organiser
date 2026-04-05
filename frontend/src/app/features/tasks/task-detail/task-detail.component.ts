@@ -70,21 +70,20 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
                 </div>
               </div>
             }
-            @if (task()!.startTime || task()!.endTime) {
+            @if (task()!.departureTime) {
+              <div class="info-item">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <div>
+                  <span class="info-label">{{ task()!.endTime ? 'Departure → Arrival' : 'Departure' }}</span>
+                  <span class="info-value">{{ task()!.departureTime }}{{ task()!.endTime ? ' → ' + task()!.endTime : '' }}</span>
+                </div>
+              </div>
+            } @else if (task()!.startTime || task()!.endTime) {
               <div class="info-item">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 <div>
                   <span class="info-label">Time</span>
-                  <span class="info-value">{{ task()!.startTime ?? '—' }} {{ task()!.endTime ? '→ ' + task()!.endTime : '' }}</span>
-                </div>
-              </div>
-            }
-            @if (task()!.departureTime || task()!.endTime) {
-              <div class="info-item">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                <div>
-                  <span class="info-label">{{ task()!.departureTime && task()!.endTime ? 'Departure → Arrival' : 'Departure' }}</span>
-                  <span class="info-value">{{ task()!.departureTime ?? '' }}{{ task()!.endTime ? ' → ' + task()!.endTime : '' }}</span>
+                  <span class="info-value">{{ task()!.startTime ?? '' }}{{ task()!.endTime ? ' → ' + task()!.endTime : '' }}</span>
                 </div>
               </div>
             }
