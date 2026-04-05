@@ -97,12 +97,18 @@ export class TasksService {
       type: dto.type ?? 'task', // Task type: task, trip, train, dinner, meeting, event, or reminder
       status: dto.status ?? 'TODO', // Current status: TODO, IN_PROGRESS, or DONE
       priority: dto.priority ?? 'MEDIUM', // Priority level: LOW, MEDIUM, or HIGH
-      dueDate: dto.dueDate ?? null, // Optional due date in ISO format for scheduling on the daily plan
-      startTime: dto.startTime ?? null, // Optional start time for time-bound events like meetings or trains
-      endTime: dto.endTime ?? null, // Optional end time for time-bound events
-      location: dto.location ?? null, // Optional location for trips, dinners, or meetings
-      completedAt: null, // Timestamp set when the task is marked as DONE; null until completed
-      estimatedMins: dto.estimatedMins ?? null, // Optional estimated duration in minutes for time planning
+      dueDate: dto.dueDate ?? null,
+      endDate: dto.endDate ?? null,        // Trip: end date for multi-day trips
+      startTime: dto.startTime ?? null,
+      endTime: dto.endTime ?? null,
+      location: dto.location ?? null,
+      boardingStation: dto.boardingStation ?? null,       // Train: boarding station
+      destinationStation: dto.destinationStation ?? null, // Train: destination station
+      trainNumber: dto.trainNumber ?? null,               // Train: train number
+      departureTime: dto.departureTime ?? null,           // Train: departure time
+      meetingLink: dto.meetingLink ?? null,               // Meeting: video call link
+      completedAt: null,
+      estimatedMins: dto.estimatedMins ?? null,
       trackedMins: 0, // Accumulated tracked time in minutes from the built-in timer; starts at 0
       isTimerActive: false, // Whether the task's timer is currently running
       timerStartAt: null, // Timestamp of when the timer was last started; null when timer is stopped

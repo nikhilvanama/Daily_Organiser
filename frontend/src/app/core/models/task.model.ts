@@ -21,10 +21,16 @@ export interface Task {
   type: PlanType; // What kind of plan this is (task, trip, meeting, etc.)
   status: TaskStatus; // Current lifecycle status (TODO, IN_PROGRESS, DONE, CANCELLED)
   priority: Priority; // Urgency level — affects badge color and sort order
-  dueDate: string | null; // ISO date string for when this plan is scheduled (used in calendar view)
-  startTime: string | null; // HH:mm start time — shown in the timeline and calendar day panel
-  endTime: string | null; // HH:mm end time — paired with startTime for time-range display
-  location: string | null; // Optional venue/place (e.g., "Office", "Grand Central Station")
+  dueDate: string | null;
+  endDate: string | null;           // Trip: end date for multi-day trips
+  startTime: string | null;
+  endTime: string | null;
+  location: string | null;
+  boardingStation: string | null;   // Train: boarding station
+  destinationStation: string | null;// Train: destination
+  trainNumber: string | null;       // Train: number/name
+  departureTime: string | null;     // Train: departure time
+  meetingLink: string | null;       // Meeting: video call URL
   completedAt: string | null; // ISO timestamp when the task was marked DONE
   estimatedMins: number | null; // User's time estimate in minutes — shown in the detail view
   trackedMins: number; // Actual minutes tracked via the built-in timer feature
@@ -46,10 +52,16 @@ export interface CreateTaskDto {
   type?: PlanType; // Defaults to 'task' on the backend if not provided
   priority?: Priority; // Defaults to 'MEDIUM' in the form
   status?: TaskStatus; // Defaults to 'TODO' in the form
-  dueDate?: string; // Optional scheduled date
-  startTime?: string; // Optional start time
-  endTime?: string; // Optional end time
-  location?: string; // Optional location
+  dueDate?: string;
+  endDate?: string;
+  startTime?: string;
+  endTime?: string;
+  location?: string;
+  boardingStation?: string;
+  destinationStation?: string;
+  trainNumber?: string;
+  departureTime?: string;
+  meetingLink?: string;
   estimatedMins?: number; // Optional time estimate
   categoryId?: string; // Optional category assignment
 }
