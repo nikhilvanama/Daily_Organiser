@@ -122,8 +122,17 @@ import { Task, PLAN_TYPES, PlanType } from '../../../core/models/task.model';
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label class="label">Vehicle / Route</label>
-            <input class="input" formControlName="trainNumber" placeholder="e.g. 12760 Charminar Exp, Bus 47C" />
+            <label class="label">Travel Type</label>
+            <select class="input" formControlName="trainNumber">
+              <option value="">Select type</option>
+              <option value="Train">Train</option>
+              <option value="Bus">Bus</option>
+              <option value="Flight">Flight</option>
+              <option value="Car">Car</option>
+              <option value="Cab">Cab</option>
+              <option value="Auto">Auto</option>
+              <option value="Metro">Metro</option>
+            </select>
           </div>
           <div class="form-group">
             <label class="label">Priority</label>

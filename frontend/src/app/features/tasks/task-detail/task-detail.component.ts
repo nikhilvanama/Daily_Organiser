@@ -118,7 +118,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
               <div class="info-item">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="18" x2="6" y2="22"/><line x1="18" y1="18" x2="18" y2="22"/></svg>
                 <div>
-                  <span class="info-label">Train</span>
+                  <span class="info-label">Travel Type</span>
                   <span class="info-value">{{ task()!.trainNumber }}</span>
                 </div>
               </div>
