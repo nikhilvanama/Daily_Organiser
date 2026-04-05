@@ -199,12 +199,12 @@ interface CalendarDay {
     /* Overflow indicator for days with more than 3 tasks */
     .cal-more { font-size: 0.65rem; color: var(--text-muted); padding: 1px 4px; }
 
-    /* Weekend cells: darker shade to indicate Sat/Sun */
-    .cal-cell.weekend { background: #f0f2f5; }
-    .cal-cell.weekend.other-month { background: #e8eaed; }
-    [data-theme="dark"] .cal-cell.weekend { background: #0d0d0f; }
-    [data-theme="dark"] .cal-cell.weekend.other-month { background: #08080a; }
-    .weekend-label { color: var(--accent) !important; }
+    /* Weekend cells: subtle tint to indicate Sat/Sun */
+    .cal-cell.weekend { background: #f5f5f5; }
+    .cal-cell.weekend.other-month { background: #ebebeb; }
+    [data-theme="dark"] .cal-cell.weekend { background: #18181b; }
+    [data-theme="dark"] .cal-cell.weekend.other-month { background: #141416; }
+    .weekend-label { color: var(--accent) !important; font-weight: 700 !important; }
 
     /* Day Detail Side Panel */
     /* Overlay: semi-transparent backdrop behind the panel */
