@@ -101,7 +101,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
                     @if (plan.dueDate) {
                       <span>{{ plan.dueDate | date:'MMM d' }}{{ plan.endDate ? ' → ' + (plan.endDate | date:'MMM d') : '' }}</span>
                     }
-                    @if (plan.departureTime) { <span>🕐 {{ plan.departureTime }}</span> }
+                    @if (plan.departureTime) { <span>🕐 {{ plan.departureTime }}{{ plan.endTime ? ' → ' + plan.endTime : '' }}</span> }
                     @if (plan.startTime) { <span>{{ plan.startTime }}{{ plan.endTime ? ' - ' + plan.endTime : '' }}</span> }
                     @if (plan.category) { <span [style.color]="plan.category.color">{{ plan.category.name }}</span> }
                   </div>

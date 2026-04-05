@@ -96,8 +96,18 @@ import { Task, PLAN_TYPES, PlanType } from '../../../core/models/task.model';
             <input class="input" type="date" formControlName="dueDate" />
           </div>
           <div class="form-group">
+            <label class="label">Arrival Date</label>
+            <input class="input" type="date" formControlName="endDate" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
             <label class="label">Departure Time</label>
             <input class="input" type="time" formControlName="departureTime" />
+          </div>
+          <div class="form-group">
+            <label class="label">Arrival Time</label>
+            <input class="input" type="time" formControlName="endTime" />
           </div>
         </div>
         <div class="form-row">
