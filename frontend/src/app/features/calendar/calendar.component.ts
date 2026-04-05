@@ -181,7 +181,7 @@ interface CalendarDay {
     /* Cells from adjacent months: dimmed background */
     .cal-cell.other-month { background: var(--bg-secondary); }
     /* Today's cell: day number shown inside a green circle */
-    .cal-cell.today .cal-date { background: var(--accent); color: #fff; border-radius: 8px; width: 28px; height: 22px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.82rem; }
+    .cal-cell.today .cal-date { background: var(--accent); color: #fff !important; border-radius: 8px; width: 28px; height: 22px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.82rem; }
     /* Day number: small, centered */
     .cal-date { font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
     .cal-cell.other-month .cal-date { color: var(--text-muted); }
