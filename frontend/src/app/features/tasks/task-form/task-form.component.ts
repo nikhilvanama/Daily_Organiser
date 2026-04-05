@@ -396,7 +396,18 @@ export class TaskFormComponent implements OnInit, OnChanges {
 
     const req = this.task ? this.taskService.update(this.task.id, dto) : this.taskService.create(dto);
     req.subscribe({
-      next: () => { this.loading = false; this.saved.emit(); },
+      next: () => {
+        this.loading = false;
+        // Reset form after save so reopening shows a clean form
+        this.selectedType = 'task';
+        this.form.reset({
+          title: '', description: '', type: 'task', priority: 'MEDIUM',
+          status: 'TODO', dueDate: '', endDate: '', startTime: '', endTime: '',
+          location: '', boardingStation: '', destinationStation: '', trainNumber: '',
+          departureTime: '', meetingLink: '', categoryId: '',
+        });
+        this.saved.emit();
+      },
       error: () => { this.loading = false; },
     });
   }
