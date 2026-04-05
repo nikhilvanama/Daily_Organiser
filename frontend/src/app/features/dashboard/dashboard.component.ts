@@ -181,7 +181,7 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
     @media (max-width: 768px) {
       .quick-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
       .qs-num { font-size: 1.25rem; }
-      .today-header { flex-direction: column; gap: 10px; }
+      .today-header { flex-direction: column; gap: 12px; }
       .today-header h1 { font-size: 1.2rem; }
       .panels { grid-template-columns: 1fr; }
       .tl-time { width: 45px; }

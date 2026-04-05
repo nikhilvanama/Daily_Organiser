@@ -57,7 +57,7 @@ import { ThemeService } from '../../../core/services/theme.service';
     .sidebar-overlay { display: none; }
 
     @media (max-width: 768px) {
-      .layout-content { padding: 1rem; padding-top: 4.5rem; }
+      .layout-content { padding: 1rem; padding-top: 4.8rem; }
 
       .mobile-topbar {
         display: flex; align-items: center; gap: 10px;
