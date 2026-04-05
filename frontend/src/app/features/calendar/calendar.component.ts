@@ -295,11 +295,17 @@ export class CalendarComponent implements OnInit {
     for (let i = 1; i <= daysInMonth; i++) {
       const date = new Date(year, month, i);
       const isToday = date.toDateString() === today.toDateString();
-      // Filter tasks that have their dueDate on this specific day
+      // Filter tasks whose date range includes this day (supports multi-day trips)
       const dayTasks = this.tasks().filter((t) => {
         if (!t.dueDate) return false;
-        const d2 = new Date(t.dueDate);
-        return d2.getFullYear() === year && d2.getMonth() === month && d2.getDate() === i;
+        const start = new Date(t.dueDate.split('T')[0]);
+        const end = t.endDate ? new Date(t.endDate.split('T')[0]) : start;
+        const thisDay = new Date(year, month, i);
+        // Set all to midnight for clean date comparison
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+        thisDay.setHours(0, 0, 0, 0);
+        return thisDay >= start && thisDay <= end;
       });
       cells.push({ date, isCurrentMonth: true, isToday, tasks: dayTasks });
     }

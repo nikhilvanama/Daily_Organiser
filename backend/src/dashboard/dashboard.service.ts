@@ -87,32 +87,31 @@ export class DashboardService {
       .slice(0, 10);
   }
 
-  // Returns tasks for a specific month to populate the calendar view on the dashboard
   async getCalendar(userId: string, year: number, month: number) {
-    // Fetch all tasks from Firebase to filter by the requested month
     const tasks = await this.firebase.getList<any>('tasks');
-    // Filter tasks to those belonging to the user with a dueDate in the specified year and month
+    const monthStart = new Date(year, month - 1, 1);
+    const monthEnd = new Date(year, month, 0, 23, 59, 59);
+
     return tasks
       .filter((t: any) => {
-        // Exclude tasks from other users and tasks without a due date
         if (t.userId !== userId || !t.dueDate) return false;
-        // Parse the task's due date to extract the year and month
-        const d = new Date(t.dueDate);
-        // Include only tasks whose due date falls within the requested year and month (month is 1-indexed)
-        return d.getFullYear() === year && d.getMonth() + 1 === month;
+        const start = new Date(t.dueDate);
+        const end = t.endDate ? new Date(t.endDate) : start;
+        // Include if any part of the task's date range overlaps with the month
+        return start <= monthEnd && end >= monthStart;
       })
-      // Map each task to a calendar-friendly format with only the fields needed for calendar rendering
       .map((t: any) => ({
-        id: t.id, // Task ID for linking to the task detail view
-        title: t.title, // Task title displayed on the calendar
-        type: t.type ?? 'task', // Task type (task, trip, train, dinner, meeting) for icon/color differentiation
-        status: t.status, // Current status for visual indicators (TODO, IN_PROGRESS, DONE)
-        priority: t.priority, // Priority level for visual indicators
-        dueDate: t.dueDate, // The due date used to position the task on the correct calendar day
-        startTime: t.startTime ?? null, // Optional start time for time-based calendar positioning
-        endTime: t.endTime ?? null, // Optional end time for time-based calendar positioning
-        location: t.location ?? null, // Optional location displayed alongside the task on the calendar
-        category: null, // Category placeholder (not populated here to keep calendar responses lightweight)
+        id: t.id,
+        title: t.title,
+        type: t.type ?? 'task',
+        status: t.status,
+        priority: t.priority,
+        dueDate: t.dueDate,
+        endDate: t.endDate ?? null,
+        startTime: t.startTime ?? null,
+        endTime: t.endTime ?? null,
+        location: t.location ?? null,
+        category: null,
       }));
   }
 }
