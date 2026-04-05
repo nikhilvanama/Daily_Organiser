@@ -1,194 +1,198 @@
-// Import Angular core utilities: Component, inject for DI, OnDestroy for cleanup, OnInit lifecycle, signal for reactive state
-import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
-// ActivatedRoute reads the :id param from the URL; Router for navigation; RouterLink for the back link
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-// DatePipe formats dates in the template
 import { DatePipe } from '@angular/common';
-// TaskService provides getOne(), startTimer(), and stopTimer() methods
 import { TaskService } from '../task.service';
-// ToastService shows error feedback for timer operations
-import { ToastService } from '../../../core/services/toast.service';
-// Task model interface for typing the task signal
-import { Task } from '../../../core/models/task.model';
+import { Task, PLAN_TYPES } from '../../../core/models/task.model';
 
-// TaskDetailComponent shows the full details of a single task/plan, including:
-// title, description, priority/status badges, category, stats (due date, estimated/tracked time),
-// and a built-in timer for time tracking. The timer counts up in real-time while active.
 @Component({
-  selector: 'app-task-detail', // Loaded by the router at /tasks/:id
-  standalone: true, // Angular 19 standalone component
-  imports: [RouterLink, DatePipe], // Enable router links and date formatting
+  selector: 'app-task-detail',
+  standalone: true,
+  imports: [RouterLink, DatePipe],
   template: `
-    <!-- Page container with fade-in animation -->
     <div class="page animate-in">
-      <!-- Back navigation link to the tasks list -->
-      <a routerLink="/tasks" class="back-link">← Back to Tasks</a>
+      <a routerLink="/tasks" class="back-link">← Back to My Plans</a>
 
-      <!-- Task detail card: only shown once the task data is loaded -->
       @if (task()) {
-        <div class="task-detail card">
-          <!-- Header section: badges (priority, status, category) + title + description -->
-          <div class="task-detail-header">
-            <div class="task-meta">
-              <!-- Priority badge: color-coded (HIGH=red, MEDIUM=amber, LOW=green) -->
-              <span class="badge badge-{{ task()!.priority.toLowerCase() }}">{{ task()!.priority }}</span>
-              <!-- Status badge: color varies by status (TODO, IN_PROGRESS, DONE, CANCELLED) -->
-              <span class="badge badge-{{ task()!.status.toLowerCase().replace('_', '-') }}">{{ task()!.status }}</span>
-              <!-- Category name in the category's assigned color (if assigned) -->
-              @if (task()!.category) {
-                <span class="task-category" [style.color]="task()!.category!.color">{{ task()!.category!.name }}</span>
-              }
-            </div>
-            <!-- Task title: strikethrough styling when status is DONE -->
-            <h1 class="task-title" [class.done]="task()!.status === 'DONE'">{{ task()!.title }}</h1>
-            <!-- Optional description text -->
-            @if (task()!.description) {
-              <p class="task-description">{{ task()!.description }}</p>
+        <div class="detail card">
+          <!-- Type + Status Header -->
+          <div class="detail-top">
+            <span class="type-chip" [style.background]="getColor() + '18'" [style.color]="getColor()">
+              {{ getIcon() }} {{ getLabel() }}
+            </span>
+            <span class="badge badge-{{ task()!.priority.toLowerCase() }}">{{ task()!.priority }}</span>
+            <span class="badge badge-{{ task()!.status.toLowerCase().replace('_', '-') }}">{{ task()!.status.replace('_', ' ') }}</span>
+            @if (task()!.category) {
+              <span class="cat-tag" [style.color]="task()!.category!.color">{{ task()!.category!.name }}</span>
             }
           </div>
 
-          <!-- Stats grid: due date, estimated time, tracked time, created date -->
-          <div class="task-stats">
-            <div class="task-stat">
-              <span class="stat-label">Due Date</span>
-              <span>{{ task()!.dueDate ? (task()!.dueDate | date:'MMM d, y') : 'No due date' }}</span>
-            </div>
-            <div class="task-stat">
-              <span class="stat-label">Estimated</span>
-              <span>{{ task()!.estimatedMins ? formatTime(task()!.estimatedMins!) : '—' }}</span>
-            </div>
-            <div class="task-stat">
-              <span class="stat-label">Tracked</span>
-              <span>{{ formatTime(task()!.trackedMins) }}</span>
-            </div>
-            <div class="task-stat">
-              <span class="stat-label">Created</span>
-              <span>{{ task()!.createdAt | date:'MMM d, y' }}</span>
+          <!-- Title -->
+          <h1 [class.done]="task()!.status === 'DONE'">{{ task()!.title }}</h1>
+
+          <!-- Description -->
+          @if (task()!.description) {
+            <p class="desc">{{ task()!.description }}</p>
+          }
+
+          <!-- Info Grid -->
+          <div class="info-grid">
+            @if (task()!.dueDate) {
+              <div class="info-item">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <div>
+                  <span class="info-label">Date</span>
+                  <span class="info-value">{{ task()!.dueDate | date:'EEEE, MMM d, y' }}</span>
+                </div>
+              </div>
+            }
+            @if (task()!.endDate) {
+              <div class="info-item">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <div>
+                  <span class="info-label">End Date</span>
+                  <span class="info-value">{{ task()!.endDate | date:'EEEE, MMM d, y' }}</span>
+                </div>
+              </div>
+            }
+            @if (task()!.startTime || task()!.endTime) {
+              <div class="info-item">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <div>
+                  <span class="info-label">Time</span>
+                  <span class="info-value">{{ task()!.startTime ?? '—' }} {{ task()!.endTime ? '→ ' + task()!.endTime : '' }}</span>
+                </div>
+              </div>
+            }
+            @if (task()!.departureTime) {
+              <div class="info-item">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <div>
+                  <span class="info-label">Departure</span>
+                  <span class="info-value">{{ task()!.departureTime }}</span>
+                </div>
+              </div>
+            }
+            @if (task()!.location) {
+              <div class="info-item">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <div>
+                  <span class="info-label">Location</span>
+                  <span class="info-value">{{ task()!.location }}</span>
+                </div>
+              </div>
+            }
+            @if (task()!.boardingStation) {
+              <div class="info-item">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <div>
+                  <span class="info-label">Boarding</span>
+                  <span class="info-value">{{ task()!.boardingStation }}</span>
+                </div>
+              </div>
+            }
+            @if (task()!.destinationStation) {
+              <div class="info-item">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <div>
+                  <span class="info-label">Destination</span>
+                  <span class="info-value">{{ task()!.destinationStation }}</span>
+                </div>
+              </div>
+            }
+            @if (task()!.trainNumber) {
+              <div class="info-item">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="18" x2="6" y2="22"/><line x1="18" y1="18" x2="18" y2="22"/></svg>
+                <div>
+                  <span class="info-label">Train</span>
+                  <span class="info-value">{{ task()!.trainNumber }}</span>
+                </div>
+              </div>
+            }
+            @if (task()!.meetingLink) {
+              <div class="info-item">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                <div>
+                  <span class="info-label">Meeting Link</span>
+                  <a class="info-link" [href]="task()!.meetingLink" target="_blank">{{ task()!.meetingLink }}</a>
+                </div>
+              </div>
+            }
+            <div class="info-item">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <div>
+                <span class="info-label">Created</span>
+                <span class="info-value">{{ task()!.createdAt | date:'MMM d, y · h:mm a' }}</span>
+              </div>
             </div>
           </div>
 
-          <!-- Timer section: live elapsed time display + start/stop controls -->
-          <div class="timer-section">
-            <div class="timer-display">
-              <!-- Clock icon -->
-              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <!-- Live timer value (H:MM:SS format), updated every second while active -->
-              <span class="timer-value">{{ timerDisplay() }}</span>
+          @if (task()!.googleEventId) {
+            <div class="gcal-badge">
+              <svg width="14" height="14" fill="none" stroke="#10b981" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              Synced to Google Calendar
             </div>
-            <div class="timer-controls">
-              <!-- Show Start button when timer is not active -->
-              @if (!task()!.isTimerActive) {
-                <button class="btn-primary" (click)="startTimer()">
-                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                  Start Timer
-                </button>
-              } @else {
-                <!-- Show Stop button when timer is running -->
-                <button class="btn-danger" (click)="stopTimer()">
-                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-                  Stop Timer
-                </button>
-              }
-            </div>
-          </div>
+          }
         </div>
       } @else {
-        <!-- Loading state while the task is being fetched -->
-        <div class="loading">Loading…</div>
+        <div class="loading">Loading...</div>
       }
     </div>
   `,
   styles: [`
-    /* Back link styled as an accent-colored text link */
     .back-link { color: var(--accent); text-decoration: none; font-size: 0.875rem; }
     .back-link:hover { text-decoration: underline; }
-    /* Detail card: vertical flex layout with spacing between sections */
-    .task-detail { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1rem; }
-    .task-detail-header { display: flex; flex-direction: column; gap: 0.75rem; }
-    /* Badges row: wrapping flex container */
-    .task-meta { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-    /* Title: large bold text, strikethrough + muted color when done */
-    .task-title { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin: 0; }
-    .task-title.done { text-decoration: line-through; color: var(--text-muted); }
-    .task-description { color: var(--text-secondary); margin: 0; line-height: 1.6; }
-    .task-category { font-size: 0.8rem; font-weight: 500; }
-    /* Stats grid: responsive auto-fit columns */
-    .task-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; padding: 1rem; background: var(--bg-secondary); border-radius: 0.5rem; }
-    .task-stat { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.875rem; color: var(--text-primary); }
-    /* Stat label: small uppercase text */
-    .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; }
-    /* Timer section: flex row with display on the left and controls on the right */
-    .timer-section { display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: var(--bg-secondary); border-radius: 0.5rem; }
-    .timer-display { display: flex; align-items: center; gap: 0.625rem; }
-    /* Timer value: large monospace-style numbers for readability */
-    .timer-value { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-primary); }
-    .timer-controls { display: flex; gap: 0.5rem; }
-    /* Danger button for stopping the timer (red background) */
-    .btn-danger { background: var(--red); color: white; border-radius: var(--radius-sm); padding: 0.5rem 1rem; font-weight: 500; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.375rem; }
+
+    .detail { padding: 2rem; margin-top: 1rem; display: flex; flex-direction: column; gap: 1.25rem; }
+
+    .detail-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .type-chip { font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 6px; }
+    .cat-tag { font-size: 0.8rem; font-weight: 500; }
+
+    h1 { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin: 0; }
+    h1.done { text-decoration: line-through; color: var(--text-muted); }
+    .desc { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; margin: 0; }
+
+    .info-grid { display: flex; flex-direction: column; gap: 2px; background: var(--bg-secondary); border-radius: 12px; padding: 4px; }
+    .info-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; border-radius: 10px;
+      color: var(--text-secondary);
+    }
+    .info-item:hover { background: var(--bg-hover); }
+    .info-item svg { flex-shrink: 0; color: var(--text-muted); }
+    .info-item > div { display: flex; flex-direction: column; gap: 1px; }
+    .info-label { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+    .info-value { font-size: 0.9rem; font-weight: 500; color: var(--text-primary); }
+    .info-link { font-size: 0.85rem; color: var(--accent); word-break: break-all; }
+    .info-link:hover { text-decoration: underline; }
+
+    .gcal-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 0.78rem; color: var(--accent); font-weight: 500;
+      padding: 8px 14px; background: var(--accent-subtle);
+      border-radius: 8px; width: fit-content;
+    }
+
     .loading { text-align: center; padding: 3rem; color: var(--text-muted); }
   `],
 })
-export class TaskDetailComponent implements OnInit, OnDestroy {
-  // Inject dependencies
-  private route = inject(ActivatedRoute); // For reading the :id route parameter
-  private router = inject(Router); // For redirecting on error (task not found)
-  private taskService = inject(TaskService); // For fetching task data and timer operations
-  private toast = inject(ToastService); // For error feedback on timer operations
+export class TaskDetailComponent implements OnInit {
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private taskService = inject(TaskService);
 
-  // Reactive signal holding the loaded task data (null until fetched)
   task = signal<Task | null>(null);
-  // Reactive signal holding the formatted timer display string (H:MM:SS)
-  timerDisplay = signal('0:00:00');
-  // Reference to the setInterval timer so it can be cleared on destroy or stop
-  private timerInterval: any;
+  planTypes = PLAN_TYPES;
 
-  // On init, read the task ID from the URL and fetch the full task from the backend
   ngOnInit() {
-    const id = this.route.snapshot.paramMap.get('id')!; // Extract :id from /tasks/:id
+    const id = this.route.snapshot.paramMap.get('id')!;
     this.taskService.getOne(id).subscribe({
-      next: (t) => {
-        this.task.set(t); // Store the task in the signal
-        // If the timer was already running (started in a previous session), resume the display timer
-        if (t.isTimerActive) this.startDisplayTimer();
-      },
-      error: () => this.router.navigate(['/tasks']), // If task not found, go back to the list
+      next: (t) => this.task.set(t),
+      error: () => this.router.navigate(['/tasks']),
     });
   }
 
-  // Clean up the interval timer when the component is destroyed to prevent memory leaks
-  ngOnDestroy() { clearInterval(this.timerInterval); }
-
-  // Start the task timer via the backend API, then begin the UI counter
-  startTimer() {
-    this.taskService.startTimer(this.task()!.id).subscribe({
-      next: (t) => { this.task.set(t); this.startDisplayTimer(); }, // Update task and start counting
-      error: () => this.toast.error('Failed to start timer'),
-    });
-  }
-
-  // Stop the task timer via the backend API, then reset the UI counter
-  stopTimer() {
-    this.taskService.stopTimer(this.task()!.id).subscribe({
-      next: (t) => { this.task.set(t); clearInterval(this.timerInterval); this.timerDisplay.set('0:00:00'); },
-      error: () => this.toast.error('Failed to stop timer'),
-    });
-  }
-
-  // Start a client-side interval that updates the timer display every second.
-  // Uses the server-provided timerStartAt timestamp to calculate elapsed time.
-  private startDisplayTimer() {
-    const start = this.task()!.timerStartAt ? new Date(this.task()!.timerStartAt!).getTime() : Date.now();
-    clearInterval(this.timerInterval); // Clear any existing interval before starting a new one
-    this.timerInterval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - start) / 1000); // Total seconds elapsed
-      const h = Math.floor(elapsed / 3600); // Hours
-      const m = Math.floor((elapsed % 3600) / 60); // Minutes
-      const s = elapsed % 60; // Seconds
-      // Format as H:MM:SS with zero-padded minutes and seconds
-      this.timerDisplay.set(`${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
-    }, 1000); // Update every second
-  }
-
-  // Utility method to format minutes into a human-readable "Xh Ym" string
-  formatTime(mins: number): string { return `${Math.floor(mins / 60)}h ${mins % 60}m`; }
+  getColor() { return this.planTypes.find((t) => t.value === this.task()?.type)?.color ?? '#3b82f6'; }
+  getIcon() { return this.planTypes.find((t) => t.value === this.task()?.type)?.icon ?? '✓'; }
+  getLabel() { return this.planTypes.find((t) => t.value === this.task()?.type)?.label ?? 'Task'; }
 }
