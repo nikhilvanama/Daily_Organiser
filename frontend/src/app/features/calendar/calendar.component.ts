@@ -9,7 +9,7 @@ import { FormsModule } from '@angular/forms';
 // Environment config provides the base API URL for the calendar endpoint
 import { environment } from '../../../environments/environment';
 // Task model interface for typing
-import { Task } from '../../core/models/task.model';
+import { Task, PLAN_TYPES } from '../../core/models/task.model';
 // ModalComponent wraps the task form in a dialog for adding tasks from the calendar
 import { ModalComponent } from '../../shared/components/modal/modal.component';
 // TaskFormComponent renders the task creation form inside the modal
@@ -71,7 +71,10 @@ interface CalendarDay {
             <!-- Task chips: show up to 3 tasks per cell -->
             <div class="cal-tasks">
               @for (task of cell.tasks.slice(0, 3); track task.id) {
-                <div class="cal-task-chip" [class.done]="task.status === 'DONE'">
+                <div class="cal-task-chip" [class.done]="task.status === 'DONE'"
+                  [style.background]="getChipColor(task.type) + '20'"
+                  [style.color]="getChipColor(task.type)"
+                  [style.border-left]="'3px solid ' + getChipColor(task.type)">
                   <!-- Show start time prefix if available -->
                   @if (task.startTime) {
                     <span class="chip-time">{{ task.startTime }}</span>
@@ -187,9 +190,8 @@ interface CalendarDay {
     .cal-tasks { display: flex; flex-direction: column; gap: 2px; flex: 1; }
     /* Individual task chip: small pill with accent styling */
     .cal-task-chip {
-      font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; font-weight: 500;
+      font-size: 0.68rem; padding: 2px 4px 2px 7px; border-radius: 4px; font-weight: 500;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      background: var(--accent-subtle); color: var(--accent);
     }
     /* Done task chips: strikethrough and faded */
     .cal-task-chip.done { text-decoration: line-through; opacity: 0.5; }
@@ -387,6 +389,10 @@ export class CalendarComponent implements OnInit {
   }
 
   // Fetch all tasks for the currently viewed month from the backend calendar endpoint
+  getChipColor(type: string): string {
+    return PLAN_TYPES.find((t) => t.value === type)?.color ?? '#3b82f6';
+  }
+
   getTaskTime(task: any): string {
     // Train: show departure → arrival
     if (task.departureTime) {

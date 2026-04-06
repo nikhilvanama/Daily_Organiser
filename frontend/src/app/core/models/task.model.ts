@@ -75,7 +75,7 @@ export const PLAN_TYPES: { value: PlanType; label: string; icon: string; color: 
   { value: 'task',     label: 'Task',     icon: '✓', color: '#3b82f6' }, // Blue — general to-do items
   { value: 'trip',     label: 'Trip',     icon: '✈', color: '#10b981' }, // Green — travel plans
   { value: 'train',    label: 'Journey',  icon: '🚌', color: '#f59e0b' }, // Amber — bus/train travel
-  { value: 'dinner',   label: 'Dinner',   icon: '🍽', color: '#ec4899' }, // Pink — dinner reservations
+  { value: 'dinner',   label: 'Food',     icon: '🍴', color: '#ec4899' }, // Pink — lunch/dinner/breakfast/snacks
   { value: 'meeting',  label: 'Meeting',  icon: '👥', color: '#8b5cf6' }, // Purple — meetings/calls
   { value: 'event',    label: 'Event',    icon: '📅', color: '#06b6d4' }, // Cyan — generic events
   { value: 'reminder', label: 'Reminder', icon: '🔔', color: '#f97316' }, // Orange — reminders/alerts

@@ -153,8 +153,8 @@ import { Task, PLAN_TYPES, PlanType } from '../../../core/models/task.model';
           </div>
         </div>
         <div class="form-group">
-          <label class="label">Restaurant / Location</label>
-          <input class="input" formControlName="location" placeholder="e.g. Paradise Biryani, Jubilee Hills" />
+          <label class="label">Place / Restaurant</label>
+          <input class="input" formControlName="location" placeholder="e.g. Paradise Biryani, Starbucks, Home..." />
         </div>
       }
 
@@ -315,7 +315,7 @@ export class TaskFormComponent implements OnInit, OnChanges {
       task: "What's the plan?",
       trip: 'Trip name (e.g. Kedarnath Trip)',
       train: 'Journey name (e.g. Train to Delhi, Bus to Office)',
-      dinner: 'Dinner plan (e.g. Dinner at Paradise)',
+      dinner: 'Food plan (e.g. Lunch at Paradise, Breakfast at Cafe)',
       meeting: 'Meeting title (e.g. Sprint Review)',
       event: 'Event name (e.g. Tech Conference)',
       reminder: 'Remind me to...',
@@ -328,7 +328,7 @@ export class TaskFormComponent implements OnInit, OnChanges {
       task: 'Optional details...',
       trip: 'Trip details, who is going, budget...',
       train: 'PNR, seat number, ticket details...',
-      dinner: 'With whom, special occasion...',
+      dinner: 'With whom, meal type, special occasion...',
       meeting: 'Agenda, topics to discuss...',
       event: 'Event details, tickets, dress code...',
       reminder: 'Additional notes...',
