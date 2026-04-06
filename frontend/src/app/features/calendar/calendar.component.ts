@@ -65,10 +65,13 @@ interface CalendarDay {
           <div class="cal-cell" [class.other-month]="!cell.isCurrentMonth" [class.today]="cell.isToday"
                [class.weekend]="isWeekendDay(cell.date)"
                [class.birthday]="isBirthday(cell.date)"
+               [class.workday]="isWorkDay(cell.date)"
                (click)="openDay(cell)">
             <!-- Day number: highlighted with accent color if it is today -->
             <span class="cal-date">{{ cell.date | date:'d' }}</span>
-            <!-- Task chips: show up to 3 tasks per cell -->
+            @if (isWorkDay(cell.date) && getOfficeHours() && cell.isCurrentMonth) {
+              <span class="office-tag">🏢 {{ getOfficeHours() }}</span>
+            }
             <div class="cal-tasks">
               @for (task of cell.tasks.slice(0, 3); track task.id) {
                 <div class="cal-task-chip" [class.done]="task.status === 'DONE'"
@@ -212,6 +215,12 @@ interface CalendarDay {
     }
     .cal-cell.birthday .cal-date { color: #ec4899 !important; font-weight: 700; }
 
+    /* Office hours on work days */
+    .office-tag {
+      font-size: 0.55rem; color: var(--text-muted); opacity: 0.7;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
     /* Day Detail Side Panel */
     /* Overlay: semi-transparent backdrop behind the panel */
     .day-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 900; }
@@ -352,6 +361,18 @@ export class CalendarComponent implements OnInit {
     if (!dob) return false;
     const bday = new Date(dob);
     return date.getDate() === bday.getDate() && date.getMonth() === bday.getMonth();
+  }
+
+  isWorkDay(date: Date): boolean {
+    const p = this.userProfile();
+    if (!p?.isEmployed || !p?.syncOfficeToCalendar) return false;
+    return !this.isWeekendDay(date);
+  }
+
+  getOfficeHours(): string {
+    const p = this.userProfile();
+    if (!p?.officeStartTime || !p?.officeEndTime) return '';
+    return `${p.officeStartTime} - ${p.officeEndTime}`;
   }
 
   // Navigate to the previous month and reload tasks
