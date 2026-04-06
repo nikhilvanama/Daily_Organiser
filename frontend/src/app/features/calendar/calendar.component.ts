@@ -70,8 +70,11 @@ interface CalendarDay {
             <!-- Day number: highlighted with accent color if it is today -->
             <div class="cal-date-row">
               <span class="cal-date">{{ cell.date | date:'d' }}</span>
-              @if (isWorkDay(cell.date) && getOfficeHours() && cell.isCurrentMonth) {
-                <span class="office-tag">{{ getOfficeHours() }}</span>
+              @if (isWorkDay(cell.date) && getOfficeHours() && cell.isCurrentMonth && !isDayOff(cell.date)) {
+                <span class="office-tag">🏢 {{ getOfficeHours() }}</span>
+              }
+              @if (isDayOff(cell.date) && cell.isCurrentMonth) {
+                <span class="off-tag">{{ getDayOffLabel(cell.date) }}</span>
               }
             </div>
             <div class="cal-tasks">
@@ -113,23 +116,41 @@ interface CalendarDay {
           </button>
         </div>
 
+        <!-- Work status toggles (only on work days) -->
+        @if (isWorkDay(selectedDay()!.date) && getOfficeHours()) {
+          <div class="day-work-section">
+            @if (!isDayOff(selectedDay()!.date)) {
+              <div class="work-info">
+                <span>🏢 Office: {{ getOfficeHours() }}</span>
+              </div>
+            }
+            <div class="day-toggles">
+              <label class="day-toggle-row">
+                <span>🏖️ Company Holiday</span>
+                <input type="checkbox" class="toggle" [checked]="isHoliday(selectedDay()!.date)" (change)="toggleHoliday(selectedDay()!.date)" />
+              </label>
+              <label class="day-toggle-row">
+                <span>🏠 On Leave</span>
+                <input type="checkbox" class="toggle" [checked]="isOnLeave(selectedDay()!.date)" (change)="toggleLeave(selectedDay()!.date)" />
+              </label>
+            </div>
+          </div>
+        }
+
         <!-- Tasks for the selected day -->
         <div class="day-tasks">
           <div class="day-section-hd">
             <span>Tasks</span>
-            <!-- Button to add a new task pre-filled with the selected date -->
             <button class="btn-primary sm" (click)="showAddTask = true">+ Add</button>
           </div>
 
-          <!-- Empty state for days with no tasks -->
           @if (selectedDay()!.tasks.length === 0) {
             <div class="day-empty">No tasks scheduled for this day</div>
           } @else {
-            <!-- Task list within the day panel -->
             @for (task of selectedDay()!.tasks; track task.id) {
               <div class="day-task-row" [class.done]="task.status === 'DONE'">
                 <a class="day-task-left" [routerLink]="['/tasks', task.id]" (click)="closeDay()">
-                  <span class="dot dot-{{ task.priority.toLowerCase() }}"></span>
+                  <span class="dot" [style.background]="getChipColor(task.type)"></span>
                   <div class="day-task-info">
                     <span class="day-task-title">{{ task.title }}</span>
                     @if (getTaskTime(task)) {
@@ -223,6 +244,30 @@ interface CalendarDay {
       font-size: 0.55rem; color: var(--text-muted); opacity: 0.6;
       white-space: nowrap;
     }
+    .off-tag {
+      font-size: 0.55rem; color: #f97316; opacity: 0.8;
+      white-space: nowrap;
+    }
+
+    /* Day work section in side panel */
+    .day-work-section { padding: 0.75rem 1.5rem; border-bottom: 1px solid var(--border); }
+    .work-info { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px; }
+    .day-toggles { display: flex; flex-direction: column; gap: 4px; }
+    .day-toggle-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 0; font-size: 0.82rem; color: var(--text-primary); cursor: pointer;
+    }
+    .toggle {
+      width: 38px; height: 20px; appearance: none; background: var(--border);
+      border-radius: 10px; position: relative; cursor: pointer; transition: background 0.2s; border: none;
+    }
+    .toggle::after {
+      content: ''; position: absolute; top: 2px; left: 2px;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: white; transition: transform 0.2s;
+    }
+    .toggle:checked { background: var(--accent); }
+    .toggle:checked::after { transform: translateX(18px); }
 
     /* Day Detail Side Panel */
     /* Overlay: semi-transparent backdrop behind the panel */
@@ -347,7 +392,7 @@ export class CalendarComponent implements OnInit {
   // On init, fetch tasks for the initially displayed month
   ngOnInit() {
     this.loadTasks();
-    // Load profile for birthday + weekend customization
+    this.initDayOffs();
     this.http.get(`${environment.apiUrl}/users/profile`).subscribe({
       next: (p: any) => this.userProfile.set(p),
     });
@@ -376,6 +421,50 @@ export class CalendarComponent implements OnInit {
     const p = this.userProfile();
     if (!p?.officeStartTime || !p?.officeEndTime) return '';
     return `${p.officeStartTime} - ${p.officeEndTime}`;
+  }
+
+  // Holiday and leave tracking — stored in localStorage per date
+  private holidays = new Set<string>();
+  private leaves = new Set<string>();
+
+  private initDayOffs() {
+    try {
+      this.holidays = new Set(JSON.parse(localStorage.getItem('do_holidays') ?? '[]'));
+      this.leaves = new Set(JSON.parse(localStorage.getItem('do_leaves') ?? '[]'));
+    } catch { }
+  }
+
+  private dateKey(date: Date): string {
+    return date.toISOString().split('T')[0];
+  }
+
+  isDayOff(date: Date): boolean {
+    return this.holidays.has(this.dateKey(date)) || this.leaves.has(this.dateKey(date));
+  }
+
+  getDayOffLabel(date: Date): string {
+    if (this.holidays.has(this.dateKey(date))) return '🏖️ Holiday';
+    if (this.leaves.has(this.dateKey(date))) return '🏠 Leave';
+    return '';
+  }
+
+  isHoliday(date: Date): boolean { return this.holidays.has(this.dateKey(date)); }
+  isOnLeave(date: Date): boolean { return this.leaves.has(this.dateKey(date)); }
+
+  toggleHoliday(date: Date) {
+    const key = this.dateKey(date);
+    if (this.holidays.has(key)) this.holidays.delete(key);
+    else { this.holidays.add(key); this.leaves.delete(key); }
+    localStorage.setItem('do_holidays', JSON.stringify([...this.holidays]));
+    localStorage.setItem('do_leaves', JSON.stringify([...this.leaves]));
+  }
+
+  toggleLeave(date: Date) {
+    const key = this.dateKey(date);
+    if (this.leaves.has(key)) this.leaves.delete(key);
+    else { this.leaves.add(key); this.holidays.delete(key); }
+    localStorage.setItem('do_leaves', JSON.stringify([...this.leaves]));
+    localStorage.setItem('do_holidays', JSON.stringify([...this.holidays]));
   }
 
   // Navigate to the previous month and reload tasks
