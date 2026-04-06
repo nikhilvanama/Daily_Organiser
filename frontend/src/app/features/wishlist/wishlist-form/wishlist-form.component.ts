@@ -1,5 +1,5 @@
 // Import Angular decorators: Component, EventEmitter for outputs, inject for DI, Input/Output for bindings, OnInit lifecycle
-import { Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, inject, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 // FormBuilder creates the reactive form; ReactiveFormsModule enables [formGroup]; Validators for validation
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 // WishlistService provides create() and update() methods for saving wishlist items
@@ -82,7 +82,7 @@ import { WishlistItem } from '../../../core/models/wishlist-item.model';
   // Compact inline styles for the form layout (minified for brevity)
   styles: [`.form{display:flex;flex-direction:column;gap:1rem}.form-group{display:flex;flex-direction:column;gap:.25rem}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}textarea.input{resize:vertical}.form-actions{display:flex;gap:.75rem;justify-content:flex-end;padding-top:.5rem}`],
 })
-export class WishlistFormComponent implements OnInit {
+export class WishlistFormComponent implements OnInit, OnChanges {
   // Optional input: when provided, the form operates in edit mode with pre-filled values
   @Input() item: WishlistItem | null = null;
   // Emitted when the item is successfully saved (created or updated)
@@ -108,8 +108,13 @@ export class WishlistFormComponent implements OnInit {
     categoryId: [''], // Optional category assignment
   });
 
-  // On init, if an existing item was passed, pre-fill the form with its current values
-  ngOnInit() {
+  ngOnInit() { this.fillForm(); }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['item']) this.fillForm();
+  }
+
+  private fillForm() {
     if (this.item) {
       this.form.patchValue({
         name: this.item.name,
@@ -121,12 +126,13 @@ export class WishlistFormComponent implements OnInit {
         priority: this.item.priority,
         categoryId: this.item.categoryId ?? '',
       });
+    } else {
+      this.form.reset({ name: '', description: '', price: null, currency: 'USD', url: '', imageUrl: '', priority: 'MEDIUM', categoryId: '' });
     }
   }
 
-  // Handle form submission — build DTO, call create or update, emit saved event
   submit() {
-    if (this.form.invalid) return; // Guard against invalid form state
+    if (this.form.invalid) return;
     this.loading = true;
     const v = this.form.value;
     // Build the DTO, converting empty/null values to undefined so the backend ignores them
@@ -144,7 +150,11 @@ export class WishlistFormComponent implements OnInit {
     // Choose create or update based on whether an existing item was provided
     const req = this.item ? this.wishlistService.update(this.item.id, dto) : this.wishlistService.create(dto);
     req.subscribe({
-      next: () => { this.loading = false; this.saved.emit(); }, // Success: notify parent
+      next: () => {
+        this.loading = false;
+        this.form.reset({ name: '', description: '', price: null, currency: 'USD', url: '', imageUrl: '', priority: 'MEDIUM', categoryId: '' });
+        this.saved.emit();
+      },
       error: () => { this.loading = false; }, // Failure: re-enable the button
     });
   }
