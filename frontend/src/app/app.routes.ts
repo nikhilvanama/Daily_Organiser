@@ -81,9 +81,13 @@ export const routes: Routes = [
       },
       {
         path: 'calendar',
-        // Monthly calendar view — shows tasks plotted on a date grid with a day-detail panel
         loadComponent: () =>
           import('./features/calendar/calendar.component').then((m) => m.CalendarComponent),
+      },
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('./features/profile/profile.component').then((m) => m.ProfileComponent),
       },
     ],
   },

@@ -100,17 +100,14 @@ import { ToastService } from '../../../core/services/toast.service';
           </button>
         }
 
-        <!-- User profile block -->
         <div class="user-block">
-          <!-- Circular avatar with the user's first initial on a green gradient background -->
-          <div class="user-avatar">{{ getUserInitial() }}</div>
-          <div class="user-info">
-            <!-- User's display name (or username as fallback) -->
-            <span class="user-name">{{ getUserName() }}</span>
-            <!-- User's email address shown in smaller, muted text -->
-            <span class="user-email">{{ auth.currentUser()?.email ?? '' }}</span>
-          </div>
-          <!-- Logout button — calls auth.logout() which clears tokens and redirects to login -->
+          <a routerLink="/profile" class="user-link">
+            <div class="user-avatar">{{ getUserInitial() }}</div>
+            <div class="user-info">
+              <span class="user-name">{{ getUserName() }}</span>
+              <span class="user-email">{{ auth.currentUser()?.email ?? '' }}</span>
+            </div>
+          </a>
           <button class="logout-icon" (click)="auth.logout()" title="Sign out">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           </button>
@@ -179,7 +176,9 @@ import { ToastService } from '../../../core/services/toast.service';
     .theme-btn { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 8px; color: var(--sidebar-text); font-size: 0.82rem; background: var(--sidebar-hover); border: none; cursor: pointer; width: 100%; transition: all 0.15s; font-family: inherit; }
     .theme-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
     /* User profile block: avatar, name/email, and logout button in a compact row */
-    .user-block { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 10px; background: var(--sidebar-hover); }
+    .user-block { display: flex; align-items: center; gap: 4px; padding: 8px; border-radius: 10px; background: var(--sidebar-hover); }
+    .user-link { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; text-decoration: none; border-radius: 6px; padding: 2px; transition: opacity 0.15s; }
+    .user-link:hover { opacity: 0.8; }
     /* Circular avatar with green gradient background showing the user's initial */
     .user-avatar { width: 36px; height: 36px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
     /* User info column: name and email stacked vertically with text truncation */

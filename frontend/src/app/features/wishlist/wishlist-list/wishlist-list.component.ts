@@ -148,8 +148,8 @@ import { WishlistItem } from '../../../core/models/wishlist-item.model';
     /* Purchased items: reduced opacity to de-emphasize them */
     .wishlist-card.purchased { opacity: 0.65; }
     /* Product image area: fixed height with cover fit */
-    .card-image { height: 160px; overflow: hidden; background: var(--bg-secondary); }
-    .card-image img { width: 100%; height: 100%; object-fit: contain; object-position: center; }
+    .card-image { height: 200px; overflow: hidden; background: var(--bg-secondary); }
+    .card-image img { width: 100%; height: 100%; object-fit: cover; object-position: end; }
     /* Placeholder: centered icon when no image URL is provided */
     .card-image.placeholder { display: flex; align-items: center; justify-content: center; color: var(--text-muted); }
     /* Card body: padded content area that grows to fill the card */
