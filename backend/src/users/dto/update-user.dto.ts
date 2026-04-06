@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength, IsBoolean, IsArray } from 'class-validator';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class UpdateUserDto {
   @IsOptional()
@@ -23,8 +23,7 @@ export class UpdateUserDto {
   address?: string;
 
   @IsOptional()
-  @IsBoolean()
-  isEmployed?: boolean;
+  isEmployed?: any;
 
   @IsOptional()
   @IsString()
@@ -39,10 +38,8 @@ export class UpdateUserDto {
   officeEndTime?: string;
 
   @IsOptional()
-  @IsArray()
-  weekendDays?: string[];
+  weekendDays?: any;
 
   @IsOptional()
-  @IsBoolean()
-  syncOfficeToCalendar?: boolean;
+  syncOfficeToCalendar?: any;
 }
