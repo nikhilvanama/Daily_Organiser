@@ -259,14 +259,28 @@ export class ProfileComponent implements OnInit {
 
   save() {
     this.saving = true;
-    this.http.patch(`${environment.apiUrl}/users/profile`, this.form.value).subscribe({
+    // Clean the data — remove null/undefined values
+    const data: any = {};
+    const v = this.form.value;
+    if (v.displayName) data.displayName = v.displayName;
+    if (v.dateOfBirth) data.dateOfBirth = v.dateOfBirth;
+    if (v.phone) data.phone = v.phone;
+    if (v.address) data.address = v.address;
+    data.isEmployed = !!v.isEmployed;
+    if (v.companyName) data.companyName = v.companyName;
+    if (v.officeStartTime) data.officeStartTime = v.officeStartTime;
+    if (v.officeEndTime) data.officeEndTime = v.officeEndTime;
+    if (v.weekendDays) data.weekendDays = v.weekendDays;
+    data.syncOfficeToCalendar = !!v.syncOfficeToCalendar;
+
+    this.http.patch(`${environment.apiUrl}/users/profile`, data).subscribe({
       next: (data: any) => {
         this.profile.set(data);
         this.auth.currentUser.update((u) => u ? { ...u, displayName: data.displayName } : u);
         this.toast.success('Profile saved');
         this.saving = false;
       },
-      error: () => { this.toast.error('Failed to save'); this.saving = false; },
+      error: (err) => { console.error('Profile save error:', err.error); this.toast.error(err.error?.message?.join?.(', ') || err.error?.message || 'Failed to save'); this.saving = false; },
     });
   }
 }
