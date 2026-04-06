@@ -68,10 +68,12 @@ interface CalendarDay {
                [class.workday]="isWorkDay(cell.date)"
                (click)="openDay(cell)">
             <!-- Day number: highlighted with accent color if it is today -->
-            <span class="cal-date">{{ cell.date | date:'d' }}</span>
-            @if (isWorkDay(cell.date) && getOfficeHours() && cell.isCurrentMonth) {
-              <span class="office-tag">🏢 {{ getOfficeHours() }}</span>
-            }
+            <div class="cal-date-row">
+              <span class="cal-date">{{ cell.date | date:'d' }}</span>
+              @if (isWorkDay(cell.date) && getOfficeHours() && cell.isCurrentMonth) {
+                <span class="office-tag">{{ getOfficeHours() }}</span>
+              }
+            </div>
             <div class="cal-tasks">
               @for (task of cell.tasks.slice(0, 3); track task.id) {
                 <div class="cal-task-chip" [class.done]="task.status === 'DONE'"
@@ -179,7 +181,7 @@ interface CalendarDay {
     .cal-cell {
       background: var(--bg-card); min-height: 110px; padding: 8px;
       display: flex; flex-direction: column; gap: 3px; cursor: pointer;
-      transition: background 0.1s;
+      transition: background 0.1s; overflow: hidden; min-width: 0;
     }
     .cal-cell:hover { background: var(--bg-hover); }
     /* Cells from adjacent months: dimmed background */
@@ -190,7 +192,7 @@ interface CalendarDay {
     .cal-date { font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
     .cal-cell.other-month .cal-date { color: var(--text-muted); }
     /* Task chips container within a day cell */
-    .cal-tasks { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+    .cal-tasks { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; overflow: hidden; }
     /* Individual task chip: small pill with accent styling */
     .cal-task-chip {
       font-size: 0.68rem; padding: 2px 4px 2px 7px; border-radius: 4px; font-weight: 500;
@@ -215,10 +217,11 @@ interface CalendarDay {
     }
     .cal-cell.birthday .cal-date { color: #ec4899 !important; font-weight: 700; }
 
-    /* Office hours on work days */
+    /* Date row: date number left, office hours right */
+    .cal-date-row { display: flex; justify-content: space-between; align-items: center; }
     .office-tag {
-      font-size: 0.55rem; color: var(--text-muted); opacity: 0.7;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      font-size: 0.55rem; color: var(--text-muted); opacity: 0.6;
+      white-space: nowrap;
     }
 
     /* Day Detail Side Panel */
