@@ -15,7 +15,12 @@ export class UsersService {
   }
 
   async updateProfile(userId: string, dto: UpdateUserDto) {
-    await this.firebase.update(`users/${userId}`, dto);
+    // Firebase rejects undefined values — strip them out
+    const clean: Record<string, any> = {};
+    for (const [key, val] of Object.entries(dto)) {
+      if (val !== undefined) clean[key] = val;
+    }
+    await this.firebase.update(`users/${userId}`, clean);
     return this.getProfile(userId);
   }
 }
