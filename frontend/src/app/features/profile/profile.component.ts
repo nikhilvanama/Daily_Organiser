@@ -61,20 +61,22 @@ import { AuthService } from '../../core/services/auth.service';
               <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
               Address
             </h3>
-            <div class="form-group">
-              <label class="label">Home Address</label>
-              <textarea class="input" formControlName="address" rows="2" placeholder="Enter your address..."></textarea>
-            </div>
-            @if (form.value.address) {
-              <div class="map-container">
+            <div class="address-row">
+              <div class="form-group address-input">
+                <label class="label">Home Address</label>
+                <textarea class="input" formControlName="address" rows="3" placeholder="Enter your address..."></textarea>
+              </div>
+              @if (form.value.address) {
+                <div class="map-container">
                 <iframe
-                  width="100%" height="200" style="border:0; border-radius: 8px;"
+                  width="100%" height="100%" style="border:0; border-radius: 8px;"
                   loading="lazy"
                   [src]="getMapUrl()"
                   allowfullscreen>
                 </iframe>
               </div>
-            }
+              }
+            </div>
           </div>
 
           <!-- Employment Card -->
@@ -151,7 +153,11 @@ import { AuthService } from '../../core/services/auth.service';
       padding: 8px 12px; background: var(--accent-subtle); border-radius: 8px;
     }
 
-    .map-container { margin-top: 0.5rem; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+    .address-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: stretch; }
+    .address-input { flex: 1; }
+    .address-input textarea { height: 100%; min-height: 100px; }
+    .map-container { border-radius: 8px; overflow: hidden; border: 1px solid var(--border); min-height: 180px; }
+    @media (max-width: 768px) { .address-row { grid-template-columns: 1fr; } }
 
     .toggle-row {
       display: flex; align-items: center; justify-content: space-between;
