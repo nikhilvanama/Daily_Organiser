@@ -2,12 +2,8 @@
 import { Component, EventEmitter, inject, Input, OnInit, Output } from '@angular/core';
 // FormBuilder creates the reactive form; ReactiveFormsModule enables [formGroup]; Validators for validation
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-// AsyncPipe subscribes to the categories$ observable for the category dropdown
-import { AsyncPipe } from '@angular/common';
 // WishlistService provides create() and update() methods for saving wishlist items
 import { WishlistService } from '../wishlist.service';
-// CategoryService provides categories$ for the category selection dropdown
-import { CategoryService } from '../../categories/category.service';
 // WishlistItem model interface for typing the input binding
 import { WishlistItem } from '../../../core/models/wishlist-item.model';
 
@@ -17,7 +13,7 @@ import { WishlistItem } from '../../../core/models/wishlist-item.model';
 @Component({
   selector: 'app-wishlist-form', // Used as <app-wishlist-form [item]="..." (saved)="..." (cancelled)="...">
   standalone: true, // Angular 19 standalone component
-  imports: [ReactiveFormsModule, AsyncPipe], // Enable reactive forms and async pipe
+  imports: [ReactiveFormsModule],
   template: `
     <form [formGroup]="form" (ngSubmit)="submit()" class="form">
       <!-- Name field: required for every item -->
@@ -70,13 +66,7 @@ import { WishlistItem } from '../../../core/models/wishlist-item.model';
         </div>
         <div class="form-group">
           <label class="label">Category</label>
-          <!-- Dropdown populated from the user's categories via CategoryService -->
-          <select class="input" formControlName="categoryId">
-            <option value="">None</option>
-            @for (cat of catService.categories$ | async; track cat.id) {
-              <option [value]="cat.id">{{ cat.name }}</option>
-            }
-          </select>
+          <input class="input" formControlName="categoryId" placeholder="e.g. Electronics, Clothing..." />
         </div>
       </div>
       <!-- Form actions: Cancel and Submit buttons -->
@@ -103,8 +93,6 @@ export class WishlistFormComponent implements OnInit {
   // Inject dependencies
   private fb = inject(FormBuilder); // For creating the reactive form
   private wishlistService = inject(WishlistService); // For create/update API calls
-  // Expose CategoryService publicly so the template can read categories$ for the dropdown
-  catService = inject(CategoryService);
 
   // Loading flag to disable the submit button during API calls
   loading = false;

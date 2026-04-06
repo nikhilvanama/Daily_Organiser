@@ -1,14 +1,12 @@
 import { Component, EventEmitter, inject, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { AsyncPipe } from '@angular/common';
 import { TaskService } from '../task.service';
-import { CategoryService } from '../../categories/category.service';
 import { Task, PLAN_TYPES, PlanType } from '../../../core/models/task.model';
 
 @Component({
   selector: 'app-task-form',
   standalone: true,
-  imports: [ReactiveFormsModule, AsyncPipe],
+  imports: [ReactiveFormsModule],
   template: `
     <form [formGroup]="form" (ngSubmit)="submit()" class="plan-form">
       <!-- Plan Type Selector -->
@@ -240,12 +238,7 @@ import { Task, PLAN_TYPES, PlanType } from '../../../core/models/task.model';
       <div class="form-row">
         <div class="form-group">
           <label class="label">Category</label>
-          <select class="input" formControlName="categoryId">
-            <option value="">No category</option>
-            @for (cat of catService.categories$ | async; track cat.id) {
-              <option [value]="cat.id">{{ cat.name }}</option>
-            }
-          </select>
+          <input class="input" formControlName="categoryId" placeholder="e.g. Work, Personal, Travel..." />
         </div>
         <div class="form-group">
           <label class="label">Status</label>
@@ -292,7 +285,6 @@ export class TaskFormComponent implements OnInit, OnChanges {
 
   private fb = inject(FormBuilder);
   private taskService = inject(TaskService);
-  catService = inject(CategoryService);
   planTypes = PLAN_TYPES;
 
   loading = false;

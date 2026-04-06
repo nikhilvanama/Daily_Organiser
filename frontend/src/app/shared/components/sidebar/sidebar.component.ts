@@ -2,16 +2,10 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 // RouterLink creates navigable links; RouterLinkActive adds the "active" CSS class to the current route link
 import { RouterLink, RouterLinkActive } from '@angular/router';
-// AsyncPipe subscribes to observables directly in templates (used for categories$ BehaviorSubject)
-import { AsyncPipe } from '@angular/common';
 // AuthService provides the current user signal and logout functionality
 import { AuthService } from '../../../core/services/auth.service';
 // ThemeService provides the current theme signal and toggle method
 import { ThemeService } from '../../../core/services/theme.service';
-// CategoryService provides the categories$ observable for listing user-defined categories
-import { CategoryService } from '../../../features/categories/category.service';
-// CategoryManagerComponent is the popup form for creating and deleting categories
-import { CategoryManagerComponent } from '../category-manager/category-manager.component';
 import { GoogleCalendarService } from '../../../core/services/google-calendar.service';
 import { ToastService } from '../../../core/services/toast.service';
 
@@ -21,7 +15,7 @@ import { ToastService } from '../../../core/services/toast.service';
 @Component({
   selector: 'app-sidebar', // Placed inside the LayoutComponent template
   standalone: true, // Angular 19 standalone component
-  imports: [RouterLink, RouterLinkActive, AsyncPipe, CategoryManagerComponent], // Dependencies used in template
+  imports: [RouterLink, RouterLinkActive],
   template: `
     <!-- Sidebar container — fixed-width dark panel on the left side of the layout -->
     <aside class="sidebar">
@@ -70,37 +64,6 @@ import { ToastService } from '../../../core/services/toast.service';
           </a>
         </nav>
 
-        <!-- Categories section — shows user-defined categories as colored dots -->
-        <div class="sidebar-categories">
-          <div class="cat-header">
-            <span class="nav-section">Categories</span>
-            <!-- Toggle button to show/hide the category manager popup -->
-            <button class="cat-add-btn" (click)="showCatManager.set(!showCatManager())" title="Manage categories">
-              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            </button>
-          </div>
-          <!-- Iterate over user's categories from the CategoryService observable -->
-          @for (cat of categories$ | async; track cat.id) {
-            <div class="cat-item">
-              <!-- Colored dot indicator matching the category's assigned color -->
-              <span class="cat-dot" [style.background]="cat.color"></span>
-              <span>{{ cat.name }}</span>
-            </div>
-          } @empty {
-            <!-- Show a dashed "Add category" button when no categories exist yet -->
-            <button class="cat-empty-btn" (click)="showCatManager.set(true)">+ Add category</button>
-          }
-        </div>
-
-        <!-- Category manager popup — shown as a floating panel next to the sidebar -->
-        @if (showCatManager()) {
-          <!-- Semi-transparent overlay to catch clicks outside the popup and close it -->
-          <div class="cat-overlay" (click)="showCatManager.set(false)"></div>
-          <!-- The actual popup containing the CategoryManagerComponent -->
-          <div class="cat-popup">
-            <app-category-manager (closed)="showCatManager.set(false)" />
-          </div>
-        }
       </div>
 
       <!-- Bottom section: theme toggle and user profile block (always visible, never scrolls) -->
@@ -254,16 +217,11 @@ export class SidebarComponent implements OnInit {
   auth = inject(AuthService);
   // Expose ThemeService publicly so the template can call toggle() and read theme()
   themeService = inject(ThemeService);
-  // CategoryService is private — only the observable is exposed to the template
-  private catService = inject(CategoryService);
   // Observable stream of user's categories — used in the template with async pipe
-  categories$ = this.catService.categories$;
   gcalService = inject(GoogleCalendarService);
   private toast = inject(ToastService);
-  showCatManager = signal(false);
 
   ngOnInit() {
-    this.catService.loadAll().subscribe();
     if (this.auth.isLoggedIn() && !this.auth.currentUser()) {
       this.auth.loadCurrentUser().subscribe();
     }
