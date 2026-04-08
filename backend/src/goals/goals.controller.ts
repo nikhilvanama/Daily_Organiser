@@ -63,7 +63,15 @@ export class GoalsController {
     return this.goalsService.addMilestone(userId, goalId, dto);
   }
 
-  // PATCH /goals/:goalId/milestones/:milestoneId - Partially updates an existing milestone
+  @Patch(':goalId/milestones/reorder')
+  reorderMilestones(
+    @CurrentUser('id') userId: string,
+    @Param('goalId') goalId: string,
+    @Body() body: { milestoneIds: string[] },
+  ) {
+    return this.goalsService.reorderMilestones(userId, goalId, body.milestoneIds);
+  }
+
   @Patch(':goalId/milestones/:milestoneId')
   updateMilestone(
     @CurrentUser('id') userId: string,

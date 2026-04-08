@@ -39,24 +39,26 @@ export interface GoalMilestone {
 // It aggregates milestones and computes an overall progress percentage
 // based on how many milestones/mini-goals are completed.
 export interface Goal {
-  id: string; // Unique identifier for the goal
-  title: string; // Goal name shown in the goal list and detail views
-  description: string | null; // Optional longer description of the goal
-  status: GoalStatus; // Current lifecycle status (ACTIVE, COMPLETED, PAUSED, ABANDONED)
-  targetDate: string | null; // Optional deadline for achieving the goal
-  progress: number; // Computed 0-100 percentage reflecting milestone/mini-goal completion
-  userId: string; // Foreign key to the owning user
-  milestones: GoalMilestone[]; // Nested array of milestones with their mini-goals
-  createdAt: string; // ISO timestamp of creation
-  updatedAt: string; // ISO timestamp of last modification
+  id: string;
+  title: string;
+  description: string | null;
+  status: GoalStatus;
+  targetDate: string | null;
+  progress: number;
+  resources: string[];
+  userId: string;
+  milestones: GoalMilestone[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 // DTO for creating a new goal — only title is required
 export interface CreateGoalDto {
-  title: string; // Required: the name of the goal
-  description?: string; // Optional description
-  status?: GoalStatus; // Defaults to 'ACTIVE' if not specified
-  targetDate?: string; // Optional target completion date
+  title: string;
+  description?: string;
+  status?: GoalStatus;
+  targetDate?: string;
+  resources?: string[];
 }
 
 // DTO for creating a milestone within a goal

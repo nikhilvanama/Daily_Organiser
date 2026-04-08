@@ -43,8 +43,16 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
           <div class="form-group">
             <label class="label">Password</label>
-            <!-- Password input with required validation -->
-            <input class="input" type="password" formControlName="password" placeholder="Enter your password" />
+            <div class="password-wrapper">
+              <input class="input" [type]="showPassword ? 'text' : 'password'" formControlName="password" placeholder="Enter your password" />
+              <button type="button" class="toggle-password" (click)="showPassword = !showPassword" tabindex="-1">
+                @if (showPassword) {
+                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                } @else {
+                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
+              </button>
+            </div>
           </div>
           <!-- Submit button: disabled while loading or if the form is invalid -->
           <button class="btn-primary submit-btn" type="submit" [disabled]="loading || form.invalid">
@@ -96,6 +104,14 @@ import { ToastService } from '../../../core/services/toast.service';
     .footer { text-align: center; margin-top: 1.75rem; font-size: 0.875rem; color: var(--text-secondary); }
     .footer a { color: var(--accent); font-weight: 600; margin-left: 4px; }
     .footer a:hover { text-decoration: underline; }
+    .password-wrapper { position: relative; }
+    .password-wrapper .input { padding-right: 40px; }
+    .toggle-password {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; color: var(--text-secondary);
+      padding: 2px; display: flex; align-items: center;
+    }
+    .toggle-password:hover { color: var(--text-primary); }
   `],
 })
 export class LoginComponent {
@@ -106,6 +122,7 @@ export class LoginComponent {
   private toast = inject(ToastService); // For showing error messages on login failure
   // Loading flag to show the spinner and disable the submit button during the API call
   loading = false;
+  showPassword = false;
   // Reactive form with email (required + email format) and password (required) fields
   form = this.fb.group({ email: ['', [Validators.required, Validators.email]], password: ['', Validators.required] });
 

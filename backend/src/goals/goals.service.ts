@@ -24,8 +24,9 @@ export class GoalsService {
     // Fetch all goals from the 'goals' collection in Firebase
     const goals = await this.firebase.getList<any>('goals');
     // Filter to only include goals belonging to the authenticated user
-    const userGoals = goals.filter((g: any) => g.userId === userId);
-    // Attach milestones (and their mini-goals) to each goal in parallel and return the enriched list
+    const userGoals = goals
+      .filter((g: any) => g.userId === userId)
+      .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     return Promise.all(userGoals.map((g: any) => this.attachMilestones(g)));
   }
 
@@ -49,10 +50,11 @@ export class GoalsService {
     const goal = {
       id, // Unique goal identifier used as the Firebase key
       title: dto.title, // Goal title (required)
-      description: dto.description ?? null, // Optional detailed description
-      status: dto.status ?? 'ACTIVE', // Goal status: ACTIVE, COMPLETED, or PAUSED; defaults to ACTIVE
-      targetDate: dto.targetDate ?? null, // Optional target date for achieving this goal
-      progress: 0, // Progress percentage (0-100), calculated from completed milestones
+      description: dto.description ?? null,
+      status: dto.status ?? 'ACTIVE',
+      targetDate: dto.targetDate ?? null,
+      resources: dto.resources ?? [],
+      progress: 0,
       userId, // Foreign key linking this goal to the authenticated user
       createdAt: new Date().toISOString(), // Timestamp when the goal was created
       updatedAt: new Date().toISOString(), // Timestamp of the last modification
@@ -126,14 +128,11 @@ export class GoalsService {
     return this.attachMilestones(goal);
   }
 
-  // Updates an existing milestone with the provided fields (partial update)
   async updateMilestone(userId: string, goalId: string, milestoneId: string, dto: Partial<CreateMilestoneDto>) {
-    // Verify the parent goal exists and belongs to the authenticated user
     await this.ensureOwnership(userId, goalId);
-    // Apply the partial update to the milestone in Firebase with an updated timestamp
     await this.firebase.update(`milestones/${milestoneId}`, { ...dto, updatedAt: new Date().toISOString() });
-    // Return the updated milestone record
-    return this.firebase.get(`milestones/${milestoneId}`);
+    const goal = await this.firebase.get<any>(`goals/${goalId}`);
+    return this.attachMilestones(goal);
   }
 
   async completeMilestone(userId: string, goalId: string, milestoneId: string) {
@@ -189,6 +188,16 @@ export class GoalsService {
     await this.firebase.update(`goals/${goalId}`, { progress });
 
     return { deleted: true };
+  }
+
+  // Reorders milestones by updating their order fields based on the provided array of IDs
+  async reorderMilestones(userId: string, goalId: string, milestoneIds: string[]) {
+    await this.ensureOwnership(userId, goalId);
+    for (let i = 0; i < milestoneIds.length; i++) {
+      await this.firebase.update(`milestones/${milestoneIds[i]}`, { order: i, updatedAt: new Date().toISOString() });
+    }
+    const goal = await this.firebase.get<any>(`goals/${goalId}`);
+    return this.attachMilestones(goal);
   }
 
   // ── Mini-Goals ──────────────────────────────────────────────────

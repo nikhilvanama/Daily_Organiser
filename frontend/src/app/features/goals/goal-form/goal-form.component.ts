@@ -1,10 +1,8 @@
 // Import Angular decorators and utilities: Component, EventEmitter for outputs, inject for DI, Input/Output for bindings, OnInit lifecycle
 import { Component, EventEmitter, inject, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
-// FormBuilder creates the reactive form; ReactiveFormsModule enables [formGroup]; Validators for field validation
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-// GoalService provides create() and update() methods for saving goals
+import { FormsModule } from '@angular/forms';
 import { GoalService } from '../goal.service';
-// Goal model interface for typing the input binding
 import { Goal } from '../../../core/models/goal.model';
 
 // GoalFormComponent is a reusable form for creating and editing goals.
@@ -13,7 +11,7 @@ import { Goal } from '../../../core/models/goal.model';
 @Component({
   selector: 'app-goal-form', // Used as <app-goal-form [goal]="..." (saved)="..." (cancelled)="...">
   standalone: true, // Angular 19 standalone component
-  imports: [ReactiveFormsModule], // Enable reactive forms in the template
+  imports: [ReactiveFormsModule, FormsModule],
   template: `
     <form [formGroup]="form" (ngSubmit)="submit()" class="goal-form">
       <!-- Title field: required for every goal -->
@@ -44,7 +42,21 @@ import { Goal } from '../../../core/models/goal.model';
           <input class="input" type="date" formControlName="targetDate" />
         </div>
       </div>
-      <!-- Form actions: Cancel and Submit buttons -->
+      <!-- Resources: links, references, or notes -->
+      <div class="form-group">
+        <label class="label">Resources</label>
+        <div class="resources-list">
+          @for (res of resources; track $index) {
+            <div class="resource-row">
+              <input class="input resource-input" [value]="res" (input)="updateResource($index, $event)" placeholder="Link or reference..." />
+              <button type="button" class="icon-btn danger" (click)="removeResource($index)">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          }
+        </div>
+        <button type="button" class="btn-ghost sm" (click)="addResource()">+ Add Resource</button>
+      </div>
       <div class="form-actions">
         <button type="button" class="btn-ghost" (click)="cancelled.emit()">Cancel</button>
         <!-- Button label changes between "Create" and "Update" based on edit mode -->
@@ -55,7 +67,7 @@ import { Goal } from '../../../core/models/goal.model';
     </form>
   `,
   // Compact inline styles for the form layout (minified for brevity)
-  styles: [`.goal-form{display:flex;flex-direction:column;gap:1rem}.form-group{display:flex;flex-direction:column;gap:.25rem}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}textarea.input{resize:vertical}.form-actions{display:flex;gap:.75rem;justify-content:flex-end;padding-top:.5rem}`],
+  styles: [`.goal-form{display:flex;flex-direction:column;gap:1rem}.form-group{display:flex;flex-direction:column;gap:.25rem}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}textarea.input{resize:vertical}.form-actions{display:flex;gap:.75rem;justify-content:flex-end;padding-top:.5rem}.resources-list{display:flex;flex-direction:column;gap:.375rem}.resource-row{display:flex;gap:.375rem;align-items:center}.resource-input{flex:1}.icon-btn{background:transparent;border:none;padding:.25rem;border-radius:.25rem;cursor:pointer;color:var(--text-muted);display:flex}.icon-btn:hover{color:var(--text-primary);background:var(--bg-secondary)}.icon-btn.danger:hover{color:var(--red)}.sm{font-size:.8rem;padding:.375rem .75rem}`],
 })
 export class GoalFormComponent implements OnInit, OnChanges {
   // Optional input: when provided, the form operates in edit mode with pre-filled values
@@ -69,14 +81,13 @@ export class GoalFormComponent implements OnInit, OnChanges {
   private fb = inject(FormBuilder); // For creating the reactive form
   private goalService = inject(GoalService); // For create/update API calls
 
-  // Loading flag to disable the submit button during API calls
   loading = false;
-  // Reactive form: title is required, everything else is optional
+  resources: string[] = [''];
   form = this.fb.group({
-    title: ['', Validators.required], // Required goal title
-    description: [''], // Optional description
-    status: ['ACTIVE'], // Default status for new goals
-    targetDate: [''], // Optional target completion date
+    title: ['', Validators.required],
+    description: [''],
+    status: ['ACTIVE'],
+    targetDate: [''],
   });
 
   ngOnInit() { this.fillForm(); }
@@ -93,32 +104,39 @@ export class GoalFormComponent implements OnInit, OnChanges {
         status: this.goal.status,
         targetDate: this.goal.targetDate ? this.goal.targetDate.split('T')[0] : '',
       });
+      this.resources = this.goal.resources?.length ? [...this.goal.resources] : [''];
     } else {
       this.form.reset({ title: '', description: '', status: 'ACTIVE', targetDate: '' });
+      this.resources = [''];
     }
   }
 
+  addResource() { this.resources.push(''); }
+  removeResource(i: number) { this.resources.splice(i, 1); if (!this.resources.length) this.resources.push(''); }
+  updateResource(i: number, event: Event) { this.resources[i] = (event.target as HTMLInputElement).value; }
+
   submit() {
-    if (this.form.invalid) return; // Guard against invalid form state
+    if (this.form.invalid) return;
     this.loading = true;
     const value = this.form.value;
-    // Build the DTO, converting empty strings to undefined so the backend ignores them
+    const filteredResources = this.resources.filter(r => r.trim());
     const dto: any = {
       title: value.title,
       description: value.description || undefined,
       status: value.status,
       targetDate: value.targetDate || undefined,
+      resources: filteredResources,
     };
 
-    // Choose create or update based on whether an existing goal was provided
     const req = this.goal ? this.goalService.update(this.goal.id, dto) : this.goalService.create(dto);
     req.subscribe({
       next: () => {
         this.loading = false;
         this.form.reset({ title: '', description: '', status: 'ACTIVE', targetDate: '' });
+        this.resources = [''];
         this.saved.emit();
       },
-      error: () => { this.loading = false; }, // Failure: re-enable the button
+      error: () => { this.loading = false; },
     });
   }
 }

@@ -34,6 +34,8 @@
 28. [Category Creation Fix](#28-category-creation-fix)
 29. [Calendar Day Panel — Clickable Titles](#29-calendar-day-panel--clickable-titles)
 30. [Task Detail — Journey Time Fix](#30-task-detail--journey-time-fix)
+31. [Goal Enhancements — Resources, Milestone Reorder, Accordion & Editing](#31-goal-enhancements--resources-milestone-reorder-accordion--editing)
+32. [Login — Password Visibility Toggle](#32-login--password-visibility-toggle)
 
 ---
 
@@ -831,7 +833,8 @@ Goals:
 
 Milestones:
 - `POST /api/goals/:id/milestones` -- Add a milestone to a goal
-- `PATCH /api/goals/:goalId/milestones/:milestoneId` -- Update milestone fields
+- `PATCH /api/goals/:goalId/milestones/reorder` -- Reorder milestones by updating their order fields
+- `PATCH /api/goals/:goalId/milestones/:milestoneId` -- Update milestone fields (returns full goal)
 - `PATCH /api/goals/:goalId/milestones/:milestoneId/complete` -- Mark as completed, recalculate progress
 - `DELETE /api/goals/:goalId/milestones/:milestoneId` -- Delete milestone and its mini-goals
 
@@ -988,11 +991,12 @@ All endpoints are prefixed with `/api`. Authentication is required unless noted.
 |---|---|---|---|---|---|
 | `GET` | `/api/goals` | JWT | List all goals | None | `Goal[]` (with milestones + mini-goals) |
 | `GET` | `/api/goals/:id` | JWT | Get single goal | None | `Goal` (with milestones + mini-goals) |
-| `POST` | `/api/goals` | JWT | Create a goal | `{ title, description?, status?, targetDate? }` | `Goal` |
+| `POST` | `/api/goals` | JWT | Create a goal | `{ title, description?, status?, targetDate?, resources? }` | `Goal` |
 | `PATCH` | `/api/goals/:id` | JWT | Update a goal | Partial goal fields | `Goal` |
 | `DELETE` | `/api/goals/:id` | JWT | Delete goal + milestones | None | `{ deleted: true }` |
 | `POST` | `/api/goals/:id/milestones` | JWT | Add milestone | `{ title, description?, dueDate?, order? }` | `Goal` |
-| `PATCH` | `/api/goals/:gId/milestones/:mId` | JWT | Update milestone | Partial milestone fields | `Milestone` |
+| `PATCH` | `/api/goals/:gId/milestones/reorder` | JWT | Reorder milestones | `{ milestoneIds: string[] }` | `Goal` |
+| `PATCH` | `/api/goals/:gId/milestones/:mId` | JWT | Update milestone | Partial milestone fields | `Goal` |
 | `PATCH` | `/api/goals/:gId/milestones/:mId/complete` | JWT | Complete milestone | None | `Goal` (with updated progress) |
 | `DELETE` | `/api/goals/:gId/milestones/:mId` | JWT | Delete milestone + mini-goals | None | `{ deleted: true }` |
 | `POST` | `/api/goals/:gId/milestones/:mId/minigoals` | JWT | Add mini-goal | `{ title }` | `Goal` |
@@ -1536,6 +1540,7 @@ A popup form component for creating and editing categories. Accessible from the 
 **Login** (`features/auth/login/login.component.ts`):
 - Full-screen layout without sidebar
 - Email and password input fields
+- Password visibility toggle (eye icon button to show/hide password)
 - Submit button with loading state (disabled while request is in flight)
 - Error display for invalid credentials
 - Link to register page
@@ -1661,17 +1666,22 @@ Displays all goals as cards with:
 The most complex page, showing the full three-level hierarchy:
 
 - **Goal Header** -- Title, description, status, target date, overall progress bar
-- **Milestones List** -- Ordered list of milestones, each showing:
-  - Title and description
+- **Resources Card** -- Displays attached resources (links shown as clickable anchors, plain text as labels)
+- **Milestones List** -- Ordered list of milestones with drag-and-drop reordering, each showing:
+  - Drag handle (six-dot grip icon) for reordering via drag-and-drop
   - Completion checkbox (triggers `completeMilestone` API call)
+  - Accordion toggle (chevron icon) to expand/collapse mini-goals
+  - Title (click to expand/collapse)
   - Due date (if set)
-  - Expand/collapse to show mini-goals
-  - **Nested Mini-Goals** -- Checklist items under each milestone:
+  - Edit button (inline editing of title and due date)
+  - Add mini-goal button
+  - Delete button
+  - **Nested Mini-Goals** (shown when accordion is expanded) -- Checklist items under each milestone:
     - Checkbox toggle (triggers `toggleMiniGoal` API call)
     - Title
-    - Delete button
+    - Delete button (visible on hover)
   - **Add Mini-Goal Form** -- Inline text input to add new mini-goals to a milestone
-- **Add Milestone Form** -- Form to add new milestones with title, description, due date, and order
+- **Add Milestone Form** -- Form to add new milestones with title and due date
 - **Edit/Delete Goal** -- Action buttons at the goal level
 
 #### Goal Form Page
@@ -1683,6 +1693,7 @@ Create or edit a goal. Contains:
 - Description textarea
 - Status select (ACTIVE, COMPLETED, PAUSED, ABANDONED)
 - Target date picker
+- Resources list (dynamic add/remove inputs for links, references, or notes)
 - Submit button
 
 #### Buy List (Wishlist) Page
@@ -1803,6 +1814,7 @@ Data loading: Calls `GET /api/dashboard/calendar?year=YYYY&month=MM` when the co
 | `status` | `GoalStatus` | `'ACTIVE'` | One of: ACTIVE, COMPLETED, PAUSED, ABANDONED |
 | `targetDate` | `string \| null` | `null` | Target completion date |
 | `progress` | `number` | `0` | 0-100 percentage (auto-calculated) |
+| `resources` | `string[]` | `[]` | Links, references, or notes attached to the goal |
 | `userId` | `string` | (from JWT) | Owner reference |
 | `milestones` | `GoalMilestone[]` | (populated) | Attached milestones |
 | `createdAt` | `string` | (auto) | ISO timestamp |
@@ -2706,6 +2718,64 @@ Fixed a bug where journey-type tasks would display a duplicate TIME row on the d
 - If the task has a `departureTime`, the detail page shows a single "Departure → Arrival" row with `departureTime → arrivalTime`
 - If the task does not have a `departureTime`, it shows the standard "Time" row with `startTime`/`endTime`
 - The two rows are mutually exclusive — they never both appear
+
+---
+
+## 31. Goal Enhancements — Resources, Milestone Reorder, Accordion & Editing
+
+### Overview
+
+A collection of enhancements to the goal tracking module that improve usability and feature depth.
+
+### Changes
+
+**Resources Field (Backend + Frontend)**
+
+- Added a new `resources` field (`string[]`) to the Goal model, allowing users to attach links, references, or notes to a goal.
+- `CreateGoalDto` now accepts an optional `resources` array, validated with `@IsArray()` and `@IsString({ each: true })`.
+- The goal form component includes a dynamic resources list with add/remove buttons. Empty entries are filtered out on submit.
+- The goal detail page renders resources in a dedicated card — URLs are shown as clickable links (with a link icon), plain text as labels (with a document icon).
+
+**Milestone Drag-and-Drop Reordering**
+
+- New endpoint: `PATCH /api/goals/:goalId/milestones/reorder` accepts `{ milestoneIds: string[] }` and updates each milestone's `order` field to match the array index.
+- The goal detail component implements native HTML5 drag-and-drop on milestone blocks, with visual feedback (opacity change on drag, accent border on drop target).
+- Reorder is optimistic — the UI updates immediately, then persists via the API.
+- New frontend service method: `GoalService.reorderMilestones(goalId, milestoneIds)`.
+
+**Milestone Accordion (Expand/Collapse)**
+
+- Mini-goals are now hidden behind an accordion toggle per milestone, keeping the milestone list compact.
+- A chevron icon rotates 180° when expanded. Clicking the milestone title or chevron toggles visibility.
+- Newly added milestones are auto-expanded. Adding a mini-goal also auto-expands the parent milestone.
+- Component tracks expanded state via a `Set<string>` of milestone IDs.
+
+**Inline Milestone Editing**
+
+- Each milestone now has an edit button (pencil icon) that opens an inline form with title and due date fields.
+- Saves via `GoalService.updateMilestone()`, which calls `PATCH /api/goals/:goalId/milestones/:milestoneId`.
+- The `updateMilestone` backend method now returns the full goal (with all milestones attached) instead of just the updated milestone, consistent with other mutation endpoints.
+
+**Goal List Sorting**
+
+- Goals are now sorted by `createdAt` (ascending) on the backend, so the oldest goals appear first and newest last.
+- New goals are appended to the end of the local cache instead of prepended.
+
+---
+
+## 32. Login — Password Visibility Toggle
+
+### Overview
+
+Added a show/hide password toggle button to the login form for better usability.
+
+### Changes
+
+- The password input is wrapped in a `.password-wrapper` div with `position: relative`.
+- A toggle button with an eye/eye-off SVG icon is positioned inside the input field (absolute, right-aligned).
+- Clicking the button toggles the input type between `password` and `text` via a `showPassword` boolean.
+- The button uses `tabindex="-1"` so it does not interfere with keyboard navigation between form fields.
+- Styled with `var(--text-secondary)` color, transitioning to `var(--text-primary)` on hover.
 
 ---
 

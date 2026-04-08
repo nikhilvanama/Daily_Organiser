@@ -31,10 +31,9 @@ export class GoalService {
   // Fetch a single goal by ID — used by the goal-detail page to get full milestone/mini-goal data
   getOne(id: string) { return this.http.get<Goal>(`${this.base}/${id}`); }
 
-  // Create a new goal and prepend it to the local cache (newest first)
   create(dto: CreateGoalDto) {
     return this.http.post<Goal>(this.base, dto).pipe(
-      tap((g) => this.goals$.next([g, ...this.goals$.value])), // Add new goal to the beginning
+      tap((g) => this.goals$.next([...this.goals$.value, g])),
     );
   }
 
@@ -56,6 +55,18 @@ export class GoalService {
   // (including the new milestone), which replaces the old goal in the cache.
   addMilestone(goalId: string, dto: CreateMilestoneDto) {
     return this.http.post<Goal>(`${this.base}/${goalId}/milestones`, dto).pipe(
+      tap((updated) => this.goals$.next(this.goals$.value.map((g) => g.id === goalId ? updated : g))),
+    );
+  }
+
+  updateMilestone(goalId: string, milestoneId: string, dto: Partial<CreateMilestoneDto>) {
+    return this.http.patch<Goal>(`${this.base}/${goalId}/milestones/${milestoneId}`, dto).pipe(
+      tap((updated) => this.goals$.next(this.goals$.value.map((g) => g.id === goalId ? updated : g))),
+    );
+  }
+
+  reorderMilestones(goalId: string, milestoneIds: string[]) {
+    return this.http.patch<Goal>(`${this.base}/${goalId}/milestones/reorder`, { milestoneIds }).pipe(
       tap((updated) => this.goals$.next(this.goals$.value.map((g) => g.id === goalId ? updated : g))),
     );
   }
