@@ -1,6 +1,6 @@
 # TaskFlow — Full-Stack Task Management App
 
-A modern productivity app built with **Angular 19** + **NestJS** + **PostgreSQL**.
+A modern productivity app built with **Angular 19** + **NestJS** + **PostgreSQL**....
 
 ## Features
 
