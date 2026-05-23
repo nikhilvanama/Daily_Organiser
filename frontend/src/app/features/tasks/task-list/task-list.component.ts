@@ -2,8 +2,8 @@
 import { Component, inject, OnInit } from '@angular/core';
 // RouterLink creates navigable links to individual task detail pages
 import { RouterLink } from '@angular/router';
-// AsyncPipe subscribes to tasks$ BehaviorSubject; DatePipe formats due dates
-import { AsyncPipe, DatePipe } from '@angular/common';
+// DatePipe formats due dates
+import { DatePipe } from '@angular/common';
 // FormBuilder creates the filter form; ReactiveFormsModule enables [formGroup] in the template
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 // TaskService provides the tasks$ observable and CRUD methods
@@ -24,7 +24,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
 @Component({
   selector: 'app-task-list', // Loaded by the router at /tasks
   standalone: true, // Angular 19 standalone component
-  imports: [RouterLink, AsyncPipe, DatePipe, ReactiveFormsModule, ModalComponent, TaskFormComponent, ConfirmDialogComponent],
+  imports: [RouterLink, DatePipe, ReactiveFormsModule, ModalComponent, TaskFormComponent, ConfirmDialogComponent],
   template: `
     <!-- Page container with fade-in animation -->
     <div class="page animate-in">
@@ -75,14 +75,14 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
       <!-- Plans list card -->
       <div class="card plans-wrap">
         <!-- Empty state when no plans match the current filters -->
-        @if ((taskService.tasks$ | async)?.length === 0) {
+        @if (sortedTasks.length === 0) {
           <div class="empty">
             <p>No plans found. Create your first plan!</p>
           </div>
         } @else {
           <div class="plans-list">
-            <!-- Iterate over the tasks from the TaskService BehaviorSubject -->
-            @for (plan of taskService.tasks$ | async; track plan.id) {
+            <!-- Iterate over the paginated, sorted tasks (DONE rows pushed to the bottom) -->
+            @for (plan of pagedTasks; track plan.id) {
               <!-- Each plan row: type icon, title/metadata, priority badge, status dropdown, actions -->
               <div class="plan-row" [class.done]="plan.status === 'DONE'">
                 <!-- Plan type icon: colored square with emoji -->
@@ -129,6 +129,14 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
               </div>
             }
           </div>
+
+          @if (totalPages > 1) {
+            <div class="pager">
+              <button class="btn-ghost sm" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">Prev</button>
+              <span class="pager-info">Page {{ currentPage }} of {{ totalPages }} · {{ sortedTasks.length }} plans</span>
+              <button class="btn-ghost sm" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">Next</button>
+            </div>
+          }
         }
       </div>
     </div>
@@ -212,6 +220,14 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
 
     /* Empty state centered message */
     .empty { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
+
+    /* Pagination bar below the plans list */
+    .pager {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 10px 14px; border-top: 1px solid var(--border);
+    }
+    .pager-info { font-size: 0.78rem; color: var(--text-muted); }
+    .pager .btn-ghost[disabled] { opacity: 0.4; cursor: not-allowed; }
   `],
 })
 export class TaskListComponent implements OnInit {
@@ -233,17 +249,57 @@ export class TaskListComponent implements OnInit {
   // Reactive form for status and priority filter dropdowns
   filterForm = this.fb.group({ status: [''], priority: [''] });
 
+  // Local copy of tasks with DONE rows pushed to the bottom; drives pagination.
+  sortedTasks: Task[] = [];
+  pageSize = 15;
+  currentPage = 1;
+
   // On initialization, load tasks and subscribe to filter changes
   ngOnInit() {
     this.loadTasks(); // Initial load with no filters
     // Re-fetch tasks whenever the filter dropdowns change
     this.filterForm.valueChanges.subscribe(() => this.loadTasks());
+    // Re-sort & re-paginate whenever the underlying task list changes
+    this.taskService.tasks$.subscribe((tasks) => {
+      this.sortedTasks = [...tasks].sort((a, b) => {
+        const aDone = a.status === 'DONE' ? 1 : 0;
+        const bDone = b.status === 'DONE' ? 1 : 0;
+        // DONE rows sink to the bottom; within DONE, latest date first.
+        if (aDone !== bDone) return aDone - bDone;
+        if (aDone === 1) return this.planDateKey(b) - this.planDateKey(a);
+        return 0;
+      });
+      // Clamp current page if the list shrank (e.g. after deletion or filter change)
+      if (this.currentPage > this.totalPages) this.currentPage = Math.max(1, this.totalPages);
+    });
+  }
+
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.sortedTasks.length / this.pageSize));
+  }
+
+  get pagedTasks(): Task[] {
+    const start = (this.currentPage - 1) * this.pageSize;
+    return this.sortedTasks.slice(start, start + this.pageSize);
+  }
+
+  goToPage(page: number) {
+    if (page < 1 || page > this.totalPages) return;
+    this.currentPage = page;
+  }
+
+  // Pick the best date to sort by: dueDate, then completedAt, then updatedAt.
+  private planDateKey(plan: Task): number {
+    const raw = plan.dueDate ?? plan.completedAt ?? plan.updatedAt;
+    const t = raw ? new Date(raw).getTime() : 0;
+    return Number.isNaN(t) ? 0 : t;
   }
 
   // Fetch tasks from the backend with the current filter values
   loadTasks() {
     const filters: Record<string, string> = { ...this.filterForm.value as any };
     if (this.activeType) filters['type'] = this.activeType; // Add type filter if a chip is active
+    this.currentPage = 1; // Filter change resets pagination to the first page
     this.taskService.loadAll(filters).subscribe();
   }
 

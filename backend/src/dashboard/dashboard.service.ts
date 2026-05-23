@@ -1,6 +1,6 @@
 // Import Injectable to register this service in NestJS dependency injection
 import { Injectable } from '@nestjs/common';
-// Import FirebaseService to read task, goal, and wishlist data from the Firebase Realtime Database for aggregation
+// Import FirebaseService to read task and goal data from the Firebase Realtime Database for aggregation
 import { FirebaseService } from '../prisma/firebase.service';
 
 // @Injectable() marks this class as a NestJS service that can be injected into DashboardController
@@ -9,7 +9,7 @@ export class DashboardService {
   // Inject FirebaseService to fetch data from multiple collections for dashboard aggregation
   constructor(private firebase: FirebaseService) {}
 
-  // Aggregates key statistics across tasks, goals, and wishlist for the authenticated user's dashboard overview
+  // Aggregates key statistics across tasks and goals for the authenticated user's dashboard overview
   async getStats(userId: string) {
     // Get today's date as a YYYY-MM-DD string for filtering tasks completed today
     const today = new Date().toISOString().split('T')[0];
@@ -33,52 +33,34 @@ export class DashboardService {
     // Count only goals that belong to the user and have ACTIVE status (not completed or paused)
     const activeGoals = goals.filter((g: any) => g.userId === userId && g.status === 'ACTIVE').length;
 
-    // Fetch all wishlist items from Firebase to compute buy list statistics
-    const wishlistItems = await this.firebase.getList<any>('wishlist');
-    // Filter to only include items belonging to the user that are still WANTED (not yet purchased)
-    const userWishlist = wishlistItems.filter((i: any) => i.userId === userId && i.status === 'WANTED');
-    // Calculate the total cost of all wanted items priced in USD for budget overview
-    const wishlistTotalUSD = userWishlist
-      .filter((i: any) => i.price !== null && i.currency === 'USD')
-      .reduce((sum: number, i: any) => sum + Number(i.price), 0);
-
     // Return the aggregated dashboard statistics as a single response object
     return {
       totalTasks, // Total number of tasks created by the user
       completedToday, // Number of tasks completed today
       activeTasks, // Number of tasks not yet marked as DONE
       activeGoals, // Number of goals with ACTIVE status
-      wishlistCount: userWishlist.length, // Number of items still on the buy list
-      wishlistTotalUSD: Math.round(wishlistTotalUSD * 100) / 100, // Total USD cost rounded to 2 decimal places
     };
   }
 
-  // Returns a recent activity feed combining the user's latest tasks, goals, and wishlist updates
+  // Returns a recent activity feed combining the user's latest tasks and goals
   async getActivity(userId: string) {
     // Fetch all tasks from Firebase for the activity feed
     const tasks = await this.firebase.getList<any>('tasks');
     // Fetch all goals from Firebase for the activity feed
     const goals = await this.firebase.getList<any>('goals');
-    // Fetch all wishlist items from Firebase for the activity feed
-    const wishlistItems = await this.firebase.getList<any>('wishlist');
 
     // Combine the most recent items from each collection into a unified activity feed
     const activity = [
-      // Take up to 5 of the user's most recent tasks and map to a standardized activity item format
+      // Take up to 6 of the user's most recent tasks and map to a standardized activity item format
       ...tasks
         .filter((t: any) => t.userId === userId)
-        .slice(0, 5)
+        .slice(0, 6)
         .map((t: any) => ({ type: 'task', id: t.id, title: t.title, status: t.status, updatedAt: t.updatedAt })),
-      // Take up to 3 of the user's most recent goals and map to a standardized activity item format
+      // Take up to 4 of the user's most recent goals and map to a standardized activity item format
       ...goals
         .filter((g: any) => g.userId === userId)
-        .slice(0, 3)
+        .slice(0, 4)
         .map((g: any) => ({ type: 'goal', id: g.id, title: g.title, status: g.status, updatedAt: g.updatedAt })),
-      // Take up to 2 of the user's most recent wishlist items and map to a standardized activity item format
-      ...wishlistItems
-        .filter((w: any) => w.userId === userId)
-        .slice(0, 2)
-        .map((w: any) => ({ type: 'wishlist', id: w.id, title: w.name, status: w.status, updatedAt: w.updatedAt })),
     ];
 
     // Sort all activity items by updatedAt timestamp (newest first) and return the top 10

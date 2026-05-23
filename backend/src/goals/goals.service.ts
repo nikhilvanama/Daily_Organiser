@@ -261,7 +261,9 @@ export class GoalsService {
   private async getMiniGoals(milestoneId: string): Promise<any[]> {
     // Fetch all mini-goals from Firebase and filter by the given milestoneId
     const all = await this.firebase.getList<any>('minigoals');
-    return all.filter((mg: any) => mg.milestoneId === milestoneId);
+    return all
+      .filter((mg: any) => mg.milestoneId === milestoneId)
+      .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   }
 
   // Private helper that verifies a goal exists and belongs to the specified user; throws exceptions if not

@@ -12,8 +12,8 @@ import { UsersModule } from './users/users.module';
 import { TasksModule } from './tasks/tasks.module';
 // GoalsModule — CRUD for goals with milestones and mini-goals (e.g., "Learn SQL", "JS Revision")
 import { GoalsModule } from './goals/goals.module';
-// WishlistModule — CRUD for the Buy List (products the user wants to purchase)
-import { WishlistModule } from './wishlist/wishlist.module';
+// HabitsModule — Daily/weekly habit tracker with streaks and per-day check-ins
+import { HabitsModule } from './habits/habits.module';
 // CategoriesModule — CRUD for user-defined categories (Work, Personal, Travel, etc.)
 import { CategoriesModule } from './categories/categories.module';
 // DashboardModule — provides aggregate stats, today's plans, calendar data, and activity feed
@@ -37,7 +37,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     UsersModule,      // /api/users/* — profile updates
     TasksModule,      // /api/tasks/* — daily plans CRUD + timer
     GoalsModule,      // /api/goals/* — goals + milestones + mini-goals
-    WishlistModule,   // /api/wishlist/* — buy list items
+    HabitsModule,     // /api/habits/* — daily/weekly habits + check-ins + streaks
     CategoriesModule, // /api/categories/* — user categories
     DashboardModule,  // /api/dashboard/* — stats, activity, calendar data
     GoogleCalendarModule, // /api/google/* — Google Calendar OAuth + sync

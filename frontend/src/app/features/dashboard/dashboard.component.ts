@@ -14,6 +14,10 @@ import { AuthService } from '../../core/services/auth.service';
 import { TaskService } from '../tasks/task.service';
 // GoalService fetches active goals for the progress summary section
 import { GoalService } from '../goals/goal.service';
+// HabitService fetches habits for the consistency widget
+import { HabitService } from '../habits/habit.service';
+// Habit model for typing
+import { Habit } from '../../core/models/habit.model';
 // Environment config provides the base API URL for the stats endpoint
 import { environment } from '../../../environments/environment';
 // Task model and PLAN_TYPES for type-specific icons and colors in the timeline
@@ -25,9 +29,10 @@ import { ToastService } from '../../core/services/toast.service';
 import { ModalComponent } from '../../shared/components/modal/modal.component';
 // TaskFormComponent renders the task creation form inside the modal
 import { TaskFormComponent } from '../tasks/task-form/task-form.component';
+import { computed } from '@angular/core';
 
 // Shape of the dashboard statistics returned by the /dashboard/stats endpoint
-interface Stats { totalTasks: number; completedToday: number; activeTasks: number; activeGoals: number; wishlistCount: number; wishlistTotalUSD: number; }
+interface Stats { totalTasks: number; completedToday: number; activeTasks: number; activeGoals: number; }
 
 // DashboardComponent is the main landing page ("Today" view) for authenticated users.
 // It displays a personalized greeting, quick stats cards, today's schedule as a timeline,
@@ -75,11 +80,95 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
           <span class="qs-num">{{ stats()?.activeGoals ?? 0 }}</span>
           <span class="qs-label">Goals</span>
         </a>
-        <a routerLink="/wishlist" class="qs-item">
-          <span class="qs-num">{{ stats()?.wishlistCount ?? 0 }}</span>
-          <span class="qs-label">To Buy</span>
-        </a>
       </div>
+
+      <!-- Daily Routine widget: progress ring + interactive today's checklist + 30-day heatmap -->
+      @if (habits().length > 0) {
+        <div class="card habits-card">
+          <div class="timeline-header">
+            <h2>Daily Routine</h2>
+            <a routerLink="/habits" class="link">All habits →</a>
+          </div>
+          <div class="habits-body">
+            <!-- Hero: progress ring on the left, secondary stats on the right -->
+            <div class="hero">
+              <div class="ring-wrap">
+                <svg viewBox="0 0 100 100" class="ring">
+                  <circle cx="50" cy="50" r="42" class="ring-bg" />
+                  <circle cx="50" cy="50" r="42" class="ring-fg"
+                    [attr.stroke-dasharray]="ringCirc"
+                    [attr.stroke-dashoffset]="ringOffset()" />
+                </svg>
+                <div class="ring-center">
+                  <span class="ring-num">{{ doneToday() }}<span class="ring-denom">/{{ scheduledToday() }}</span></span>
+                  <span class="ring-label">today</span>
+                </div>
+              </div>
+              <div class="hero-stats">
+                <div class="hs-row">
+                  <span class="hs-num">{{ consistency30() | number:'1.0-0' }}%</span>
+                  <span class="hs-label">30-day consistency</span>
+                </div>
+                <div class="hs-row">
+                  <span class="hs-num">🔥 {{ bestStreak() }}</span>
+                  <span class="hs-label">best current streak</span>
+                </div>
+                <div class="hs-row">
+                  <span class="hs-num">{{ habits().length }}</span>
+                  <span class="hs-label">total habits</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Today's checklist: click a row to toggle done. Optimistic update makes it instant. -->
+            <div class="today-block">
+              <div class="today-block-label">Today's checklist</div>
+              @if (todayHabits().length === 0) {
+                <div class="today-empty">No habits scheduled today. Enjoy the day off!</div>
+              } @else {
+                <div class="today-list">
+                  @for (h of todayHabits(); track h.id) {
+                    <button class="th-row" [class.done]="h.doneToday" (click)="toggleHabit(h)">
+                      <span class="th-check" [style.--ring]="h.color" [style.background]="h.doneToday ? h.color : 'transparent'">
+                        @if (h.doneToday) {
+                          <svg width="10" height="10" fill="none" stroke="#fff" stroke-width="3.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                        }
+                      </span>
+                      <span class="th-icon" [style.background]="h.color + '22'" [style.color]="h.color">{{ h.icon }}</span>
+                      <span class="th-title">{{ h.title }}</span>
+                      @if (habitTimeLabel(h)) {
+                        <span class="th-time">{{ habitTimeLabel(h) }}</span>
+                      }
+                      <span class="th-streak" [class.lit]="h.streak > 0">🔥 {{ h.streak }}</span>
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- 30-day rollup heatmap: each cell = % of habits scheduled that day that got done -->
+            <div class="heatmap-block">
+              <div class="heatmap-label">Last 30 days</div>
+              <div class="heatmap-row">
+                @for (cell of heatmap(); track cell.date) {
+                  <span class="hm-cell"
+                    [style.background]="cell.color"
+                    [title]="cell.tooltip"></span>
+                }
+              </div>
+              <div class="heatmap-legend">
+                <span>Less</span>
+                <span class="lg-cell" style="background: var(--bg-hover)"></span>
+                <span class="lg-cell" style="background: rgba(16,185,129,0.25)"></span>
+                <span class="lg-cell" style="background: rgba(16,185,129,0.55)"></span>
+                <span class="lg-cell" style="background: rgba(16,185,129,0.85)"></span>
+                <span class="lg-cell" style="background: rgba(16,185,129,1)"></span>
+                <span>More</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
 
       <!-- Today's Schedule: timeline of tasks/plans due today, sorted by start time -->
       <div class="card timeline-card">
@@ -170,6 +259,7 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
           </div>
         </div>
       }
+
     </div>
 
     <!-- Modal for adding a new plan — wraps the TaskFormComponent -->
@@ -263,6 +353,76 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
     @keyframes spin { to { transform: rotate(360deg); } }
     .loading-screen p { font-size: 0.95rem; font-weight: 500; color: var(--text-primary); }
     .loading-hint { font-size: 0.78rem; color: var(--text-muted); }
+
+    /* --- Daily Routine widget (redesigned) --- */
+    .habits-card { overflow: hidden; }
+    .habits-body { padding: 1.25rem 1.5rem 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
+
+    /* Hero row: progress ring + secondary stats */
+    .hero { display: flex; gap: 1.5rem; align-items: center; }
+    .ring-wrap { position: relative; width: 120px; height: 120px; flex-shrink: 0; }
+    .ring { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .ring-bg { fill: none; stroke: var(--bg-secondary); stroke-width: 8; }
+    .ring-fg { fill: none; stroke: var(--accent); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 0.5s ease; }
+    .ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .ring-num { font-size: 1.85rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
+    .ring-denom { font-size: 1rem; font-weight: 500; color: var(--text-muted); }
+    .ring-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+
+    .hero-stats { flex: 1; display: flex; flex-direction: column; gap: 0.65rem; }
+    .hs-row { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: 8px 12px; background: var(--bg-secondary); border-radius: 8px; }
+    .hs-num { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
+    .hs-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+    /* Today's checklist */
+    .today-block { display: flex; flex-direction: column; gap: 6px; }
+    .today-block-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+    .today-empty { padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem; background: var(--bg-secondary); border-radius: 8px; }
+    /* Two-column compact grid; collapses to one column on narrow screens */
+    .today-list { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; }
+    .th-row {
+      display: flex; align-items: center; gap: 8px; padding: 5px 8px;
+      background: transparent; border: 1px solid transparent; border-radius: 6px;
+      width: 100%; text-align: left; cursor: pointer; transition: all 0.15s;
+      font-family: inherit; color: inherit; min-width: 0;
+    }
+    .th-row:hover { background: var(--bg-hover); border-color: var(--border); }
+    .th-row.done { opacity: 0.55; }
+    .th-row.done .th-title { text-decoration: line-through; color: var(--text-muted); }
+
+    .th-check {
+      width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--ring, var(--accent));
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .th-icon { width: 22px; height: 22px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; flex-shrink: 0; }
+    .th-title { flex: 1; min-width: 0; font-size: 0.83rem; font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .th-time { font-size: 0.7rem; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
+    .th-streak {
+      font-size: 0.7rem; font-weight: 600; color: var(--text-muted);
+      background: var(--bg-secondary); padding: 2px 6px; border-radius: 8px;
+      transition: color 0.2s; flex-shrink: 0;
+    }
+    .th-streak.lit { color: #f97316; }
+
+    @media (max-width: 900px) {
+      .today-list { grid-template-columns: 1fr; }
+    }
+
+    /* 30-day heatmap row */
+    .heatmap-block { display: flex; flex-direction: column; gap: 6px; }
+    .heatmap-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+    .heatmap-row { display: grid; grid-template-columns: repeat(30, 1fr); gap: 3px; }
+    .hm-cell { aspect-ratio: 1; border-radius: 3px; transition: transform 0.1s; cursor: default; }
+    .hm-cell:hover { transform: scale(1.4); z-index: 1; position: relative; }
+    .heatmap-legend { display: flex; align-items: center; gap: 4px; font-size: 0.68rem; color: var(--text-muted); justify-content: flex-end; margin-top: 2px; }
+    .lg-cell { width: 10px; height: 10px; border-radius: 2px; }
+
+    @media (max-width: 768px) {
+      .hero { flex-direction: column; align-items: stretch; }
+      .ring-wrap { align-self: center; }
+      .heatmap-row { grid-template-columns: repeat(15, 1fr); }
+    }
   `],
 })
 export class DashboardComponent implements OnInit {
@@ -274,6 +434,8 @@ export class DashboardComponent implements OnInit {
   private taskService = inject(TaskService);
   // GoalService for fetching active goals for the progress section
   private goalService = inject(GoalService);
+  // HabitService for the Daily Routine consistency widget
+  private habitService = inject(HabitService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private toast = inject(ToastService);
@@ -283,6 +445,100 @@ export class DashboardComponent implements OnInit {
   todayPlans = signal<Task[]>([]);
   // Reactive signal holding the first 4 active goals for the progress summary
   activeGoals = signal<Goal[]>([]);
+  // Reactive signal holding the user's active habits for the consistency widget
+  habits = signal<Habit[]>([]);
+
+  // --- Habit widget computeds ---
+  todayHabits = computed(() =>
+    this.habits()
+      .filter((h) => h.scheduledToday)
+      .sort((a, b) => {
+        if (!a.startTime && !b.startTime) return 0;
+        if (!a.startTime) return 1;
+        if (!b.startTime) return -1;
+        return a.startTime.localeCompare(b.startTime);
+      })
+  );
+  scheduledToday = computed(() => this.todayHabits().length);
+  doneToday = computed(() => this.todayHabits().filter((h) => h.doneToday).length);
+  todayPct = computed(() => {
+    const total = this.scheduledToday();
+    return total === 0 ? 0 : (this.doneToday() / total) * 100;
+  });
+
+  // SVG ring math: circumference of r=42 circle. Offset shrinks as completion grows.
+  readonly ringCirc = 2 * Math.PI * 42;
+  ringOffset = computed(() => this.ringCirc * (1 - this.todayPct() / 100));
+
+  toggleHabit(h: Habit) {
+    const wasDone = h.doneToday;
+    this.habitService.toggleToday(h.id).subscribe({
+      next: (u) => {
+        if (u.doneToday && !wasDone) this.toast.success(`Nice — ${u.streak}-day streak`);
+      },
+    });
+  }
+
+  // 30-day consistency: total completed scheduled days / total scheduled days across all habits.
+  consistency30 = computed(() => {
+    let scheduledSlots = 0;
+    let doneSlots = 0;
+    for (const h of this.habits()) {
+      for (const d of h.history) {
+        if (d.scheduled) {
+          scheduledSlots++;
+          if (d.done) doneSlots++;
+        }
+      }
+    }
+    return scheduledSlots === 0 ? 0 : (doneSlots / scheduledSlots) * 100;
+  });
+
+  bestStreak = computed(() => this.habits().reduce((max, h) => Math.max(max, h.streak), 0));
+  // Bar width caps at 30 days for visual scale
+  bestStreakBar = computed(() => Math.min(100, (this.bestStreak() / 30) * 100));
+
+  // 30-day aggregate heatmap: for each calendar day, what fraction of habits scheduled
+  // for that day were actually completed. Cell color intensity scales with that fraction.
+  heatmap = computed<{ date: string; color: string; tooltip: string }[]>(() => {
+    const habits = this.habits();
+    if (habits.length === 0) return [];
+    // History arrays are aligned (server returns 30 most recent days, oldest first).
+    const len = habits[0].history.length;
+    const cells: { date: string; color: string; tooltip: string }[] = [];
+    for (let i = 0; i < len; i++) {
+      const date = habits[0].history[i].date;
+      let scheduled = 0;
+      let done = 0;
+      for (const h of habits) {
+        const cell = h.history[i];
+        if (cell?.scheduled) {
+          scheduled++;
+          if (cell.done) done++;
+        }
+      }
+      const ratio = scheduled === 0 ? -1 : done / scheduled; // -1 = no habits scheduled that day
+      cells.push({
+        date,
+        color: this.heatColor(ratio),
+        tooltip: scheduled === 0 ? `${date} · rest day` : `${date} · ${done}/${scheduled} done`,
+      });
+    }
+    return cells;
+  });
+
+  habitTimeLabel(h: Habit): string {
+    if (h.startTime && h.endTime) return `${h.startTime} - ${h.endTime}`;
+    return h.startTime ?? h.endTime ?? '';
+  }
+
+  private heatColor(ratio: number): string {
+    if (ratio < 0) return 'var(--bg-hover)'; // rest day — no habits scheduled
+    if (ratio === 0) return 'rgba(239, 68, 68, 0.18)'; // scheduled but none done — faint red
+    // Linear blend from a pale accent (low completion) to solid accent (full completion).
+    const alpha = 0.25 + ratio * 0.75; // 0.25 → 1.0
+    return `rgba(16, 185, 129, ${alpha.toFixed(2)})`;
+  }
   // Controls visibility of the "Add Plan" modal
   showAddPlan = false;
   // Today's date object used by the DatePipe in the header
@@ -296,6 +552,8 @@ export class DashboardComponent implements OnInit {
   // Load all dashboard data on component initialization
   ngOnInit() {
     this.loadAll();
+    // Subscribe to the shared habits stream so toggles from anywhere reflect here too.
+    this.habitService.habits$.subscribe((habits) => this.habits.set(habits));
     // Handle Google Calendar OAuth callback redirect
     if (this.route.snapshot.queryParams['gcal'] === 'connected') {
       this.toast.success('Google Calendar connected! Your plans will now sync automatically.');
@@ -332,6 +590,9 @@ export class DashboardComponent implements OnInit {
       next: (goals) => { this.activeGoals.set(goals.filter((g: Goal) => g.status === 'ACTIVE').slice(0, 4)); checkDone(); },
       error: () => checkDone(),
     });
+    // Habits load is fire-and-forget; the widget hides itself if there are no habits,
+    // so its arrival doesn't gate the loading screen.
+    this.habitService.loadAll().subscribe({ error: () => {} });
   }
 
   // Retry once after 3 seconds if first load fails (handles Render cold start)

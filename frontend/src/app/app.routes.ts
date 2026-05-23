@@ -74,10 +74,10 @@ export const routes: Routes = [
           import('./features/goals/goal-detail/goal-detail.component').then((m) => m.GoalDetailComponent),
       },
       {
-        path: 'wishlist',
-        // Buy list page — shows wishlist items as a product-card grid with purchase tracking
+        path: 'habits',
+        // Daily Routine page — daily habit checklist with streak tracking + heatmap
         loadComponent: () =>
-          import('./features/wishlist/wishlist-list/wishlist-list.component').then((m) => m.WishlistListComponent),
+          import('./features/habits/habit-list/habit-list.component').then((m) => m.HabitListComponent),
       },
       {
         path: 'calendar',

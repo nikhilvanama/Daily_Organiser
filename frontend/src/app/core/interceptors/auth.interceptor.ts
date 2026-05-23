@@ -48,8 +48,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
           }),
           catchError((refreshErr) => {
             isRefreshing = false; // Unlock — refresh failed
-            // If refresh fails, the session is expired — log the user out
-            auth.logout();
+            // Session is dead — clear local state and redirect to /auth/login immediately.
+            // Don't call logout() because that fires an HTTP POST which would also 401
+            // and the async wait causes the calling page to render with empty data first.
+            auth.clearSession();
             return throwError(() => refreshErr); // Propagate the error to the caller
           }),
         );

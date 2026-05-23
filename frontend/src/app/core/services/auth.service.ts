@@ -93,9 +93,11 @@ export class AuthService {
     this.currentUser.set(res.user);
   }
 
-  // Clears all auth state and redirects to the login page.
-  // Called on logout or when a token refresh fails (session expired).
-  private clearSession() {
+  // Clears all auth state and redirects to the login page WITHOUT calling the backend.
+  // Used by the auth interceptor when a token refresh fails — the session is already dead
+  // server-side, so we skip the /logout POST (which would just 401 too) and redirect
+  // synchronously to avoid the brief "empty page" flash while waiting for an HTTP response.
+  clearSession() {
     this.tokens.clearTokens(); // Remove JWT tokens from localStorage
     this.currentUser.set(null); // Reset the user signal to null
     this.router.navigate(['/auth/login']); // Redirect to the login page

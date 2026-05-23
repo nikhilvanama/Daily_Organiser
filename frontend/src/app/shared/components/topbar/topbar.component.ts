@@ -73,10 +73,10 @@ export class TopbarComponent {
   // This is a simple approach — in a more complex app, this could use ActivatedRoute data.
   getTitle(): string {
     const path = window.location.pathname;
-    if (path.includes('dashboard')) return 'Today'; // Dashboard page
+    if (path.includes('dashboard')) return 'Dashboard'; // Dashboard page
     if (path.includes('tasks')) return 'My Plans'; // Task list or detail page
     if (path.includes('goals')) return 'Goals'; // Goal list or detail page
-    if (path.includes('wishlist')) return 'Buy List'; // Wishlist page
+    if (path.includes('habits')) return 'Daily Routine'; // Habits page
     if (path.includes('calendar')) return 'Calendar'; // Calendar page
     return 'Daily Organizer'; // Fallback title
   }

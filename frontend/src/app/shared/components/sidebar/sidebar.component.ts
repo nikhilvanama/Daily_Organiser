@@ -10,7 +10,7 @@ import { GoogleCalendarService } from '../../../core/services/google-calendar.se
 import { ToastService } from '../../../core/services/toast.service';
 
 // SidebarComponent is the persistent left navigation panel visible on all authenticated pages.
-// It contains: app logo, navigation links (Today, My Plans, Calendar, Goals, Buy List),
+// It contains: app logo, navigation links (Today, My Plans, Calendar, Goals),
 // a categories section with a popup manager, a theme toggle button, and a user info block.
 @Component({
   selector: 'app-sidebar', // Placed inside the LayoutComponent template
@@ -36,8 +36,8 @@ import { ToastService } from '../../../core/services/toast.service';
           <span class="nav-section">Overview</span>
           <!-- Dashboard link — shows today's schedule, stats, and active goals -->
           <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <span>Today</span>
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+            <span>Dashboard</span>
           </a>
           <!-- Tasks link — lists all plans (tasks, trips, meetings, etc.) -->
           <a routerLink="/tasks" routerLinkActive="active" class="nav-link">
@@ -50,17 +50,17 @@ import { ToastService } from '../../../core/services/toast.service';
             <span>Calendar</span>
           </a>
 
-          <!-- "Trackers" section label for goals and wishlist -->
+          <!-- "Trackers" section label for goals and habits -->
           <span class="nav-section">Trackers</span>
           <!-- Goals link — lists all goals with progress tracking -->
           <a routerLink="/goals" routerLinkActive="active" class="nav-link">
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
             <span>Goals</span>
           </a>
-          <!-- Wishlist link — shows the buy list with product cards -->
-          <a routerLink="/wishlist" routerLinkActive="active" class="nav-link">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-            <span>Buy List</span>
+          <!-- Habits link — daily routine checklist with streak tracking -->
+          <a routerLink="/habits" routerLinkActive="active" class="nav-link">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>Daily Routine</span>
           </a>
         </nav>
 
