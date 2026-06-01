@@ -22,7 +22,12 @@
 9. [Recurring patterns you'll see in the code](#9-recurring-patterns-youll-see-in-the-code)
 10. [Adding a new feature module](#10-adding-a-new-feature-module)
 11. [Running the project locally](#11-running-the-project-locally)
-12. [Glossary](#12-glossary)
+12. [Concepts used in this project](#12-concepts-used-in-this-project)
+    - [12.1 Frontend (Angular) concepts](#121-frontend-angular-concepts)
+    - [12.2 Backend (NestJS) concepts](#122-backend-nestjs-concepts)
+    - [12.3 Database (Firebase) concepts](#123-database-firebase-concepts)
+    - [12.4 Cross-cutting / fullstack concepts](#124-cross-cutting--fullstack-concepts)
+13. [Glossary](#13-glossary)
 
 ---
 
@@ -966,7 +971,547 @@ Done. Roughly mirror the structure of `habits/` or `goals/` and you'll be consis
 
 ---
 
-## 12. Glossary
+## 12. Concepts used in this project
+
+A scannable catalog of every framework feature, language feature, and architectural pattern this project actually uses. Each entry has a one-line "what it is", a file pointer, and a short code example so you can find it in the codebase.
+
+---
+
+### 12.1 Frontend (Angular) concepts
+
+#### Components & structure
+
+**Standalone components** — Angular 19's preferred component style. The component declares its own imports list; no `NgModule` boilerplate.
+- Used everywhere: every `.component.ts` in `frontend/src/app/`.
+- Example:
+  ```ts
+  @Component({
+    selector: 'app-habit-list',
+    standalone: true,
+    imports: [ModalComponent, HabitFormComponent, ConfirmDialogComponent],
+    template: `...`,
+  })
+  export class HabitListComponent { }
+  ```
+
+**Inline templates and styles** — `template:` / `styles:` arrays are inlined inside the `@Component()` decorator. (Larger components could use `templateUrl` / `styleUrls`, but this project keeps everything in one file.)
+- Used in every component.
+
+**Component lifecycle hooks** — methods Angular calls at specific points in a component's life.
+- `ngOnInit()` — runs once after the component is created. Used to load data and subscribe to streams.
+- `ngOnDestroy()` — runs when the component is removed. Used to unsubscribe.
+- `ngOnChanges(changes)` — runs whenever an `@Input()` value changes.
+- See `frontend/src/app/features/habits/habit-list/habit-list.component.ts`.
+
+**`@Input()` / `@Output()` / `EventEmitter`** — how a parent component passes data into a child (`@Input`) and how a child notifies the parent (`@Output` + `EventEmitter`).
+- Used in form components: `habit-form.component.ts`, `task-form.component.ts`.
+- Example:
+  ```ts
+  @Input() habit: Habit | null = null;
+  @Output() saved = new EventEmitter<void>();
+  // Parent: <app-habit-form [habit]="editing" (saved)="onSaved()" />
+  ```
+
+**Content projection (`<ng-content>`)** — lets a parent template inject children into a slot inside the child component's template. Used by the modal to wrap arbitrary form bodies.
+- See `frontend/src/app/shared/components/modal/modal.component.ts`.
+- Example:
+  ```html
+  <!-- modal.component.ts -->
+  <div class="modal-body"><ng-content /></div>
+
+  <!-- usage in parent -->
+  <app-modal [isOpen]="showForm">
+    <app-habit-form [habit]="editing" />
+  </app-modal>
+  ```
+
+---
+
+#### Templates & control flow
+
+**Property binding** `[prop]="expr"` — sets an element/component property from a TS expression.
+- Example: `<div [style.background]="h.color">`
+
+**Event binding** `(event)="handler($event)"` — runs a TS method when a DOM event fires.
+- Example: `<button (click)="toggleHabit(h)">`
+
+**String interpolation** `{{ expression }}` — renders a TS expression as text.
+- Example: `<span>{{ h.streak }}</span>`
+
+**New control flow `@if` / `@else` / `@for`** — Angular 17+ built-in template syntax (no more `*ngIf` / `*ngFor`).
+- `@for` requires a `track` expression for diffing.
+- Example:
+  ```html
+  @if (todayHabits.length === 0) {
+    <p>No habits today.</p>
+  } @else {
+    @for (h of todayHabits; track h.id) {
+      <div>{{ h.title }}</div>
+    }
+  }
+  ```
+
+**Pipes** — `{{ value | pipeName }}` — transform a value in the template. Built-in pipes used: `DatePipe`, `DecimalPipe`, `AsyncPipe`.
+- Example: `{{ today | date:'EEEE, MMMM d, y' }}`, `{{ progress | number:'1.0-0' }}`.
+
+---
+
+#### State & reactivity
+
+**Signals** (`signal()`, `computed()`) — Angular 16+ reactive primitives. A signal holds a value and notifies dependents when it changes. `computed()` derives new signals from existing ones.
+- Used in `dashboard.component.ts` for `habits`, `todayHabits`, `consistency30`, etc.
+- Example:
+  ```ts
+  habits = signal<Habit[]>([]);
+  doneToday = computed(() => this.habits().filter(h => h.doneToday).length);
+  // Read: this.doneToday()
+  // Write: this.habits.set([...newArray]);
+  ```
+
+**RxJS `Observable`** — a stream of values over time. HTTP calls return Observables. Subscribe with `.subscribe()` to react to each emission.
+- Used in every service.
+- Example: `this.http.get<Habit[]>(url).subscribe({ next: (h) => ... });`
+
+**`BehaviorSubject`** — a special Observable that holds the *current* value and emits it to every new subscriber. Used as the in-memory cache for entity lists.
+- Used in `TaskService`, `GoalService`, `HabitService`, `CategoryService`.
+- Example:
+  ```ts
+  habits$ = new BehaviorSubject<Habit[]>([]);
+  // emit a new value:  this.habits$.next([...new array])
+  // read latest sync: this.habits$.value
+  // subscribe:        this.habits$.subscribe(h => ...)
+  ```
+
+**RxJS operators** — chained with `.pipe()` to transform/side-effect on streams.
+- `tap(x => ...)` — perform a side effect, don't change the value. Used to update BehaviorSubjects after HTTP calls.
+- `catchError(err => ...)` — intercept errors, return a fallback Observable or rethrow.
+- `switchMap(x => newObservable)` — replace the stream with a new one (used in interceptor to retry after token refresh).
+- `map(x => transform(x))` — transform values.
+- `throwError(() => err)` — create an erroring Observable.
+- See `frontend/src/app/core/interceptors/auth.interceptor.ts`.
+
+**`AsyncPipe`** — auto-subscribes to an Observable in the template and emits its values. Cleans up on destroy. (We mostly use signals now but a few places still use this.)
+- Example: `<div>{{ tasks$ | async }}</div>`
+
+---
+
+#### Forms
+
+**Reactive Forms** — form state lives in TS as a `FormGroup` / `FormControl` object with validators. The template binds via directives.
+- Used in every form: `habit-form`, `task-form`, `goal-form`, `login`, `register`, `profile`.
+- Building blocks: `FormBuilder`, `FormGroup`, `FormControl`, `Validators`, `ReactiveFormsModule`.
+- Example:
+  ```ts
+  form = this.fb.group({
+    title: ['', Validators.required],
+    description: [''],
+    weekdays: [[]],
+  });
+  // template:
+  // <form [formGroup]="form" (ngSubmit)="submit()">
+  //   <input formControlName="title" />
+  // </form>
+  ```
+
+**FormsModule (`ngModel`)** — older template-driven forms with two-way binding `[(ngModel)]="prop"`. Used sparingly (e.g., calendar's holiday toggles).
+
+---
+
+#### Routing
+
+**Routes config** — `frontend/src/app/app.routes.ts` defines all URL → component mappings.
+
+**Lazy loading** — `loadComponent: () => import('...').then(m => m.X)` defers loading the component's JS chunk until the user navigates there.
+- Cuts the initial bundle size dramatically.
+- Used for every page route.
+
+**`RouterLink` / `RouterLinkActive`** — directives for navigating without a page reload and highlighting the active link.
+- Used in `sidebar.component.ts`.
+- Example: `<a routerLink="/habits" routerLinkActive="active">Daily Routine</a>`
+
+**Route guards** — functions that return `true`/`false` to allow or block navigation.
+- `authGuard` blocks unauth users from `/dashboard`, `/tasks`, etc.
+- `noAuthGuard` blocks logged-in users from `/auth/login`.
+- See `frontend/src/app/core/guards/`.
+
+**`Router` + `ActivatedRoute` services** — programmatic navigation and reading query params.
+- Example (dashboard handles Google OAuth callback):
+  ```ts
+  if (this.route.snapshot.queryParams['gcal'] === 'connected') {
+    this.toast.success('Google Calendar connected!');
+    this.router.navigate([], { queryParams: {}, replaceUrl: true });
+  }
+  ```
+
+---
+
+#### HTTP
+
+**`HttpClient`** — Angular's built-in HTTP client. Returns Observables, supports generics for typed responses.
+- Example: `this.http.get<Habit[]>('/api/habits')`
+
+**Functional HTTP interceptors** — pure functions that wrap every outgoing request. The `provideHttpClient(withInterceptors([authInterceptor]))` registration in `app.config.ts` plugs them in.
+- See `auth.interceptor.ts`. It attaches the `Authorization` header and handles 401 refresh.
+
+**Query parameters & URL building** — appended via template strings.
+- Example: `${this.base}/habits?today=${this.localTodayKey()}`
+
+---
+
+#### Dependency injection
+
+**`@Injectable({ providedIn: 'root' })`** — marks a class as a service the DI system can create. `'root'` makes it a singleton shared by the whole app.
+- Used by every service: `AuthService`, `HabitService`, `ThemeService`, etc.
+
+**`inject(Service)` function** — modern alternative to constructor injection. Works inside the class body OR inside functional interceptors/guards.
+- Example: `private http = inject(HttpClient);`
+
+**Constructor injection** — older style still used in some classes.
+- Example: `constructor(private http: HttpClient, private router: Router) {}`
+
+**Singleton scope** — `providedIn: 'root'` services are created once and shared. That's why a `BehaviorSubject` inside a service stays in sync across components.
+
+---
+
+#### App configuration
+
+**`ApplicationConfig`** — defines what providers the app needs at bootstrap. Lives in `app.config.ts`.
+- Example:
+  ```ts
+  export const appConfig: ApplicationConfig = {
+    providers: [
+      provideRouter(routes),
+      provideHttpClient(withInterceptors([authInterceptor])),
+    ],
+  };
+  ```
+
+**`bootstrapApplication`** — the standalone-app entry point, called in `main.ts`. Replaces the old `platformBrowserDynamic().bootstrapModule(AppModule)`.
+
+---
+
+#### Styling
+
+**CSS custom properties (variables)** — theme tokens like `--accent`, `--bg-card`, `--text-primary` defined in `frontend/src/styles.css`. Components reference them via `var(--accent)`.
+- Used in every component's `styles:` block.
+
+**Component-scoped styles** — Angular's default view encapsulation rewrites selectors so component styles don't leak. You write `.btn-primary` and it becomes `.btn-primary[_ngcontent-xyz]` at runtime.
+
+**Dark/light theme via `data-theme` attribute** — `ThemeService` sets `data-theme="dark"` on `<body>`; CSS variables override based on this attribute.
+- See `frontend/src/app/core/services/theme.service.ts`.
+
+---
+
+#### Browser APIs used
+
+**`localStorage`** — persistent key-value storage in the browser.
+- `TokenStorageService` stores JWTs.
+- `ThemeService` stores theme preference.
+
+**`Notification` API** — declared (the habit form has a reminder toggle), but actual delivery is not yet implemented.
+
+**`environments/`** — Angular's mechanism for swapping config per build (dev vs prod API URL).
+
+---
+
+### 12.2 Backend (NestJS) concepts
+
+#### Module system
+
+**`@Module()` decorator** — wraps a feature's controllers, providers (services), and imports into a single unit.
+- Used in every feature: `habits.module.ts`, `goals.module.ts`, etc.
+- Example:
+  ```ts
+  @Module({
+    controllers: [HabitsController],
+    providers: [HabitsService],
+  })
+  export class HabitsModule {}
+  ```
+
+**Root `AppModule`** — imports every feature module and registers global providers like the JWT guard.
+- See `backend/src/app.module.ts`.
+
+---
+
+#### Controllers & routing
+
+**`@Controller('prefix')`** — declares a class as a HTTP controller and prepends a path prefix.
+- Combined with `app.setGlobalPrefix('api')` in `main.ts`, `@Controller('habits')` serves `/api/habits/*`.
+
+**Method decorators**: `@Get()`, `@Post()`, `@Patch()`, `@Delete()` — map a method to an HTTP verb. Path patterns can include `:param` segments.
+- Example: `@Patch(':id') update(@Param('id') id: string, @Body() dto: UpdateHabitDto) { ... }`
+
+**Parameter decorators**:
+- `@Body() dto` — extracts the JSON request body
+- `@Param('name')` — extracts a URL segment
+- `@Query('name')` — extracts a query string value
+- Used in every controller.
+
+**Implicit status codes** — `200` for `GET/PATCH`, `201` for `POST`. Throw an exception to return another status.
+
+---
+
+#### Services & dependency injection
+
+**`@Injectable()`** — same idea as Angular: marks a class as injectable. NestJS resolves dependencies from the module's `providers` array.
+- Used in every service.
+
+**Constructor injection** — declare what you need in the constructor.
+- Example: `constructor(private firebase: FirebaseService) {}`
+
+**Singleton by default** — every provider is a singleton inside its module unless you opt out.
+
+---
+
+#### Validation
+
+**DTOs (Data Transfer Objects)** — plain classes describing what a request body should look like.
+- Example: `backend/src/habits/dto/create-habit.dto.ts`
+
+**`class-validator` decorators** — declarative validation rules.
+- `@IsString()`, `@IsOptional()`, `@IsBoolean()`, `@IsInt()`, `@IsArray()`, `@IsDateString()`
+- `@Min(n)`, `@Max(n)`, `@MaxLength(n)`, `@ArrayMinSize(n)`, `@ArrayMaxSize(n)`
+- `@Matches(regex)` — for custom string patterns (e.g. `HH:MM` time)
+- Example:
+  ```ts
+  export class CreateHabitDto {
+    @IsString() @MaxLength(120) title: string;
+    @IsOptional() @Matches(/^([01]\d|2[0-3]):[0-5]\d$/) startTime?: string;
+  }
+  ```
+
+**Global `ValidationPipe`** — installed in `main.ts` with `whitelist: true, forbidNonWhitelisted: true, transform: true`. Automatically rejects requests with unknown fields and converts incoming JSON into typed DTO instances.
+
+**`PartialType`** (from `@nestjs/mapped-types`) — generates a DTO where all fields are optional. Used for update DTOs.
+- Example: `export class UpdateHabitDto extends PartialType(CreateHabitDto) {}`
+
+---
+
+#### Authentication
+
+**Passport strategies** — pluggable auth strategies. This project has two:
+- `JwtStrategy` — validates the access token in the `Authorization` header.
+- `JwtRefreshStrategy` — validates the refresh token in the request body (only used by `/auth/refresh`).
+- See `backend/src/auth/strategies/`.
+
+**JWT signing** — `JwtService.signAsync(payload, { secret, expiresIn })` creates a signed token.
+
+**`bcrypt`** — one-way password hashing. We never store the plain password — only the bcrypt hash.
+- `bcrypt.hash(password, salt)` on register.
+- `bcrypt.compare(input, storedHash)` on login.
+
+**Refresh token rotation** — every successful refresh issues a NEW refresh token (and stores its hash). Old refresh tokens become invalid. Limits replay attacks.
+
+---
+
+#### Authorization & permissions
+
+**Global guards** — registered via the `APP_GUARD` provider so they run on every request.
+- `JwtAuthGuard` is registered globally in `app.module.ts`; every endpoint requires a valid JWT unless marked `@Public()`.
+
+**Custom guards** extending Passport's `AuthGuard`:
+- `JwtAuthGuard` (`backend/src/auth/guards/jwt-auth.guard.ts`) — the global one. Skips routes with `@Public()` metadata.
+- `JwtRefreshGuard` — only used on `/auth/refresh`.
+
+**`@Public()` decorator** — sets metadata that `JwtAuthGuard` reads via `Reflector.getAllAndOverride()` to opt-out.
+- See `backend/src/common/decorators/public.decorator.ts`.
+
+**Ownership checks** — pure code-level "does this user own this record?" verification inside each service.
+- Pattern: `private async ensureOwnership(userId, recordId)` throws `ForbiddenException` if userId doesn't match the record's `userId` field.
+- Used in `HabitsService`, `GoalsService`, `TasksService`, etc.
+
+**Authentication vs Authorization** — two different concepts:
+- *Authentication* = "who are you?" → handled by `JwtAuthGuard` validating the token.
+- *Authorization* = "are you allowed to do this?" → handled inside services via ownership checks.
+
+---
+
+#### Custom decorators
+
+**`@CurrentUser('id')`** — extracts the authenticated user (or one of its fields) from the request, set there by the JWT strategy.
+- See `backend/src/common/decorators/current-user.decorator.ts`.
+- Used in every controller: `@CurrentUser('id') userId: string`.
+
+**`@Public()`** — marks a route as bypassing the global guard. (See above.)
+
+---
+
+#### Exception handling
+
+**Built-in HTTP exceptions** — throw them from services and Nest's exception filter turns them into proper HTTP responses.
+- `NotFoundException` → 404
+- `ForbiddenException` → 403
+- `UnauthorizedException` → 401
+- `BadRequestException` → 400
+- `ConflictException` → 409 (e.g., email already taken)
+- Example: `if (!habit) throw new NotFoundException('Habit not found');`
+
+---
+
+#### Configuration
+
+**`ConfigModule.forRoot({ isGlobal: true })`** — loads `.env` once at startup; any service can read with `process.env.VAR` or `ConfigService`.
+- Configured in `app.module.ts`.
+
+**`.env` file** — holds secrets (`JWT_SECRET`, `FIREBASE_DATABASE_URL`) — never committed to git.
+
+---
+
+#### Middleware concepts
+
+**Pipes** — run after routing, before the controller method. `ValidationPipe` is the only one we use globally.
+
+**Guards** — run before controller methods. Returning false (or throwing) blocks the request.
+
+**Interceptors / Exception filters** — Nest has these too; we don't use custom ones beyond the built-in exception filter.
+
+**CORS** — `app.enableCors({ origin: [...], credentials: true })` in `main.ts` whitelists which frontend origins can call this API. Browsers block calls from origins not in the list.
+
+**Global prefix** — `app.setGlobalPrefix('api')` means every controller path is automatically prefixed with `/api`.
+
+---
+
+#### Lifecycle
+
+**`OnModuleInit`** — a hook that runs once after the module's dependencies are resolved. Used by `FirebaseService` to initialize the Firebase Admin SDK.
+- See `backend/src/prisma/firebase.service.ts`.
+
+**`async`/`await`** — every service method that touches Firebase returns a `Promise`. Standard ES2017 syntax.
+
+**`Promise.all([...])`** — for parallel async calls. Used in `HabitsService.findAll` to fetch habits and check-ins simultaneously.
+
+---
+
+#### Crypto & ID generation
+
+**`crypto.randomUUID()`** — Node's built-in to generate a random unique ID (used as Firebase keys for new records).
+
+**`bcrypt.hash` / `bcrypt.compare`** — password hashing (see Authentication above).
+
+---
+
+### 12.3 Database (Firebase) concepts
+
+#### NoSQL JSON tree
+
+The database is just one giant JSON object. There are no tables, no rows, no columns, no SQL — just nested keys and values. Top-level keys act like "collections":
+
+```
+{
+  "habits": {
+    "abc-123": { "id": "abc-123", "title": "Wakeup", ... },
+    "def-456": { ... }
+  },
+  "habitCheckins": { ... },
+  "users": { ... }
+}
+```
+
+You read/write at any path: `habits/abc-123/title` gives you just the title.
+
+#### Firebase Admin SDK (server-side)
+
+The backend uses `firebase-admin` — a privileged SDK that bypasses client-side security rules. It needs a service account key file (or env var) to authenticate.
+- Initialized in `backend/src/prisma/firebase.service.ts`.
+
+**Service account credentials** — `serviceAccountKey.json` is the backend's god-mode credential. Never expose it to clients or commit it to git.
+
+#### Operations (via `FirebaseService`)
+
+This project wraps the Admin SDK in a small service exposing 6 methods:
+
+| Method | What it does |
+|--------|--------------|
+| `ref(path)` | Get a database reference to a path (low-level) |
+| `get<T>(path)` | Read a single record, returns `null` if missing |
+| `getList<T>(path)` | Read all children at a path as an array |
+| `push(path, data)` | Add a new child with an auto-generated key |
+| `update(path, data)` | Merge fields into an existing record (preserves other fields) |
+| `remove(path)` | Delete an entire path |
+
+Most services use `ref(path).set(record)` (overwrite) plus `update()` for partial changes.
+
+#### No native joins or relations
+
+Firebase can't join `goals` with `milestones`. You fetch both lists and combine them in JS code.
+
+Example from `GoalsService.findOne`:
+```ts
+const goal = await this.firebase.get(`goals/${id}`);
+const allMilestones = await this.firebase.getList('milestones');
+const goalMilestones = allMilestones.filter(m => m.goalId === id);
+```
+
+#### No indexes (by default)
+
+Real Firebase supports `.indexOn` security rules for filtering, but this project doesn't configure any. We fetch entire collections and filter in code. Fine for small data, slow at scale.
+
+#### No automatic timestamps or schemas
+
+Firebase doesn't validate field types or add timestamps. We manually:
+- Generate `createdAt` and `updatedAt` strings: `new Date().toISOString()`
+- Validate at the controller layer via DTOs
+
+#### Denormalization
+
+Children reference parents by ID, not by nesting. Example:
+- A milestone has `{ id, goalId, ... }` — `goalId` is the foreign key.
+- We don't store milestones *inside* the goal record.
+
+Why: makes per-record updates atomic, makes queries simpler, avoids load-the-whole-thing-just-to-update-one-field.
+
+#### Eventual consistency / derived data
+
+Derived values (`streak`, `progress`, `consistency`) are computed at READ time, not stored. So they're never stale — but every read is more work.
+
+#### Authentication is NOT done by Firebase
+
+We don't use Firebase Auth or Firestore security rules. The backend authenticates users with its own JWT system and uses Firebase as a dumb data store. Frontend never touches Firebase directly.
+
+#### Date storage as strings
+
+All timestamps are stored as ISO 8601 strings (`"2026-05-23T10:30:00.000Z"`) — they sort lexicographically the same as chronologically and are human-readable.
+
+Habit check-in dates use `YYYY-MM-DD` (no time component) so we can do equality checks for "did the user check in on this day?"
+
+---
+
+### 12.4 Cross-cutting / fullstack concepts
+
+**HTTP request/response cycle** — browser sends a request (verb + URL + headers + body), server processes it, sends back a response (status code + headers + body). Stateless: each request is independent.
+
+**JSON** — the data format both layers speak. Just text that looks like a JS object.
+
+**CORS (Cross-Origin Resource Sharing)** — browser security rule. The frontend at `localhost:4200` is a different "origin" from the backend at `localhost:3000`. By default, the browser blocks cross-origin requests; the backend must explicitly opt in with `enableCors()`.
+
+**Stateless authentication** — no server-side sessions. The server doesn't remember who you are between requests; it re-verifies the JWT on every call. Simplifies scaling (any server can handle any request).
+
+**Tokens vs sessions** — Sessions store user identity server-side and use a cookie pointer. Tokens (JWTs) encode the identity itself, signed with a secret. We use tokens.
+
+**Refresh-token rotation** — every refresh issues a new refresh token, invalidating the old one. Limits damage if a token leaks.
+
+**Optimistic UI updates** — flip the UI immediately on user action, before the server confirms. Revert on error. Makes interactions feel instant despite network latency. Used in `HabitService.toggleToday`.
+
+**Environment variables** — config values (API keys, DB URLs, secrets) injected at runtime via the OS environment. Different per machine; never committed.
+
+**TypeScript interfaces** — shared shape definitions used by both client (`core/models/`) and parallel DTOs on the server (`dto/`). Compile-time safety.
+
+**Lazy loading** — defer downloading code until it's needed. Reduces initial page load size. Used for every route in this app.
+
+**Hot module replacement (HMR) / watch mode** — both Angular and NestJS dev servers watch for file changes and rebuild/restart automatically. You save a file, see results instantly.
+
+**Single Page Application (SPA)** — the frontend is one HTML file that swaps content via JavaScript routing. No full page reloads between routes.
+
+**Dependency injection** — the framework creates and supplies your dependencies instead of you newing them up manually. Makes testing and swapping implementations easier. Used heavily in both Angular and NestJS.
+
+**Reactive programming** — model data as streams of values over time (RxJS) or as reactive cells that auto-recompute (Signals). The UI follows data automatically — no manual DOM updates.
+
+**Separation of concerns** — controllers route, services hold logic, DTOs validate, components render, models type. Each piece does one thing.
+
+---
+
+## 13. Glossary
 
 - **API**: A list of URLs (endpoints) the backend exposes for the frontend to call.
 - **BehaviorSubject**: An RxJS class that holds a current value and re-emits it to new subscribers. Used as a local cache for entity lists.
