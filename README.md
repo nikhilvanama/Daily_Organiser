@@ -10,15 +10,17 @@ A personal productivity app for managing plans, goals, daily habits, and a calen
 
 | Feature | What it does |
 |---------|------|
-| **Dashboard** | Today's snapshot: stats, schedule, goal progress, daily routine widget (ring + heatmap + interactive checklist) |
+| **Dashboard** | Today's snapshot: stats, schedule, goal progress, Daily Routine widget (ring + heatmap + interactive checklist) |
 | **My Plans** | All tasks/trips/meetings/events/reminders with filters, pagination (15/page), status changes, edit/delete |
 | **Goals** | Goals with milestones, mini-goals, progress %, resources, target dates |
 | **Daily Routine (Habits)** | Per-weekday habit tracker with streaks, 30-day heatmap, backfill past dates, time intervals |
-| **Calendar** | Monthly grid with all plans plotted by due date, office-hours overlay, holidays, leaves |
+| **Journal** | One reflection entry per day with mood emoji, streak of consecutive days journaled, past-entries browser |
+| **Projects (freelance)** | Project pipeline (LEAD → QUOTED → IN_PROGRESS → DELIVERED → PAID/LOST/ON_HOLD) with per-project payments, outstanding balance, deadlines, progress, portfolio links |
+| **Calendar** | Monthly grid showing plans + Google Calendar events (festivals, holidays, bookings) plotted by date; office-hours / weekends / birthdays / leaves overlay |
 | **Categories** | User-defined color-coded labels shared by tasks |
-| **Google Calendar sync** | Optional one-way sync: push plans to your Google Calendar |
+| **Google Calendar sync** | Two-way: push app plans to Google AND pull events from your subscribed Google calendars (holidays, birthdays, third-party bookings) for read-only display |
 | **Dark / Light mode** | Auto-detect system preference, manual toggle, persisted |
-| **Auth** | Email/password register & login, JWT access tokens + refresh-token rotation |
+| **Auth** | Email/password register & login, JWT access tokens + refresh-token rotation, auto-redirect on expired session |
 
 ---
 
@@ -84,9 +86,11 @@ All routes are prefixed with `/api` and require a valid JWT in the `Authorizatio
 | Tasks | `GET/POST /tasks`, `GET/PATCH/DELETE /tasks/:id`, `GET /tasks/today`, `GET /tasks/upcoming`, `POST /tasks/:id/timer/start`, `POST /tasks/:id/timer/stop` |
 | Goals | `GET/POST /goals`, `GET/PATCH/DELETE /goals/:id`, milestone & mini-goal sub-routes |
 | Habits | `GET/POST /habits`, `PATCH/DELETE /habits/:id`, `POST /habits/:id/checkin[?today=…]`, `POST /habits/:id/checkin/:date[?today=…]` |
+| Journal | `GET /journal`, `GET /journal/:date`, `PUT /journal/:date`, `DELETE /journal/:date` |
+| Projects | `GET/POST /projects`, `GET/PATCH/DELETE /projects/:id`, `POST /projects/:id/payments`, `DELETE /projects/:projectId/payments/:paymentId` |
 | Categories | `GET/POST /categories`, `PATCH/DELETE /categories/:id` |
 | Dashboard | `GET /dashboard/stats`, `GET /dashboard/activity`, `GET /dashboard/calendar?year=…&month=…` |
-| Google Calendar | `GET /google/auth`, `GET /google/callback`, `GET /google/status`, `POST /google/disconnect`, `POST /google/sync-all` |
+| Google Calendar | `GET /google/auth`, `GET /google/callback`, `GET /google/status`, `POST /google/disconnect`, `POST /google/sync-all`, `GET /google/events?from=…&to=…` |
 
 ---
 
@@ -97,7 +101,7 @@ frontend/src/app/
 ├── core/
 │   ├── guards/         authGuard, noAuthGuard
 │   ├── interceptors/   authInterceptor (attach JWT + refresh on 401)
-│   ├── models/         TypeScript interfaces (Task, Goal, Habit, Category, User)
+│   ├── models/         TypeScript interfaces (Task, Goal, Habit, Journal, Project, Category, User)
 │   └── services/       AuthService, TokenStorageService, ThemeService, ToastService, GoogleCalendarService
 ├── shared/
 │   └── components/     LayoutComponent, SidebarComponent, TopbarComponent, ModalComponent, ToastContainer, ConfirmDialog, CategoryManager
@@ -107,7 +111,9 @@ frontend/src/app/
     ├── tasks/          list (My Plans), form, detail (with timer)
     ├── goals/          list, form, detail (milestones + mini-goals)
     ├── habits/         list (Daily Routine), form, service
-    ├── calendar/       monthly grid view
+    ├── journal/        day-end reflection page, service
+    ├── projects/       list (pipeline), form, detail (payments), service
+    ├── calendar/       monthly grid (app plans + Google events)
     ├── categories/     category service
     └── profile/        edit profile
 
@@ -117,9 +123,11 @@ backend/src/
 ├── tasks/              CRUD + timer endpoints
 ├── goals/              goals + milestones + mini-goals (nested) with auto-progress
 ├── habits/             habits + check-ins, streak + heatmap computation
+├── journal/            daily reflections (one entry per date, PUT-upsert)
+├── projects/           freelance projects + nested payments, status pipeline
 ├── categories/         CRUD
 ├── dashboard/          stats / activity / calendar aggregations
-├── google-calendar/    OAuth + sync
+├── google-calendar/    OAuth + two-way sync (push tasks, pull external events)
 ├── common/             @Public() decorator, @CurrentUser() decorator
 └── prisma/             FirebaseService (Realtime DB wrapper) — name is historical
 ```

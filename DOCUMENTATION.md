@@ -19,6 +19,9 @@
    - [Daily Routine (Habits)](#83-daily-routine-habits)
    - [Calendar](#84-calendar)
    - [Dashboard](#85-dashboard)
+   - [Journal](#86-journal)
+   - [Projects (freelance tracker)](#87-projects-freelance-tracker)
+   - [Google Calendar integration (two-way)](#88-google-calendar-integration-two-way)
 9. [Recurring patterns you'll see in the code](#9-recurring-patterns-youll-see-in-the-code)
 10. [Adding a new feature module](#10-adding-a-new-feature-module)
 11. [Running the project locally](#11-running-the-project-locally)
@@ -33,13 +36,43 @@
 
 ## 1. What is this project?
 
-**Daily Organizer** is a personal productivity web app. One user logs in and can:
+### Purpose
 
-- Plan tasks, trips, meetings, dinners, reminders (collectively called "plans")
-- Set goals broken down into milestones and mini-goals
-- Build daily habits with streaks and a 30-day heatmap (Daily Routine)
-- View everything on a calendar
-- Connect a Google Calendar to push plans into it
+**Daily Organizer** is a single-user personal productivity app that consolidates the things you'd otherwise spread across five separate tools — a task manager, habit tracker, journal, calendar, and a freelance CRM — into one private workspace.
+
+It is **deliberately not a team / shared product**. Every record is scoped to one account: your tasks, your habits, your journal, your client projects, your payment history. There's no sharing, no workspace concept, no admin roles. This makes the data model simple (everything has a `userId` foreign key) and the privacy story easy to reason about.
+
+It is **hostable on free tiers** — Firebase Realtime Database (free up to 1 GB), Render (free backend instance), Vercel (free frontend hosting). The app is built so the same person who owns the data also runs the infrastructure.
+
+### Who this is for
+
+The original author is a freelance developer in India who wanted to:
+- Plan tasks and events alongside a calendar (without leaking personal events into a team workspace)
+- Track recurring habits with streaks
+- Reflect on each day in a private journal
+- Manage a freelance project pipeline — quotes, deadlines, payments
+- See a snapshot of "today" without opening five apps
+
+If your needs overlap, this is for you. If you need team collaboration, a different product (Notion, Asana, etc.) is a better fit.
+
+### What it does — full feature list
+
+| Module | What it does |
+|--------|------|
+| **Dashboard** | Greeting + today's snapshot: stats, schedule, goal progress, and the Daily Routine widget (progress ring + 30-day consistency heatmap + interactive habit checklist) |
+| **My Plans (Tasks)** | All scheduled items — tasks, trips, journeys, meals, meetings, events, reminders — with type chips, status / priority filters, 15-per-page pagination, and DONE rows auto-sorted to the bottom |
+| **Goals** | Long-term goals → milestones → mini-goals, with auto-calculated progress %, reorderable milestones, resources list, target date |
+| **Daily Routine (Habits)** | Per-weekday recurring habits with time intervals, current streak, 30-day heatmap, date navigation to backfill missed days, optimistic toggle for instant UI |
+| **Journal** | One reflection entry per day, with mood emoji, title, body, streak of consecutive days journaled, and browse-past-entries list |
+| **Projects** (freelance) | Project pipeline (LEAD → QUOTED → IN_PROGRESS → DELIVERED → PAID / LOST / ON_HOLD), per-project payments, deadlines, progress %, portfolio links, outstanding-balance and monthly-income stats |
+| **Calendar** | Monthly grid showing plans + Google Calendar events (festivals, holidays, restaurant/movie bookings) plotted by date; weekends/birthdays/holidays/leaves overlay |
+| **Categories** | User-defined color-coded labels for grouping tasks |
+| **Google Calendar sync** | Two-way: pushes app plans to your primary Google calendar, AND pulls events from all your subscribed calendars (holidays, birthdays, third-party bookings) into the app's calendar view |
+| **Profile** | Edit display name, email, password, employment + office hours, weekend days, date of birth |
+| **Dark / Light theme** | Auto-detect system preference, manual toggle, persisted to localStorage |
+| **Auth** | Email/password register + login, JWT access + refresh token rotation, auto-redirect on expired session |
+
+### How it's organized
 
 It's a **full-stack** app: there's a **frontend** (what you see in the browser), a **backend** (a separate program running on a server), and a **database** (where data is stored permanently). All three are in this repo:
 
@@ -249,6 +282,8 @@ app/
 │   │   ├── task.model.ts
 │   │   ├── goal.model.ts
 │   │   ├── habit.model.ts
+│   │   ├── journal.model.ts
+│   │   ├── project.model.ts
 │   │   └── category.model.ts
 │   └── services/                ← singleton classes injectable everywhere
 │       ├── auth.service.ts        ← login/register/refresh, current user signal
@@ -284,7 +319,15 @@ app/
     │   ├── habit.service.ts
     │   ├── habit-list/          ← "Daily Routine" page
     │   └── habit-form/
-    ├── calendar/                ← monthly grid
+    ├── journal/
+    │   ├── journal.service.ts
+    │   └── journal-page/        ← "Journal" page (today's reflection + past entries)
+    ├── projects/
+    │   ├── project.service.ts
+    │   ├── project-list/        ← pipeline view with stats and status filter chips
+    │   ├── project-form/        ← create/edit project modal
+    │   └── project-detail/      ← project info, payments, edit, status changer
+    ├── calendar/                ← monthly grid (renders app plans + Google events)
     ├── categories/              ← category service only (UI is in shared/)
     └── profile/                 ← edit profile + change password
 ```
@@ -312,9 +355,11 @@ src/
 ├── tasks/                       ← /api/tasks/* CRUD + timer endpoints
 ├── goals/                       ← /api/goals/* + nested milestones + mini-goals
 ├── habits/                      ← /api/habits/* + check-ins, streaks, heatmap
+├── journal/                     ← /api/journal/* — daily reflections (one entry per date)
+├── projects/                    ← /api/projects/* + nested payments (freelance tracker)
 ├── categories/                  ← /api/categories/* CRUD
 ├── dashboard/                   ← /api/dashboard/stats|activity|calendar (aggregations)
-├── google-calendar/             ← /api/google/* OAuth + sync
+├── google-calendar/             ← /api/google/* OAuth + bidirectional sync
 │
 ├── common/                      ← shared utilities
 │   └── decorators/
@@ -331,6 +376,110 @@ Every feature module follows the same skeleton:
 - A `XxxController` (HTTP routing — small file)
 - A `XxxService` (business logic + Firebase reads/writes — the meat)
 - `dto/` folder with classes describing what request bodies should look like
+
+### How the modules connect to each other
+
+Every record in this app is owned by exactly one user. Modules don't share data across users — they share **logical relationships** *within* one user's account, expressed as foreign-key IDs.
+
+#### Entity relationships (Firebase collections)
+
+```
+                            ┌─── tasks ──────────────────┐
+                            │   (My Plans)                │
+                            │   • categoryId → categories │
+                            │   • googleEventId → Google  │
+                            └─── + timer fields ──────────┘
+                                       ▲
+                                       │ rendered on
+                                       │
+   users ──────┬───────────────────► calendar (view) ◄── google events (read-only pull)
+   (root)      │                                   │
+               │                                   │
+               ├─── goals                          │
+               │     └─► milestones                │
+               │            └─► minigoals          │
+               │                                   │
+               ├─── habits                         │
+               │     └─► habitCheckins             │
+               │           (one per date)          │
+               │                                   │
+               ├─── journal                        │
+               │     (one entry per date)          │
+               │                                   │
+               ├─── projects ─► projectPayments   │
+               │     (freelance pipeline)          │
+               │                                   │
+               ├─── categories                     │
+               │     (color labels for tasks)      │
+               │                                   │
+               └─── googleAccessToken/RefreshToken │
+                     (stored on user record)       │
+                                                   │
+                            ┌──────────────────────┘
+                            ▼
+                       dashboard (view) ──── aggregates from:
+                                              tasks, goals, habits,
+                                              and reads habit$ stream
+```
+
+#### Foreign-key conventions
+
+Every child entity stores a reference to its parent as a string ID field. We use Firebase like a small relational DB without joins — we filter in JavaScript instead of using SQL.
+
+| Child | Parent reference | Joined where |
+|-------|------------------|--------------|
+| `tasks.categoryId` | `categories/<id>` | `TasksService` attaches the full category on read |
+| `tasks.googleEventId` | Google event ID | Used to dedupe Google reads + propagate updates/deletes |
+| `milestones.goalId` | `goals/<id>` | `GoalsService.findOne` joins via filter |
+| `minigoals.milestoneId` | `milestones/<id>` | Joined per-milestone inside `attachMilestones` |
+| `habitCheckins.habitId` | `habits/<id>` | `enrich(habit)` filters check-ins for streak + heatmap |
+| `journal.userId` + `journal.date` | (composite uniqueness) | Service ensures one entry per (user, date) |
+| `projectPayments.projectId` | `projects/<id>` | `enrich(project)` filters payments + computes balance |
+
+#### What "joining" looks like in code
+
+Because Firebase has no joins, every multi-collection read fetches each collection separately and combines them in memory. Example from `HabitsService.findAll`:
+
+```ts
+const [habits, checkins] = await Promise.all([
+  this.firebase.getList('habits'),
+  this.firebase.getList('habitCheckins'),
+]);
+const userHabits = habits.filter(h => h.userId === userId && !h.archived);
+const userCheckins = checkins.filter(c => c.userId === userId);
+return userHabits.map(h => this.enrich(h, userCheckins, todayKey));
+```
+
+The `enrich()` function then walks the check-ins for each habit to compute streak + 30-day history.
+
+For a few hundred records per user this is fast (~10–50 ms). At scale you'd index in Firebase (`.indexOn` rules) or move to a relational DB.
+
+#### Views that aggregate across modules
+
+Two pages don't own their own data — they reach into multiple modules:
+
+- **Dashboard** (`/dashboard`):
+  - Calls `GET /api/dashboard/stats` (aggregates tasks + goals)
+  - Calls `TaskService.getToday()` for today's plans timeline
+  - Calls `GoalService.loadAll()` to find active goals
+  - Subscribes to `HabitService.habits$` for the Daily Routine widget (so a toggle on the habits page instantly reflects on the dashboard)
+
+- **Calendar** (`/calendar`):
+  - Calls `GET /api/dashboard/calendar?year=&month=` for the month's plans
+  - Calls `GET /api/google/events?from=&to=` for external Google events when connected
+  - Reads `userProfile` for weekend / birthday / office-hours overlays
+  - Reads localStorage for holiday / leave overrides
+
+The shared `BehaviorSubject`s inside service classes (e.g., `habits$`, `tasks$`, `projects$`, `entries$`) are the cross-module sync mechanism. Any component that subscribes sees updates from any other component that mutates via the same service.
+
+#### What is *not* connected
+
+- Tasks and habits are independent: completing a habit does not check off any task, and vice versa
+- Goals and habits are independent: a habit isn't a milestone of a goal (deliberate — keeps the schemas separate)
+- Projects and tasks are independent: a project's deliverables aren't represented as tasks (could be a future feature)
+- Journal entries aren't auto-linked to that day's tasks (also a possible future feature)
+
+This is intentional — we keep modules orthogonal so each can evolve without rippling into the others.
 
 ---
 
@@ -716,6 +865,167 @@ The Daily Routine widget on the dashboard renders:
 - **30-day aggregate heatmap** — for each day, the cell color shows what % of scheduled habits got done that day. Legend bar shows the gradient.
 
 When you toggle a habit from the dashboard, the `HabitService.habits$` BehaviorSubject emits → both the dashboard widget and the habits page (if open in another tab) sync instantly because they both subscribe.
+
+### 8.6 Journal
+
+Day-end reflections. One entry per user per date, stored at `journal/<uuid>` in Firebase with fields `{userId, date (YYYY-MM-DD), title?, body, mood?, createdAt, updatedAt}`.
+
+**Why an upsert pattern?** Since there's exactly one entry per (user, date), the API uses `PUT /api/journal/:date` instead of separate POST + PATCH. The backend finds an existing entry for that date and either updates or creates — same URL, idempotent. Saving twice is harmless.
+
+**Endpoints**:
+- `GET /api/journal` — list entries (date-desc, capped at 100)
+- `GET /api/journal/:date` — fetch one date's entry (returns `null` if not yet written)
+- `PUT /api/journal/:date` — upsert
+- `DELETE /api/journal/:date` — remove
+
+**Frontend** ([features/journal/journal-page/journal-page.component.ts](frontend/src/app/features/journal/journal-page/journal-page.component.ts)):
+- A `selectedDate` signal, defaulting to today's local date
+- Date navigation arrows (← / →) to walk back up to a year of past entries
+- The form auto-fills from the cached `entries$` BehaviorSubject when `selectedDate` changes
+- Mood emoji chips (8 options), title, body textarea
+- Live word count, "✓ Saved" pill that fades after 2.5s
+- Below the form: a list of past entries with date · mood · title · 2-line preview; clicking any switches `selectedDate` to view/edit that entry
+
+**Streak math** (client-side computed signal): walk back from today's local date, counting consecutive days with entries. Capped at 365.
+
+### 8.7 Projects (freelance tracker)
+
+A freelance pipeline: each project moves through statuses (`LEAD → QUOTED → IN_PROGRESS → DELIVERED → PAID`, or branches to `LOST` / `ON_HOLD`). Payments are recorded against the project as separate records.
+
+**Schema**:
+```
+projects/<id> {
+  id, userId, title, clientName, clientContact, description,
+  status, quotedAmount, currency, startDate, deadline, deliveredAt,
+  progress, portfolioLinks: string[], archived, createdAt, updatedAt
+}
+
+projectPayments/<id> {
+  id, projectId, userId, amount, currency, date, note?, method?, createdAt
+}
+```
+
+**Computed fields** added by `enrich()` on every read (server-side, never stored):
+- `payments[]` — all payments for this project, sorted date-desc
+- `totalReceived` — sum of payments
+- `balance` — `max(0, quotedAmount - totalReceived)`
+- `isOverdue` — `deadline < today` AND status is not `PAID` or `LOST`
+
+**Endpoints** under `/api/projects`:
+- `GET /` — list (sorted "active work first" then by deadline)
+- `GET /:id`, `POST /`, `PATCH /:id`, `DELETE /:id` — standard CRUD (delete cascades to payments)
+- `POST /:id/payments` — record a payment
+- `DELETE /:projectId/payments/:paymentId` — remove a payment
+
+**Status transitions** that the service handles automatically:
+- Moving to `DELIVERED` or `PAID` stamps `deliveredAt` if it's not set yet
+- Moving back from `DELIVERED` clears `deliveredAt`
+
+**Frontend** has three views:
+
+1. **List page** (`/projects`) — stats summary (total, in-progress, outstanding balance, this-month income, pending quotes), status filter chips, project rows with status pill / deadline / amounts / progress bar. Active work auto-sorted to the top.
+
+2. **Detail page** (`/projects/:id`) — header with title + status + overdue flag, a quick-controls card for status dropdown + progress slider, a 2-column layout below: left has description + portfolio links + dates, right has the payments section with an inline "+ Record payment" form and a list of past payments.
+
+3. **Form** (modal) — title + client info + description + status + quoted amount + currency + dates + progress + portfolio links array.
+
+**Currency**: defaults to INR but each project can override. Money is formatted with `en-IN` grouping (e.g. ₹1,25,000).
+
+**The "may or may not come" flow** — leads that haven't converted yet sit in `LEAD` or `QUOTED` status. If they go cold, mark them `LOST` and they drop to the bottom of the list (with the LOST filter chip available to surface them later for follow-up).
+
+### 8.8 Google Calendar integration (two-way)
+
+The integration does two distinct things, in two directions:
+
+| Direction | Trigger | What happens |
+|-----------|---------|--------------|
+| **Push (app → Google)** | User saves a task with a `dueDate` | Backend creates a Google event in the user's primary calendar; stores the returned event ID on the task |
+| **Pull (Google → app)** | User opens `/calendar` | Backend lists events from ALL the user's subscribed Google calendars in the viewed month and returns them for read-only display |
+
+#### OAuth 2.0 flow
+
+The user's Google account is connected via OAuth 2.0. The flow:
+
+```
+1. User clicks "Connect Google Calendar" in the sidebar
+        │
+        ▼  GET /api/google/auth
+2. Backend generates a consent URL with scopes + redirect_uri + state=userId
+        │
+        ▼ returns { url }
+3. Frontend redirects browser to Google's consent screen
+        │
+        ▼  user approves
+4. Google redirects browser to our backend at GOOGLE_REDIRECT_URI
+   with ?code=<auth_code>&state=<userId>
+        │
+        ▼  GET /api/google/callback
+5. Backend exchanges the auth code for access + refresh tokens
+   and stores them on the user record in Firebase
+        │
+        ▼  redirect to frontend dashboard
+6. Frontend updates its connected signal to true
+```
+
+**Why two tokens?** Same reason as our app's auth — short-lived access tokens limit damage if leaked; long-lived refresh tokens stay safe in our DB and silently mint new access tokens.
+
+**Where tokens live**: on each user record in Firebase as `googleAccessToken`, `googleRefreshToken`, `googleTokenExpiry`, `googleCalendarConnected`.
+
+#### OAuth scopes we request
+
+| Scope | What it allows |
+|-------|------|
+| `calendar.events` | Read + write events on calendars the user has access to (primary, etc.) — used by the push direction |
+| `calendar.readonly` | Read events across all the user's subscribed calendars — used to pull festivals, holidays, third-party-app bookings |
+| `calendar.calendarlist.readonly` | List the user's subscribed calendars (Holidays in India, Birthdays, work team calendars) so we can enumerate them before reading events |
+
+Scopes are bundled in the `getAuthUrl()` call inside `GoogleCalendarService`. If you change the list, **existing users must disconnect + reconnect** for their tokens to be valid for the new scope; Google won't quietly upgrade an old token's permissions.
+
+#### Push direction (app → Google)
+
+When a task with a `dueDate` is created:
+1. `TasksService.create()` saves the task in Firebase
+2. It then asynchronously calls `GoogleCalendarService.createEvent(userId, task)` (fire-and-forget — task creation never blocks on Google)
+3. `createEvent` converts the task to Google's event format (`taskToEvent`): timed events use `start.dateTime`, all-day use `start.date`, color is mapped from `task.type`
+4. The returned `googleEventId` is patched back onto the task in Firebase
+5. On updates/deletes the same `googleEventId` is used to keep the Google event in sync
+
+Each push uses a fresh authorized client via `getAuthorizedClient(userId)`, which:
+- Reads the stored refresh token
+- Constructs an `OAuth2Client` with the saved credentials
+- Subscribes to the `'tokens'` event so any refreshed access tokens get persisted back to Firebase
+- Hands the client to `google.calendar({...})`
+
+#### Pull direction (Google → app)
+
+When the calendar view opens, the frontend calls `GET /api/google/events?from=YYYY-MM-DD&to=YYYY-MM-DD`. The backend:
+
+1. Builds a UTC time range (inclusive `from`, exclusive end-of-`to`+1 because Google's `timeMax` is exclusive)
+2. Calls `calendarList.list()` to enumerate all the user's subscribed calendars. If the scope is insufficient, falls back to `[{ id: 'primary' }]`
+3. Calls `events.list()` on each calendar in parallel (`Promise.all`), with `singleEvents: true` to expand recurring events into individual instances
+4. Builds a `Set<string>` of `googleEventId`s currently saved on the user's tasks (so events we ourselves pushed are filtered out — no duplicates)
+5. Flattens, normalizes each event:
+   - All-day events: `{start, end}` are `YYYY-MM-DD` (end converted to inclusive — Google's all-day end is exclusive)
+   - Timed events: `startTime` and `endTime` are local `HH:MM`
+6. Sorts ascending by date then start time
+7. Returns the array
+
+The frontend's calendar component takes the response and, for each day cell, picks events whose `start <= dayKey && end >= dayKey` (so a multi-day festival shows on every day in its range).
+
+#### Token refresh + invalid_grant handling
+
+If an access token is expired but the refresh token is still valid, `googleapis` silently refreshes it and emits a `'tokens'` event. We listen to that and persist the new access token + expiry to Firebase.
+
+If the **refresh token itself is dead** (revoked by the user, expired due to inactivity, or invalidated because we changed scopes), Google returns `invalid_grant`. `handleAuthError(userId, err)` detects this and **clears the user's Google connection in Firebase** — setting `googleCalendarConnected: false` — so the UI prompts a reconnect on the next status check, instead of silently failing forever.
+
+#### Common setup issues
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `Error 400: redirect_uri_mismatch` | The `GOOGLE_REDIRECT_URI` env var doesn't exactly match what's listed in the Google Cloud OAuth client's "Authorized redirect URIs" | Add `http://localhost:3000/api/google/callback` to the client in Google Cloud Console |
+| `invalid_grant` (in backend logs) | Refresh token revoked or scope-mismatched | User must disconnect + reconnect once |
+| Toggle reads "G Cal on" but events don't appear | Same as above — token is stored but dead | New `handleAuthError` will auto-clear it; user reconnects |
+| Festivals / birthdays not pulled in | Scope insufficient (only `calendar.events` was granted, not `calendar.readonly` + `calendar.calendarlist.readonly`) | Disconnect + reconnect; approve all permissions on the consent screen |
 
 ---
 
