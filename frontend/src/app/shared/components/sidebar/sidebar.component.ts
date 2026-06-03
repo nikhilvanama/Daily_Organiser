@@ -49,6 +49,11 @@ import { ToastService } from '../../../core/services/toast.service';
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
             <span>Calendar</span>
           </a>
+          <!-- Analytics link — weekly/monthly stats across all modules -->
+          <a routerLink="/analytics" routerLinkActive="active" class="nav-link">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            <span>Analytics</span>
+          </a>
 
           <!-- "Trackers" section label for goals and habits -->
           <span class="nav-section">Trackers</span>
@@ -66,6 +71,11 @@ import { ToastService } from '../../../core/services/toast.service';
           <a routerLink="/journal" routerLinkActive="active" class="nav-link">
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
             <span>Journal</span>
+          </a>
+          <!-- Focus link — Pomodoro timer with session logging -->
+          <a routerLink="/focus" routerLinkActive="active" class="nav-link">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14.5 14.5"/></svg>
+            <span>Focus</span>
           </a>
 
           <!-- Freelance section: project pipeline + payments -->

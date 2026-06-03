@@ -18,6 +18,10 @@ import { HabitsModule } from './habits/habits.module';
 import { JournalModule } from './journal/journal.module';
 // ProjectsModule — Freelance project tracker with payments, deadlines, statuses
 import { ProjectsModule } from './projects/projects.module';
+// FocusModule — Pomodoro session log + task time-tracking integration
+import { FocusModule } from './focus/focus.module';
+// AnalyticsModule — Cross-module aggregations for the Analytics page
+import { AnalyticsModule } from './analytics/analytics.module';
 // CategoriesModule — CRUD for user-defined categories (Work, Personal, Travel, etc.)
 import { CategoriesModule } from './categories/categories.module';
 // DashboardModule — provides aggregate stats, today's plans, calendar data, and activity feed
@@ -44,6 +48,8 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     HabitsModule,     // /api/habits/* — daily/weekly habits + check-ins + streaks
     JournalModule,    // /api/journal/* — daily reflections
     ProjectsModule,   // /api/projects/* — freelance projects + payments
+    FocusModule,      // /api/focus/* — Pomodoro sessions
+    AnalyticsModule,  // /api/analytics/* — cross-module summary stats
     CategoriesModule, // /api/categories/* — user categories
     DashboardModule,  // /api/dashboard/* — stats, activity, calendar data
     GoogleCalendarModule, // /api/google/* — Google Calendar OAuth + sync
