@@ -1,12 +1,22 @@
-import { ArrayMaxSize, IsArray, IsDateString, IsEnum, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsEnum, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
-export const PROJECT_STATUSES = ['LEAD', 'QUOTED', 'IN_PROGRESS', 'DELIVERED', 'PAID', 'LOST', 'ON_HOLD'] as const;
+// Project status is now ONLY about the work itself — payment is tracked separately.
+// Old records may still have status 'PAID'; service migrates those to 'DELIVERED' on read.
+export const PROJECT_STATUSES = ['LEAD', 'QUOTED', 'IN_PROGRESS', 'DELIVERED', 'LOST', 'ON_HOLD'] as const;
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
+
+export const PAYMENT_STATUSES = ['NOT_INVOICED', 'PENDING', 'PARTIAL', 'PAID', 'NOT_APPLICABLE'] as const;
+export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
 export class CreateProjectDto {
   @IsString()
   @MaxLength(160)
   title: string;
+
+  // Self projects (personal work) skip client + payment fields.
+  @IsOptional()
+  @IsBoolean()
+  isSelf?: boolean;
 
   @IsOptional()
   @IsString()
@@ -26,6 +36,10 @@ export class CreateProjectDto {
   @IsOptional()
   @IsEnum(PROJECT_STATUSES)
   status?: ProjectStatus;
+
+  @IsOptional()
+  @IsEnum(PAYMENT_STATUSES)
+  paymentStatus?: PaymentStatus;
 
   @IsOptional()
   @IsNumber()

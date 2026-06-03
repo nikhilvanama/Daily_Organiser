@@ -1,7 +1,7 @@
 import { Component, EventEmitter, inject, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ProjectService } from '../project.service';
-import { PROJECT_STATUSES, Project, ProjectStatus } from '../../../core/models/project.model';
+import { PAYMENT_STATUSES, PROJECT_STATUSES, PaymentStatus, Project, ProjectStatus } from '../../../core/models/project.model';
 
 const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AUD', 'CAD'] as const;
 
@@ -11,21 +11,32 @@ const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AUD', 'CAD'] as const;
   imports: [ReactiveFormsModule],
   template: `
     <form [formGroup]="form" (ngSubmit)="submit()" class="project-form">
+      <!-- Self project: hide client/payment fields when checked -->
+      <label class="self-toggle">
+        <input type="checkbox" formControlName="isSelf" />
+        <span>
+          <strong>Self project</strong>
+          <small>Personal work — no client or payment tracking</small>
+        </span>
+      </label>
+
       <div class="form-group">
         <label class="label">Title *</label>
         <input class="input" formControlName="title" placeholder="e.g. Wedding photo album design" />
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label class="label">Client name</label>
-          <input class="input" formControlName="clientName" placeholder="Client name" />
+      @if (!form.value.isSelf) {
+        <div class="form-row">
+          <div class="form-group">
+            <label class="label">Client name</label>
+            <input class="input" formControlName="clientName" placeholder="Client name" />
+          </div>
+          <div class="form-group">
+            <label class="label">Contact</label>
+            <input class="input" formControlName="clientContact" placeholder="Email / phone / handle" />
+          </div>
         </div>
-        <div class="form-group">
-          <label class="label">Contact</label>
-          <input class="input" formControlName="clientContact" placeholder="Email / phone / handle" />
-        </div>
-      </div>
+      }
 
       <div class="form-group">
         <label class="label">Description / scope</label>
@@ -34,7 +45,7 @@ const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AUD', 'CAD'] as const;
 
       <div class="form-row">
         <div class="form-group">
-          <label class="label">Status</label>
+          <label class="label">Project status</label>
           <select class="input" formControlName="status">
             @for (s of statuses; track s.value) {
               <option [value]="s.value">{{ s.label }}</option>
@@ -47,18 +58,34 @@ const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AUD', 'CAD'] as const;
         </div>
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label class="label">Quoted amount</label>
-          <input class="input" type="number" min="0" step="0.01" formControlName="quotedAmount" placeholder="0" />
+      @if (!form.value.isSelf) {
+        <div class="form-row">
+          <div class="form-group">
+            <label class="label">Payment status</label>
+            <select class="input" formControlName="paymentStatus">
+              @for (p of paymentStatuses; track p.value) {
+                <option [value]="p.value">{{ p.label }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="label">Quoted amount</label>
+            <input class="input" type="number" min="0" step="0.01" formControlName="quotedAmount" placeholder="0" />
+          </div>
         </div>
-        <div class="form-group">
-          <label class="label">Currency</label>
-          <select class="input" formControlName="currency">
-            @for (c of currencies; track c) { <option [value]="c">{{ c }}</option> }
-          </select>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="label">Currency</label>
+            <select class="input" formControlName="currency">
+              @for (c of currencies; track c) { <option [value]="c">{{ c }}</option> }
+            </select>
+          </div>
+          <div class="form-group">
+            <!-- empty to keep two-column rhythm -->
+          </div>
         </div>
-      </div>
+      }
 
       <div class="form-row">
         <div class="form-group">
@@ -96,6 +123,15 @@ const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AUD', 'CAD'] as const;
   `,
   styles: [`
     .project-form { display: flex; flex-direction: column; gap: 1rem; }
+    .self-toggle {
+      display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px;
+      background: var(--bg-hover); border: 1px solid var(--border); border-radius: 8px;
+      cursor: pointer; transition: border-color 0.15s;
+    }
+    .self-toggle:hover { border-color: var(--text-muted); }
+    .self-toggle input { margin-top: 4px; cursor: pointer; }
+    .self-toggle strong { display: block; font-size: 0.88rem; color: var(--text-primary); }
+    .self-toggle small { display: block; font-size: 0.72rem; color: var(--text-muted); margin-top: 1px; }
     .form-group { display: flex; flex-direction: column; gap: 0.25rem; }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
     textarea.input { resize: vertical; }
@@ -119,15 +155,18 @@ export class ProjectFormComponent implements OnInit, OnChanges {
 
   loading = false;
   statuses = PROJECT_STATUSES;
+  paymentStatuses = PAYMENT_STATUSES.filter((p) => p.value !== 'NOT_APPLICABLE'); // hidden in form; only the backend sets it for self projects
   currencies = CURRENCIES;
   portfolioLinks: string[] = [];
 
   form = this.fb.group({
     title: ['', Validators.required],
+    isSelf: [false],
     clientName: [''],
     clientContact: [''],
     description: [''],
     status: ['LEAD' as ProjectStatus],
+    paymentStatus: ['PENDING' as PaymentStatus],
     quotedAmount: [null as number | null],
     currency: ['INR'],
     startDate: [''],
@@ -142,8 +181,8 @@ export class ProjectFormComponent implements OnInit, OnChanges {
     if (!this.project) {
       this.portfolioLinks = [''];
       this.form.reset({
-        title: '', clientName: '', clientContact: '', description: '',
-        status: 'LEAD', quotedAmount: null, currency: 'INR',
+        title: '', isSelf: false, clientName: '', clientContact: '', description: '',
+        status: 'LEAD', paymentStatus: 'PENDING', quotedAmount: null, currency: 'INR',
         startDate: '', deadline: '', progress: 0,
       });
       return;
@@ -151,10 +190,13 @@ export class ProjectFormComponent implements OnInit, OnChanges {
     this.portfolioLinks = this.project.portfolioLinks.length > 0 ? [...this.project.portfolioLinks] : [''];
     this.form.patchValue({
       title: this.project.title,
+      isSelf: this.project.isSelf,
       clientName: this.project.clientName ?? '',
       clientContact: this.project.clientContact ?? '',
       description: this.project.description ?? '',
       status: this.project.status,
+      // NOT_APPLICABLE comes from server-side flagging; in the form we keep a "real" choice for non-self projects.
+      paymentStatus: this.project.paymentStatus === 'NOT_APPLICABLE' ? 'PENDING' : this.project.paymentStatus,
       quotedAmount: this.project.quotedAmount,
       currency: this.project.currency,
       startDate: this.project.startDate ?? '',
@@ -174,19 +216,26 @@ export class ProjectFormComponent implements OnInit, OnChanges {
     if (this.form.invalid) return;
     this.loading = true;
     const raw = this.form.value;
-    const dto = {
+    const isSelf = !!raw.isSelf;
+    const dto: any = {
       title: raw.title!,
-      clientName: raw.clientName?.trim() || undefined,
-      clientContact: raw.clientContact?.trim() || undefined,
+      isSelf,
       description: raw.description?.trim() || undefined,
       status: raw.status ?? 'LEAD',
-      quotedAmount: raw.quotedAmount ?? undefined,
       currency: raw.currency || 'INR',
       startDate: raw.startDate || undefined,
       deadline: raw.deadline || undefined,
       progress: raw.progress ?? 0,
       portfolioLinks: this.portfolioLinks.map((l) => l.trim()).filter(Boolean),
     };
+    // Client + payment fields only carried through for non-self projects. The backend also
+    // clears them when isSelf=true, but stripping here keeps the request payload clean.
+    if (!isSelf) {
+      dto.clientName = raw.clientName?.trim() || undefined;
+      dto.clientContact = raw.clientContact?.trim() || undefined;
+      dto.paymentStatus = raw.paymentStatus ?? 'PENDING';
+      dto.quotedAmount = raw.quotedAmount ?? undefined;
+    }
     const op$ = this.project
       ? this.projectService.update(this.project.id, dto)
       : this.projectService.create(dto);

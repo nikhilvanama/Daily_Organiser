@@ -3,7 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { ProjectService } from '../project.service';
-import { Project, ProjectPayment, PROJECT_STATUSES, ProjectStatus } from '../../../core/models/project.model';
+import { PAYMENT_STATUSES, PaymentStatus, Project, ProjectPayment, PROJECT_STATUSES, ProjectStatus } from '../../../core/models/project.model';
 import { ModalComponent } from '../../../shared/components/modal/modal.component';
 import { ProjectFormComponent } from '../project-form/project-form.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -33,6 +33,13 @@ import { ToastService } from '../../../core/services/toast.service';
             <span class="status-pill"
               [style.background]="statusColor() + '22'"
               [style.color]="statusColor()">{{ statusLabel() }}</span>
+            @if (project()!.isSelf) {
+              <span class="status-pill self">🏠 Self project</span>
+            } @else {
+              <span class="status-pill"
+                [style.background]="paymentColor() + '22'"
+                [style.color]="paymentColor()">{{ paymentLabel() }}</span>
+            }
             @if (project()!.clientName) { <span class="muted">· {{ project()!.clientName }}</span> }
             @if (project()!.clientContact) { <span class="muted">· {{ project()!.clientContact }}</span> }
             @if (project()!.isOverdue) { <span class="overdue-pill">⚠ Overdue</span> }
@@ -42,13 +49,23 @@ import { ToastService } from '../../../core/services/toast.service';
         <!-- Quick status & progress controls -->
         <div class="card quick-controls">
           <div class="control-block">
-            <label class="label">Status</label>
+            <label class="label">Project status</label>
             <select class="input" [value]="project()!.status" (change)="updateStatus($any($event.target).value)">
               @for (s of statuses; track s.value) {
                 <option [value]="s.value">{{ s.label }}</option>
               }
             </select>
           </div>
+          @if (!project()!.isSelf) {
+            <div class="control-block">
+              <label class="label">Payment status</label>
+              <select class="input" [value]="project()!.paymentStatus" (change)="updatePaymentStatus($any($event.target).value)">
+                @for (p of paymentStatuses; track p.value) {
+                  <option [value]="p.value">{{ p.label }}</option>
+                }
+              </select>
+            </div>
+          }
           <div class="control-block">
             <label class="label">Progress · {{ project()!.progress }}%</label>
             <input type="range" min="0" max="100" step="5" [value]="project()!.progress" (input)="onProgressInput($any($event.target).value)" (change)="updateProgress($any($event.target).value)" />
@@ -66,7 +83,7 @@ import { ToastService } from '../../../core/services/toast.service';
             }
 
             <div class="kv-grid">
-              @if (project()!.quotedAmount !== null) {
+              @if (!project()!.isSelf && project()!.quotedAmount !== null) {
                 <div><span class="muted">Quoted</span> <strong>{{ formatMoney(project()!.quotedAmount!, project()!.currency) }}</strong></div>
               }
               @if (project()!.startDate) {
@@ -93,7 +110,8 @@ import { ToastService } from '../../../core/services/toast.service';
             }
           </div>
 
-          <!-- RIGHT: payments -->
+          <!-- RIGHT: payments (hidden entirely for self projects) -->
+          @if (!project()!.isSelf) {
           <div class="card section payments-section">
             <div class="payments-header">
               <h3>Payments</h3>
@@ -141,6 +159,7 @@ import { ToastService } from '../../../core/services/toast.service';
               </ul>
             }
           </div>
+          }
         </div>
       } @else if (!loading()) {
         <div class="card empty-card">
@@ -185,6 +204,7 @@ import { ToastService } from '../../../core/services/toast.service';
     .title-block h1 { font-size: 1.5rem; font-weight: 700; margin: 0; }
     .title-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.85rem; }
     .status-pill { font-size: 0.7rem; font-weight: 600; padding: 3px 10px; border-radius: 6px; }
+    .status-pill.self { background: var(--bg-hover); color: var(--text-muted); }
     .overdue-pill { background: rgba(239, 68, 68, 0.15); color: #ef4444; font-size: 0.72rem; padding: 3px 8px; border-radius: 6px; font-weight: 600; }
     .muted { color: var(--text-muted); }
     .overdue-text { color: #ef4444; }
@@ -248,7 +268,6 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private sub: Subscription | null = null;
 
-  statuses = PROJECT_STATUSES;
   project = signal<Project | null>(null);
   loading = signal(true);
   showForm = false;
@@ -263,8 +282,13 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
     method: [''],
   });
 
+  statuses = PROJECT_STATUSES;
+  paymentStatuses = PAYMENT_STATUSES.filter((p) => p.value !== 'NOT_APPLICABLE');
+
   statusColor = computed(() => PROJECT_STATUSES.find((s) => s.value === this.project()?.status)?.color ?? '#94a3b8');
   statusLabel = computed(() => PROJECT_STATUSES.find((s) => s.value === this.project()?.status)?.label ?? this.project()?.status ?? '');
+  paymentColor = computed(() => PAYMENT_STATUSES.find((p) => p.value === this.project()?.paymentStatus)?.color ?? '#94a3b8');
+  paymentLabel = computed(() => PAYMENT_STATUSES.find((p) => p.value === this.project()?.paymentStatus)?.label ?? this.project()?.paymentStatus ?? '');
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
@@ -291,6 +315,14 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
     if (!p) return;
     this.projectService.update(p.id, { status }).subscribe({
       next: (u) => { this.project.set(u); this.toast.success('Status updated'); },
+    });
+  }
+
+  updatePaymentStatus(paymentStatus: PaymentStatus) {
+    const p = this.project();
+    if (!p) return;
+    this.projectService.update(p.id, { paymentStatus }).subscribe({
+      next: (u) => { this.project.set(u); this.toast.success('Payment status updated'); },
     });
   }
 

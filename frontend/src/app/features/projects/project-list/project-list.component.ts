@@ -2,7 +2,7 @@ import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ProjectService } from '../project.service';
-import { Project, PROJECT_STATUSES, ProjectStatus } from '../../../core/models/project.model';
+import { PAYMENT_STATUSES, PaymentStatus, Project, PROJECT_STATUSES, ProjectStatus } from '../../../core/models/project.model';
 import { ModalComponent } from '../../../shared/components/modal/modal.component';
 import { ProjectFormComponent } from '../project-form/project-form.component';
 import { ToastService } from '../../../core/services/toast.service';
@@ -48,10 +48,10 @@ import { ToastService } from '../../../core/services/toast.service';
         </div>
       </div>
 
-      <!-- Status filter chips -->
+      <!-- Status filter chips (LEAD intentionally hidden to keep the bar focused) -->
       <div class="chip-row">
         <button class="chip" [class.active]="!filterStatus()" (click)="filterStatus.set(null)">All</button>
-        @for (s of statuses; track s.value) {
+        @for (s of filterableStatuses; track s.value) {
           <button class="chip" [class.active]="filterStatus() === s.value" [style.--chip-color]="s.color" (click)="filterStatus.set(s.value)">
             {{ s.label }} <span class="chip-count">{{ countByStatus(s.value) }}</span>
           </button>
@@ -70,9 +70,18 @@ import { ToastService } from '../../../core/services/toast.service';
         <div class="project-list">
           @for (p of filtered(); track p.id) {
             <a [routerLink]="['/projects', p.id]" class="project-row" [class.overdue]="p.isOverdue">
-              <span class="status-pill" [style.background]="statusColor(p.status) + '22'" [style.color]="statusColor(p.status)">
-                {{ statusLabel(p.status) }}
-              </span>
+              <div class="pill-stack">
+                <span class="status-pill" [style.background]="statusColor(p.status) + '22'" [style.color]="statusColor(p.status)">
+                  {{ statusLabel(p.status) }}
+                </span>
+                @if (!p.isSelf) {
+                  <span class="status-pill payment" [style.background]="paymentColor(p.paymentStatus) + '22'" [style.color]="paymentColor(p.paymentStatus)">
+                    {{ paymentLabel(p.paymentStatus) }}
+                  </span>
+                } @else {
+                  <span class="status-pill self">🏠 Self</span>
+                }
+              </div>
               <div class="proj-main">
                 <div class="proj-top">
                   <span class="proj-title">{{ p.title }}</span>
@@ -86,14 +95,16 @@ import { ToastService } from '../../../core/services/toast.service';
                       @else { · {{ daysUntil(p.deadline) }} }
                     </span>
                   }
-                  @if (p.quotedAmount !== null && p.quotedAmount > 0) {
-                    <span class="meta-item">💰 {{ formatMoney(p.quotedAmount, p.currency) }}</span>
-                  }
-                  @if (p.totalReceived > 0) {
-                    <span class="meta-item received">✓ {{ formatMoney(p.totalReceived, p.currency) }} received</span>
-                  }
-                  @if (p.balance > 0 && p.status !== 'LOST') {
-                    <span class="meta-item balance">⌛ {{ formatMoney(p.balance, p.currency) }} pending</span>
+                  @if (!p.isSelf) {
+                    @if (p.quotedAmount !== null && p.quotedAmount > 0) {
+                      <span class="meta-item">💰 {{ formatMoney(p.quotedAmount, p.currency) }}</span>
+                    }
+                    @if (p.totalReceived > 0) {
+                      <span class="meta-item received">✓ {{ formatMoney(p.totalReceived, p.currency) }} received</span>
+                    }
+                    @if (p.balance > 0 && p.status !== 'LOST') {
+                      <span class="meta-item balance">⌛ {{ formatMoney(p.balance, p.currency) }} pending</span>
+                    }
                   }
                 </div>
               </div>
@@ -141,7 +152,11 @@ import { ToastService } from '../../../core/services/toast.service';
     .project-row:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: var(--shadow-md); }
     .project-row.overdue { border-color: rgba(239, 68, 68, 0.4); }
 
-    .status-pill { font-size: 0.7rem; font-weight: 600; padding: 4px 10px; border-radius: 6px; white-space: nowrap; flex-shrink: 0; }
+    /* Two pills stacked vertically: project status on top, payment (or self) below */
+    .pill-stack { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; align-items: flex-start; min-width: 96px; }
+    .status-pill { font-size: 0.7rem; font-weight: 600; padding: 4px 10px; border-radius: 6px; white-space: nowrap; }
+    .status-pill.payment { font-size: 0.66rem; padding: 3px 8px; }
+    .status-pill.self { font-size: 0.66rem; padding: 3px 8px; background: var(--bg-hover); color: var(--text-muted); }
     .proj-main { flex: 1; min-width: 0; }
     .proj-top { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
     .proj-title { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
@@ -171,6 +186,8 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
   projects = signal<Project[]>([]);
   statuses = PROJECT_STATUSES;
+  // Filter bar omits LEAD by design — leads sit at the top by default and clutter the chips row.
+  filterableStatuses = PROJECT_STATUSES.filter((s) => s.value !== 'LEAD');
   filterStatus = signal<ProjectStatus | null>(null);
   showForm = false;
 
@@ -179,9 +196,10 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     return s ? this.projects().filter((p) => p.status === s) : this.projects();
   });
 
+  // Outstanding = pending balance across NON-self projects that aren't lost or already fully paid.
   outstanding = computed(() =>
     this.projects()
-      .filter((p) => p.status !== 'LOST' && p.status !== 'PAID')
+      .filter((p) => !p.isSelf && p.status !== 'LOST' && p.paymentStatus !== 'PAID')
       .reduce((sum, p) => sum + (p.balance ?? 0), 0)
   );
 
@@ -211,6 +229,8 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
   statusColor(s: ProjectStatus): string { return PROJECT_STATUSES.find((x) => x.value === s)?.color ?? '#94a3b8'; }
   statusLabel(s: ProjectStatus): string { return PROJECT_STATUSES.find((x) => x.value === s)?.label ?? s; }
+  paymentColor(s: PaymentStatus): string { return PAYMENT_STATUSES.find((x) => x.value === s)?.color ?? '#94a3b8'; }
+  paymentLabel(s: PaymentStatus): string { return PAYMENT_STATUSES.find((x) => x.value === s)?.label ?? s; }
 
   formatMoney(n: number, currency = 'INR'): string {
     if (n === 0) return `${this.currencySymbol(currency)}0`;

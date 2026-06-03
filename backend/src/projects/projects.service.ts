@@ -1,7 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { FirebaseService } from '../prisma/firebase.service';
-import { CreateProjectDto, ProjectStatus } from './dto/create-project.dto';
+import { CreateProjectDto, PaymentStatus, ProjectStatus } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 
@@ -9,10 +9,12 @@ type ProjectRecord = {
   id: string;
   userId: string;
   title: string;
+  isSelf: boolean;
   clientName: string | null;
   clientContact: string | null;
   description: string | null;
   status: ProjectStatus;
+  paymentStatus: PaymentStatus;
   quotedAmount: number | null;
   currency: string;
   startDate: string | null;
@@ -50,8 +52,9 @@ export class ProjectsService {
     const userPayments = payments.filter((p) => p.userId === userId);
     return userProjects
       .map((p) => this.enrich(p, userPayments))
-      // Pinned-on-top order: active work first (IN_PROGRESS, QUOTED, LEAD), then DELIVERED,
-      // then closed (PAID, LOST, ON_HOLD). Within a group, sort by deadline asc, missing last.
+      // Pinned-on-top order: active work first (IN_PROGRESS, QUOTED, LEAD), then DELIVERED
+      // (work done but maybe payment pending), then ON_HOLD, then LOST. Within a group,
+      // sort by deadline asc with missing-deadline last.
       .sort((a, b) => {
         const groupOrder = (s: ProjectStatus) =>
           s === 'IN_PROGRESS' ? 0
@@ -59,8 +62,7 @@ export class ProjectsService {
           : s === 'LEAD' ? 2
           : s === 'DELIVERED' ? 3
           : s === 'ON_HOLD' ? 4
-          : s === 'PAID' ? 5
-          : 6; // LOST
+          : 5; // LOST
         const g = groupOrder(a.status) - groupOrder(b.status);
         if (g !== 0) return g;
         if (!a.deadline && !b.deadline) return 0;
@@ -80,15 +82,19 @@ export class ProjectsService {
 
   async create(userId: string, dto: CreateProjectDto) {
     const id = randomUUID();
+    const isSelf = !!dto.isSelf;
     const project: ProjectRecord = {
       id,
       userId,
       title: dto.title,
-      clientName: dto.clientName ?? null,
-      clientContact: dto.clientContact ?? null,
+      isSelf,
+      // Self projects don't carry client/payment fields, even if the client sends them.
+      clientName: isSelf ? null : dto.clientName ?? null,
+      clientContact: isSelf ? null : dto.clientContact ?? null,
       description: dto.description ?? null,
       status: dto.status ?? 'LEAD',
-      quotedAmount: dto.quotedAmount ?? null,
+      paymentStatus: isSelf ? 'NOT_APPLICABLE' : (dto.paymentStatus ?? 'PENDING'),
+      quotedAmount: isSelf ? null : dto.quotedAmount ?? null,
       currency: dto.currency ?? 'INR',
       startDate: dto.startDate ?? null,
       deadline: dto.deadline ?? null,
@@ -105,10 +111,29 @@ export class ProjectsService {
 
   async update(userId: string, id: string, dto: UpdateProjectDto) {
     const existing = await this.ensureOwnership(userId, id);
-    const patch: Record<string, any> = { ...dto, updatedAt: new Date().toISOString() };
+    const patch: Record<string, any> = { updatedAt: new Date().toISOString() };
+
+    // Copy every defined field into the patch — Firebase Admin SDK rejects `undefined` values,
+    // so we skip undefined and explicitly carry through null where the client asks to clear.
+    for (const [k, v] of Object.entries(dto)) {
+      if (v !== undefined) patch[k] = v;
+    }
+
+    // Flipping to self project clears client and payment fields.
+    if (dto.isSelf === true && !existing.isSelf) {
+      patch.clientName = null;
+      patch.clientContact = null;
+      patch.quotedAmount = null;
+      patch.paymentStatus = 'NOT_APPLICABLE';
+    }
+    // Flipping away from self project resets paymentStatus to a sensible default.
+    if (dto.isSelf === false && existing.isSelf) {
+      if (!dto.paymentStatus) patch.paymentStatus = 'PENDING';
+    }
+
     // When the user flips status to DELIVERED, stamp deliveredAt; when flipped away, clear it.
     if (dto.status && dto.status !== existing.status) {
-      if (dto.status === 'DELIVERED' || dto.status === 'PAID') {
+      if (dto.status === 'DELIVERED') {
         patch.deliveredAt = existing.deliveredAt ?? new Date().toISOString();
       } else if (existing.status === 'DELIVERED') {
         patch.deliveredAt = null;
@@ -135,6 +160,9 @@ export class ProjectsService {
 
   async addPayment(userId: string, projectId: string, dto: CreatePaymentDto) {
     const project = await this.ensureOwnership(userId, projectId);
+    if (project.isSelf) {
+      throw new ForbiddenException('Self projects do not track payments');
+    }
     const id = randomUUID();
     const payment: PaymentRecord = {
       id,
@@ -171,18 +199,42 @@ export class ProjectsService {
   }
 
   // Attaches payments + computed totals/balance/overdue flag.
+  // Also migrates legacy fields on read (no DB rewrite — the response just looks correct):
+  //   - status === 'PAID' (old combined status) → status: 'DELIVERED' + paymentStatus: 'PAID'
+  //   - missing isSelf → false
+  //   - missing paymentStatus → derive from status / amounts
   private enrich(project: ProjectRecord, allUserPayments: PaymentRecord[]) {
-    const payments = allUserPayments
-      .filter((p) => p.projectId === project.id)
-      .sort((a, b) => b.date.localeCompare(a.date));
+    const payments = project.isSelf
+      ? []
+      : allUserPayments
+          .filter((p) => p.projectId === project.id)
+          .sort((a, b) => b.date.localeCompare(a.date));
     const totalReceived = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
     const quoted = project.quotedAmount ?? 0;
     const balance = Math.max(0, quoted - totalReceived);
     const todayKey = new Date().toISOString().split('T')[0];
+
+    // ---- Legacy migration applied at read time ----
+    let migratedStatus: ProjectStatus = (project.status as any) === 'PAID'
+      ? 'DELIVERED'
+      : (project.status ?? 'LEAD');
+    let migratedPaymentStatus: PaymentStatus = project.paymentStatus
+      ?? ((project.status as any) === 'PAID' ? 'PAID'
+        : project.isSelf ? 'NOT_APPLICABLE'
+        : totalReceived >= quoted && quoted > 0 ? 'PAID'
+        : totalReceived > 0 ? 'PARTIAL'
+        : 'PENDING');
+    const isSelf = project.isSelf ?? false;
+    if (isSelf) migratedPaymentStatus = 'NOT_APPLICABLE';
+
     const isOverdue = !!project.deadline && project.deadline < todayKey
-      && project.status !== 'PAID' && project.status !== 'LOST';
+      && migratedStatus !== 'DELIVERED' && migratedStatus !== 'LOST';
+
     return {
       ...project,
+      isSelf,
+      status: migratedStatus,
+      paymentStatus: migratedPaymentStatus,
       payments,
       totalReceived: Math.round(totalReceived * 100) / 100,
       balance: Math.round(balance * 100) / 100,
