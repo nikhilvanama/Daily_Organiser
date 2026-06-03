@@ -33,16 +33,37 @@ export class HabitsService {
   constructor(private firebase: FirebaseService) {}
 
   async findAll(userId: string, today?: string) {
-    const [habits, checkins] = await Promise.all([
+    const [habits, checkins, tasks] = await Promise.all([
       this.firebase.getList<HabitRecord>('habits'),
       this.firebase.getList<CheckinRecord>('habitCheckins'),
+      this.firebase.getList<any>('tasks'),
     ]);
     const userHabits = habits
       .filter((h) => h.userId === userId && !h.archived)
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     const userCheckins = checkins.filter((c) => c.userId === userId);
     const todayKey = this.resolveToday(today);
-    return userHabits.map((h) => this.enrich(h, userCheckins, todayKey));
+    // Days covered by any trip plan are treated as rest days for habits (no scheduling,
+    // no streak penalty). Auto-detected; no manual marking required.
+    const offDates = this.buildTripDates(tasks.filter((t) => t.userId === userId));
+    return userHabits.map((h) => this.enrich(h, userCheckins, todayKey, offDates));
+  }
+
+  // Returns a Set<YYYY-MM-DD> of every date covered by a trip plan (dueDate..endDate inclusive).
+  private buildTripDates(userTasks: any[]): Set<string> {
+    const out = new Set<string>();
+    for (const t of userTasks) {
+      if (t.type !== 'trip' || !t.dueDate) continue;
+      const start = t.dueDate.slice(0, 10);
+      const end = (t.endDate ?? t.dueDate).slice(0, 10);
+      const cursor = new Date(start + 'T00:00:00Z');
+      const stop = new Date(end + 'T00:00:00Z');
+      while (cursor <= stop) {
+        out.add(cursor.toISOString().split('T')[0]);
+        cursor.setUTCDate(cursor.getUTCDate() + 1);
+      }
+    }
+    return out;
   }
 
   async create(userId: string, dto: CreateHabitDto, today?: string) {
@@ -72,8 +93,13 @@ export class HabitsService {
     if (dto.weekdays) patch.weekdays = Array.from(new Set(dto.weekdays)).sort();
     await this.firebase.update(`habits/${id}`, patch);
     const updated = await this.firebase.get<HabitRecord>(`habits/${id}`);
-    const checkins = (await this.firebase.getList<CheckinRecord>('habitCheckins')).filter((c) => c.userId === userId);
-    return this.enrich(updated!, checkins, this.resolveToday(today));
+    const [checkins, tasks] = await Promise.all([
+      this.firebase.getList<CheckinRecord>('habitCheckins'),
+      this.firebase.getList<any>('tasks'),
+    ]);
+    const userCheckins = checkins.filter((c) => c.userId === userId);
+    const offDates = this.buildTripDates(tasks.filter((t) => t.userId === userId));
+    return this.enrich(updated!, userCheckins, this.resolveToday(today), offDates);
   }
 
   async remove(userId: string, id: string) {
@@ -111,8 +137,13 @@ export class HabitsService {
       await this.firebase.ref(`habitCheckins/${id}`).set(record);
     }
     const habit = await this.firebase.get<HabitRecord>(`habits/${habitId}`);
-    const fresh = (await this.firebase.getList<CheckinRecord>('habitCheckins')).filter((c) => c.userId === userId);
-    return this.enrich(habit!, fresh, todayKey);
+    const [freshCheckins, tasks] = await Promise.all([
+      this.firebase.getList<CheckinRecord>('habitCheckins'),
+      this.firebase.getList<any>('tasks'),
+    ]);
+    const fresh = freshCheckins.filter((c) => c.userId === userId);
+    const offDates = this.buildTripDates(tasks.filter((t) => t.userId === userId));
+    return this.enrich(habit!, fresh, todayKey, offDates);
   }
 
   // --- helpers ---
@@ -135,7 +166,10 @@ export class HabitsService {
   }
 
   // Builds the response payload: habit + today's scheduling/completion status + streak + recent history.
-  private enrich(habit: HabitRecord, allUserCheckins: CheckinRecord[], today: string) {
+  // offDates is a set of YYYY-MM-DD strings the user shouldn't be held accountable for
+  // (currently auto-derived from trip plans). Off days are treated as scheduled=false so they
+  // never break a streak, never count against consistency, and render as rest cells in the heatmap.
+  private enrich(habit: HabitRecord, allUserCheckins: CheckinRecord[], today: string, offDates: Set<string> = new Set()) {
     const habitCheckins = allUserCheckins
       .filter((c) => c.habitId === habit.id)
       .sort((a, b) => a.date.localeCompare(b.date));
@@ -144,7 +178,9 @@ export class HabitsService {
     // so the cursor must be UTC too — otherwise a user in a +HH:MM timezone gets
     // a date key one day behind and no streak ever matches.
     const todayCursor = new Date(today + 'T00:00:00Z');
-    const scheduledToday = habit.weekdays.includes(todayCursor.getUTCDay());
+    const isWeekdayMatch = habit.weekdays.includes(todayCursor.getUTCDay());
+    const isOffToday = offDates.has(today);
+    const scheduledToday = isWeekdayMatch && !isOffToday;
     const doneToday = checkinDates.has(today);
 
     // Streak: count consecutive scheduled days (walking back from today) that have a check-in.
@@ -156,7 +192,7 @@ export class HabitsService {
     while (true) {
       const key = cursor.toISOString().split('T')[0];
       const dayOfWeek = cursor.getUTCDay();
-      const scheduled = habit.weekdays.includes(dayOfWeek);
+      const scheduled = habit.weekdays.includes(dayOfWeek) && !offDates.has(key);
       if (scheduled) {
         if (checkinDates.has(key)) {
           streak++;
@@ -176,16 +212,18 @@ export class HabitsService {
 
     // Last 30 calendar days, oldest first — convenient for a heatmap or sparkline.
     // Days BEFORE the habit was created are marked scheduled=false so the heatmap doesn't
-    // paint them as "missed" — the user wasn't tracking yet.
-    const history: { date: string; done: boolean; scheduled: boolean }[] = [];
+    // paint them as "missed". Off (trip) days are also marked scheduled=false.
+    const history: { date: string; done: boolean; scheduled: boolean; off?: boolean }[] = [];
     const cursor2 = new Date(today + 'T00:00:00Z');
     for (let i = 0; i < 30; i++) {
       const key = cursor2.toISOString().split('T')[0];
       const existed = key >= habitCreatedDay;
+      const isOff = offDates.has(key);
       history.unshift({
         date: key,
         done: checkinDates.has(key),
-        scheduled: existed && habit.weekdays.includes(cursor2.getUTCDay()),
+        scheduled: existed && habit.weekdays.includes(cursor2.getUTCDay()) && !isOff,
+        off: isOff,
       });
       cursor2.setUTCDate(cursor2.getUTCDate() - 1);
     }
@@ -197,6 +235,7 @@ export class HabitsService {
       streak,
       totalCompletions: habitCheckins.length,
       history,
+      isOffToday,
     };
   }
 }

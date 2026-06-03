@@ -6,6 +6,7 @@ export interface HabitHistoryDay {
   date: string;     // YYYY-MM-DD
   done: boolean;    // a check-in exists for this date
   scheduled: boolean; // habit was scheduled to run that day
+  off?: boolean;    // user was off (e.g. trip day) — don't penalize for missing
 }
 
 export interface Habit {
@@ -28,6 +29,7 @@ export interface Habit {
   streak: number;
   totalCompletions: number;
   history: HabitHistoryDay[]; // oldest first, last entry is today
+  isOffToday?: boolean;        // auto-detected from trip plans overlapping today
 }
 
 export interface CreateHabitDto {

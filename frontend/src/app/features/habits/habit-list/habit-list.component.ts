@@ -51,11 +51,20 @@ import { Subscription } from 'rxjs';
             }
           </div>
         </div>
-        @if (scheduledForSelected().length === 0) {
+        @if (isSelectedDateOff()) {
+          <div class="trip-banner">
+            <span class="trip-icon">🧳</span>
+            <div class="trip-text">
+              <strong>{{ selectedDate === todayKey() ? "You're on a trip today" : 'This was a trip day' }}</strong>
+              <small>Daily routine is paused — these dates don't count toward streaks or consistency.</small>
+            </div>
+          </div>
+        }
+        @if (scheduledForSelected().length === 0 && !isSelectedDateOff()) {
           <div class="empty">
             <p>No habits scheduled on this day.</p>
           </div>
-        } @else {
+        } @else if (scheduledForSelected().length > 0) {
           <div class="checklist">
             @for (h of scheduledForSelected(); track h.id) {
               <button class="check-row" [class.done]="isDoneOnSelected(h)" (click)="toggleSelected(h)">
@@ -109,9 +118,10 @@ import { Subscription } from 'rxjs';
                   @for (d of h.history; track d.date) {
                     <button class="heat-cell"
                       [class.done]="d.done"
-                      [class.dim]="!d.scheduled"
+                      [class.dim]="!d.scheduled && !d.off"
+                      [class.off]="d.off"
                       [style.--cell-color]="h.color"
-                      [title]="d.date + (d.done ? ' · done' : d.scheduled ? ' · missed' : ' · not scheduled')"
+                      [title]="d.date + (d.done ? ' · done' : d.off ? ' · trip day' : d.scheduled ? ' · missed' : ' · not scheduled')"
                       (click)="toggleDate(h, d.date)"></button>
                   }
                 </div>
@@ -238,8 +248,22 @@ import { Subscription } from 'rxjs';
     .heat-cell:hover { transform: scale(1.4); }
     .heat-cell.dim { opacity: 0.35; }
     .heat-cell.done { background: var(--cell-color, var(--accent)); }
+    .heat-cell.off { background: rgba(59, 130, 246, 0.18); opacity: 0.8; }
+    .heat-cell.off.done { background: var(--cell-color, var(--accent)); } /* if user did the habit on a trip day anyway */
 
     .empty { padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.88rem; }
+
+    /* Trip-day banner — shown when the selected date overlaps a trip plan */
+    .trip-banner {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; margin-bottom: 0.75rem;
+      background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25);
+      border-radius: 8px;
+    }
+    .trip-icon { font-size: 1.5rem; line-height: 1; }
+    .trip-text { display: flex; flex-direction: column; gap: 2px; }
+    .trip-text strong { font-size: 0.9rem; color: var(--text-primary); }
+    .trip-text small { font-size: 0.78rem; color: var(--text-muted); }
 
     @media (max-width: 768px) {
       .habit-grid { grid-template-columns: 1fr; }
@@ -324,6 +348,16 @@ export class HabitListComponent implements OnInit, OnDestroy {
     if (!b.startTime) return -1;
     return a.startTime.localeCompare(b.startTime);
   };
+
+  // True when the selected date overlaps a trip plan (auto-detected by the backend).
+  // For today we use the response's isOffToday; for past dates we use the history cell's `off` flag.
+  isSelectedDateOff(): boolean {
+    if (this.allHabits.length === 0) return false;
+    if (this.selectedDate === this.localTodayKey()) {
+      return this.allHabits.some((h) => h.isOffToday);
+    }
+    return this.allHabits.some((h) => h.history.find((d) => d.date === this.selectedDate)?.off);
+  }
 
   // For today, trust h.doneToday; for past dates, look up the history cell.
   isDoneOnSelected(h: Habit): boolean {
