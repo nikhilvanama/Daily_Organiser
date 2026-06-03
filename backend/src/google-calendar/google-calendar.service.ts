@@ -24,14 +24,23 @@ export class GoogleCalendarService {
     return new google.auth.OAuth2(this.clientId, this.clientSecret, this.redirectUri);
   }
 
-  // Generate the Google OAuth consent URL — userId is passed as state for the callback
+  // Generate the Google OAuth consent URL — userId is passed as state for the callback.
+  // Scopes:
+  //   - calendar.events       — read/write events on calendars the user grants (primary)
+  //   - calendar.readonly     — read events across all calendars the user is subscribed to,
+  //                             so holidays/festivals/birthdays/external bookings show up
+  //   - calendar.calendarlist.readonly — list the user's subscribed calendars
   getAuthUrl(userId: string): string {
     const oauth2Client = this.createOAuth2Client();
     return oauth2Client.generateAuthUrl({
-      access_type: 'offline',        // Request a refresh token for long-lived access
-      prompt: 'consent',             // Always show consent screen to get refresh_token
-      scope: ['https://www.googleapis.com/auth/calendar.events'], // Only events, not full calendar access
-      state: userId,                 // Pass userId so callback knows which user to store tokens for
+      access_type: 'offline',
+      prompt: 'consent',
+      scope: [
+        'https://www.googleapis.com/auth/calendar.events',
+        'https://www.googleapis.com/auth/calendar.readonly',
+        'https://www.googleapis.com/auth/calendar.calendarlist.readonly',
+      ],
+      state: userId,
     });
   }
 
@@ -63,6 +72,24 @@ export class GoogleCalendarService {
       googleTokenExpiry: null,
       googleCalendarConnected: false,
     });
+  }
+
+  // When a Google API call returns an `invalid_grant` (revoked / scope-mismatched refresh token),
+  // mark the connection as disconnected in Firebase so the UI prompts a reconnect instead of
+  // silently failing forever. Returns true if the error was an invalid_grant we handled.
+  private async handleAuthError(userId: string, err: any): Promise<boolean> {
+    const msg = (err?.message || err?.response?.data?.error || '').toString();
+    if (msg.includes('invalid_grant') || err?.response?.data?.error === 'invalid_grant') {
+      console.warn(`Google Calendar: token revoked / scope-changed for user ${userId} — marking disconnected`);
+      await this.firebase.update(`users/${userId}`, {
+        googleAccessToken: null,
+        googleRefreshToken: null,
+        googleTokenExpiry: null,
+        googleCalendarConnected: false,
+      });
+      return true;
+    }
+    return false;
   }
 
   // Get an authorized OAuth2Client for a user (handles token refresh automatically)
@@ -151,6 +178,7 @@ export class GoogleCalendarService {
       return response.data.id || null;
     } catch (err: any) {
       console.error('Google Calendar createEvent error:', err.message);
+      await this.handleAuthError(userId, err);
       return null;
     }
   }
@@ -171,6 +199,7 @@ export class GoogleCalendarService {
       console.log(`Google Calendar: Updated event ${googleEventId}`);
     } catch (err: any) {
       console.error('Google Calendar updateEvent error:', err.message);
+      await this.handleAuthError(userId, err);
     }
   }
 
@@ -206,6 +235,149 @@ export class GoogleCalendarService {
     return { synced, failed };
   }
 
+  // List events across ALL of the user's subscribed Google calendars in a date range.
+  // Used to pull external bookings (restaurant, movie tickets), holidays, festivals, birthdays
+  // into our own calendar view. Events we previously pushed from this app are filtered out
+  // (matched by Google event ID stored on each task as googleEventId) to avoid duplicates.
+  async listEvents(
+    userId: string,
+    from: string, // YYYY-MM-DD inclusive
+    to: string,   // YYYY-MM-DD inclusive (events ending on this day still show)
+  ): Promise<Array<{
+    id: string;
+    title: string;
+    start: string;       // YYYY-MM-DD — used to bucket into calendar cells
+    end: string;         // YYYY-MM-DD — for multi-day events
+    startTime: string | null;
+    endTime: string | null;
+    allDay: boolean;
+    location: string | null;
+    calendarName: string;
+    htmlLink: string;
+  }>> {
+    const connected = await this.isConnected(userId);
+    if (!connected) return [];
+
+    try {
+      const auth = await this.getAuthorizedClient(userId);
+      const calendar = google.calendar({ version: 'v3', auth });
+
+      // RFC3339 bounds: start of `from` to end of `to` in UTC. Google's `timeMin`/`timeMax`
+      // are exclusive at the end, so we add a day to `to` and use start-of-day.
+      const timeMin = new Date(`${from}T00:00:00.000Z`).toISOString();
+      const toEnd = new Date(`${to}T00:00:00.000Z`);
+      toEnd.setUTCDate(toEnd.getUTCDate() + 1);
+      const timeMax = toEnd.toISOString();
+
+      // Step 1: enumerate the user's subscribed calendars. If the calendarList scope wasn't
+      // granted (older connection), fall back to just the primary calendar.
+      let calendarIds: { id: string; summary: string }[];
+      try {
+        const list = await calendar.calendarList.list();
+        calendarIds = (list.data.items ?? [])
+          .filter((c) => c.id)
+          .map((c) => ({ id: c.id!, summary: c.summary || c.id! }));
+        if (calendarIds.length === 0) calendarIds = [{ id: 'primary', summary: 'Primary' }];
+      } catch {
+        calendarIds = [{ id: 'primary', summary: 'Primary' }];
+      }
+
+      // Step 2: fetch events from each calendar in parallel. Per-calendar errors are swallowed
+      // so one bad calendar doesn't break the whole response.
+      const results = await Promise.all(
+        calendarIds.map((c) =>
+          calendar.events
+            .list({
+              calendarId: c.id,
+              timeMin,
+              timeMax,
+              singleEvents: true,        // expand recurring events into individual instances
+              orderBy: 'startTime',
+              maxResults: 250,
+            })
+            .then((r) => ({ events: r.data.items ?? [], calendarName: c.summary }))
+            .catch(() => ({ events: [], calendarName: c.summary })),
+        ),
+      );
+
+      // Step 3: build a set of Google event IDs that originated from our own pushes, so we
+      // don't double-count them when the user has an app-task and the Google event for it.
+      const tasks = await this.firebase.getList<any>('tasks');
+      const ownPushedIds = new Set(
+        tasks
+          .filter((t: any) => t.userId === userId && t.googleEventId)
+          .map((t: any) => t.googleEventId as string),
+      );
+
+      // Step 4: flatten + normalize the events.
+      const out: Array<any> = [];
+      for (const { events, calendarName } of results) {
+        for (const ev of events) {
+          if (!ev.id || ownPushedIds.has(ev.id)) continue;
+          if (ev.status === 'cancelled') continue;
+
+          // All-day events use `date`; timed events use `dateTime`.
+          const startDate = ev.start?.date ?? ev.start?.dateTime;
+          const endDate = ev.end?.date ?? ev.end?.dateTime;
+          if (!startDate) continue;
+
+          const allDay = !!ev.start?.date;
+          let startDay: string;
+          let endDay: string;
+          let startTime: string | null = null;
+          let endTime: string | null = null;
+
+          if (allDay) {
+            startDay = ev.start!.date!;
+            // Google all-day end dates are exclusive — subtract 1 day to make them inclusive
+            // for our cell-bucketing logic.
+            const e = new Date(`${ev.end?.date ?? ev.start!.date}T00:00:00Z`);
+            e.setUTCDate(e.getUTCDate() - 1);
+            endDay = e.toISOString().split('T')[0];
+            if (endDay < startDay) endDay = startDay; // single-day all-day events
+          } else {
+            const s = new Date(ev.start!.dateTime!);
+            const e = new Date(ev.end!.dateTime!);
+            startDay = this.localDayKey(s);
+            endDay = this.localDayKey(e);
+            startTime = `${String(s.getHours()).padStart(2, '0')}:${String(s.getMinutes()).padStart(2, '0')}`;
+            endTime = `${String(e.getHours()).padStart(2, '0')}:${String(e.getMinutes()).padStart(2, '0')}`;
+          }
+
+          out.push({
+            id: ev.id,
+            title: ev.summary || '(no title)',
+            start: startDay,
+            end: endDay,
+            startTime,
+            endTime,
+            allDay,
+            location: ev.location ?? null,
+            calendarName,
+            htmlLink: ev.htmlLink ?? '',
+          });
+        }
+      }
+
+      // Sort newest-first within a day by start time
+      out.sort((a, b) => {
+        const d = a.start.localeCompare(b.start);
+        if (d !== 0) return d;
+        return (a.startTime ?? '').localeCompare(b.startTime ?? '');
+      });
+      return out;
+    } catch (err: any) {
+      console.error('Google Calendar listEvents error:', err.message);
+      await this.handleAuthError(userId, err);
+      return [];
+    }
+  }
+
+  // Convert a Date to a local YYYY-MM-DD string (server local time, fine for users in IST).
+  private localDayKey(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
   // Delete a Google Calendar event
   async deleteEvent(userId: string, googleEventId: string): Promise<void> {
     try {
@@ -220,6 +392,7 @@ export class GoogleCalendarService {
       console.log(`Google Calendar: Deleted event ${googleEventId}`);
     } catch (err: any) {
       console.error('Google Calendar deleteEvent error:', err.message);
+      await this.handleAuthError(userId, err);
     }
   }
 }

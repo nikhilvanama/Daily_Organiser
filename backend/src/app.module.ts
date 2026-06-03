@@ -14,6 +14,10 @@ import { TasksModule } from './tasks/tasks.module';
 import { GoalsModule } from './goals/goals.module';
 // HabitsModule — Daily/weekly habit tracker with streaks and per-day check-ins
 import { HabitsModule } from './habits/habits.module';
+// JournalModule — Day-end reflections; one entry per (user, date)
+import { JournalModule } from './journal/journal.module';
+// ProjectsModule — Freelance project tracker with payments, deadlines, statuses
+import { ProjectsModule } from './projects/projects.module';
 // CategoriesModule — CRUD for user-defined categories (Work, Personal, Travel, etc.)
 import { CategoriesModule } from './categories/categories.module';
 // DashboardModule — provides aggregate stats, today's plans, calendar data, and activity feed
@@ -38,6 +42,8 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     TasksModule,      // /api/tasks/* — daily plans CRUD + timer
     GoalsModule,      // /api/goals/* — goals + milestones + mini-goals
     HabitsModule,     // /api/habits/* — daily/weekly habits + check-ins + streaks
+    JournalModule,    // /api/journal/* — daily reflections
+    ProjectsModule,   // /api/projects/* — freelance projects + payments
     CategoriesModule, // /api/categories/* — user categories
     DashboardModule,  // /api/dashboard/* — stats, activity, calendar data
     GoogleCalendarModule, // /api/google/* — Google Calendar OAuth + sync

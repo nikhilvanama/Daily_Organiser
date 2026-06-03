@@ -77,6 +77,8 @@ export class TopbarComponent {
     if (path.includes('tasks')) return 'My Plans'; // Task list or detail page
     if (path.includes('goals')) return 'Goals'; // Goal list or detail page
     if (path.includes('habits')) return 'Daily Routine'; // Habits page
+    if (path.includes('journal')) return 'Journal'; // Journal page
+    if (path.includes('projects')) return 'Projects'; // Freelance projects
     if (path.includes('calendar')) return 'Calendar'; // Calendar page
     return 'Daily Organizer'; // Fallback title
   }

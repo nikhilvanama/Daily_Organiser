@@ -14,6 +14,9 @@ import { Task, PLAN_TYPES } from '../../core/models/task.model';
 import { ModalComponent } from '../../shared/components/modal/modal.component';
 // TaskFormComponent renders the task creation form inside the modal
 import { TaskFormComponent } from '../tasks/task-form/task-form.component';
+// GoogleCalendarService brings in events from the user's Google Calendars (festivals,
+// holidays, restaurant bookings, movie tickets, etc.) for read-only display alongside tasks.
+import { GoogleCalendarService, GoogleExternalEvent } from '../../core/services/google-calendar.service';
 
 // CalendarDay represents a single cell in the monthly calendar grid.
 // Each cell knows its date, whether it belongs to the current month,
@@ -23,6 +26,7 @@ interface CalendarDay {
   isCurrentMonth: boolean; // False for padding days from previous/next months
   isToday: boolean; // True if this date matches today's date
   tasks: Task[]; // Tasks that have their dueDate on this date
+  googleEvents: GoogleExternalEvent[]; // Events pulled from connected Google Calendars
 }
 
 // CalendarComponent displays a monthly calendar grid with tasks plotted on their due dates.
@@ -50,6 +54,12 @@ interface CalendarDay {
         </button>
         <!-- "Today" button: jumps back to the current month -->
         <button class="btn-ghost today-btn" (click)="goToday()">Today</button>
+        @if (gcalService.connected()) {
+          <button class="btn-ghost gcal-toggle" [class.on]="showGoogleEvents()" (click)="toggleGoogleEvents()" [title]="showGoogleEvents() ? 'Hide Google events' : 'Show Google events'">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            G Cal {{ showGoogleEvents() ? 'on' : 'off' }}
+          </button>
+        }
       </div>
 
       <!-- 7-column grid: day labels header + 42 day cells (6 weeks to cover any month layout) -->
@@ -93,6 +103,19 @@ interface CalendarDay {
               <!-- Overflow indicator when more than 3 tasks are on one day -->
               @if (cell.tasks.length > 3) {
                 <div class="cal-more">+{{ cell.tasks.length - 3 }} more</div>
+              }
+              <!-- Google Calendar events: read-only, distinct outline-style chip with 'G' badge -->
+              @if (showGoogleEvents() && cell.googleEvents.length > 0) {
+                @for (gev of cell.googleEvents.slice(0, 2); track gev.id) {
+                  <div class="cal-gevent-chip" [title]="gev.title + (gev.location ? ' · ' + gev.location : '')">
+                    <span class="g-badge">G</span>
+                    @if (gev.startTime) { <span class="chip-time">{{ gev.startTime }}</span> }
+                    {{ gev.title }}
+                  </div>
+                }
+                @if (cell.googleEvents.length > 2) {
+                  <div class="cal-more">+{{ cell.googleEvents.length - 2 }} from Google</div>
+                }
               }
             </div>
           </div>
@@ -167,6 +190,31 @@ interface CalendarDay {
           }
         </div>
 
+        <!-- Google Calendar events for this day (read-only) -->
+        @if (showGoogleEvents() && selectedDay()!.googleEvents.length > 0) {
+          <div class="day-gevents">
+            <div class="day-section-hd"><span>From Google Calendar</span></div>
+            @for (gev of selectedDay()!.googleEvents; track gev.id) {
+              <a class="day-gevent-row" [href]="gev.htmlLink" target="_blank" rel="noopener">
+                <span class="g-badge">G</span>
+                <div class="day-gevent-info">
+                  <span class="day-gevent-title">{{ gev.title }}</span>
+                  <span class="day-gevent-meta">
+                    @if (gev.startTime) {
+                      <span>{{ gev.startTime }}{{ gev.endTime ? ' - ' + gev.endTime : '' }}</span>
+                    } @else {
+                      <span>All day</span>
+                    }
+                    <span class="dot-sep">·</span>
+                    <span class="day-gevent-cal">{{ gev.calendarName }}</span>
+                    @if (gev.location) { <span class="dot-sep">·</span><span>📍 {{ gev.location }}</span> }
+                  </span>
+                </div>
+              </a>
+            }
+          </div>
+        }
+
         <!-- Quick notes section: text area for free-form daily notes (client-side only) -->
         <div class="day-notes">
           <div class="day-section-hd"><span>Quick Note</span></div>
@@ -224,6 +272,41 @@ interface CalendarDay {
     .chip-time { font-weight: 600; margin-right: 3px; }
     /* Overflow indicator for days with more than 3 tasks */
     .cal-more { font-size: 0.65rem; color: var(--text-muted); padding: 1px 4px; }
+
+    /* Google Calendar event chips — outline style, distinct from app-task chips */
+    .cal-gevent-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 0.66rem; padding: 2px 6px; border-radius: 4px;
+      border: 1px solid var(--border); background: var(--bg-secondary);
+      color: var(--text-secondary); font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+    }
+    .g-badge {
+      font-size: 0.55rem; font-weight: 800; line-height: 1;
+      background: linear-gradient(135deg, #4285F4 0%, #34A853 33%, #FBBC04 66%, #EA4335 100%);
+      color: #fff; padding: 2px 4px; border-radius: 3px; letter-spacing: 0.04em;
+    }
+
+    /* Toggle button in the header */
+    .gcal-toggle {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 0.75rem; padding: 5px 10px; border-radius: 6px;
+      border: 1px solid var(--border); color: var(--text-secondary);
+    }
+    .gcal-toggle.on { color: var(--accent); border-color: var(--accent); background: rgba(16, 185, 129, 0.08); }
+
+    /* Google events in the day-detail panel */
+    .day-gevents { padding: 1rem 1.25rem; border-top: 1px solid var(--border); }
+    .day-gevent-row {
+      display: flex; align-items: flex-start; gap: 10px; padding: 8px 6px; border-radius: 6px;
+      text-decoration: none; color: inherit; transition: background 0.1s;
+    }
+    .day-gevent-row:hover { background: var(--bg-hover); }
+    .day-gevent-info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .day-gevent-title { font-size: 0.88rem; font-weight: 500; color: var(--text-primary); }
+    .day-gevent-meta { font-size: 0.72rem; color: var(--text-muted); display: flex; gap: 4px; flex-wrap: wrap; }
+    .day-gevent-cal { color: var(--accent); }
+    .dot-sep { color: var(--text-muted); }
 
     /* Weekend cells — uses CSS variables that change with theme */
     .cal-cell.weekend { background: var(--weekend-bg, #f3f4f6); }
@@ -332,14 +415,25 @@ interface CalendarDay {
 })
 export class CalendarComponent implements OnInit {
   private http = inject(HttpClient);
+  gcalService = inject(GoogleCalendarService);
 
   dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   viewDate = signal(new Date());
   tasks = signal<Task[]>([]);
+  // Events pulled from connected Google Calendars (festivals, holidays, bookings, etc.).
+  googleEvents = signal<GoogleExternalEvent[]>([]);
+  // Toggle for whether to display Google events in cells / day panel. Persisted to localStorage.
+  showGoogleEvents = signal<boolean>(localStorage.getItem('do_show_google_events') !== 'false');
   selectedDay = signal<CalendarDay | null>(null);
   showAddTask = false;
   dayNote = '';
   prefillTask: any = null;
+
+  toggleGoogleEvents() {
+    const next = !this.showGoogleEvents();
+    this.showGoogleEvents.set(next);
+    localStorage.setItem('do_show_google_events', String(next));
+  }
 
   // Profile data for birthday + weekend customization
   userProfile = signal<any>(null);
@@ -361,7 +455,7 @@ export class CalendarComponent implements OnInit {
     // Fill padding cells from the previous month (so the grid starts on Sunday)
     const prevMonthDays = new Date(year, month, 0).getDate();
     for (let i = firstDay - 1; i >= 0; i--) {
-      cells.push({ date: new Date(year, month - 1, prevMonthDays - i), isCurrentMonth: false, isToday: false, tasks: [] });
+      cells.push({ date: new Date(year, month - 1, prevMonthDays - i), isCurrentMonth: false, isToday: false, tasks: [], googleEvents: [] });
     }
     // Fill cells for the current month's days
     for (let i = 1; i <= daysInMonth; i++) {
@@ -379,12 +473,16 @@ export class CalendarComponent implements OnInit {
         thisDay.setHours(0, 0, 0, 0);
         return thisDay >= start && thisDay <= end;
       });
-      cells.push({ date, isCurrentMonth: true, isToday, tasks: dayTasks });
+      // Google events whose date range includes this day. A multi-day all-day event (festival
+      // spanning multiple days) shows on every day in its range.
+      const dayKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+      const dayGEvents = this.googleEvents().filter((g) => g.start <= dayKey && g.end >= dayKey);
+      cells.push({ date, isCurrentMonth: true, isToday, tasks: dayTasks, googleEvents: dayGEvents });
     }
     // Fill remaining cells with next month's days to complete the 6x7 grid (42 cells)
     const remaining = 42 - cells.length;
     for (let i = 1; i <= remaining; i++) {
-      cells.push({ date: new Date(year, month + 1, i), isCurrentMonth: false, isToday: false, tasks: [] });
+      cells.push({ date: new Date(year, month + 1, i), isCurrentMonth: false, isToday: false, tasks: [], googleEvents: [] });
     }
     return cells;
   });
@@ -395,6 +493,10 @@ export class CalendarComponent implements OnInit {
     this.initDayOffs();
     this.http.get(`${environment.apiUrl}/users/profile`).subscribe({
       next: (p: any) => this.userProfile.set(p),
+    });
+    // If Google Calendar is connected, also pull external events for the current month.
+    this.gcalService.checkStatus().subscribe({
+      next: ({ connected }) => { if (connected) this.loadGoogleEvents(); },
     });
   }
 
@@ -467,12 +569,21 @@ export class CalendarComponent implements OnInit {
     localStorage.setItem('do_holidays', JSON.stringify([...this.holidays]));
   }
 
-  // Navigate to the previous month and reload tasks
-  prevMonth() { this.viewDate.update((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1)); this.loadTasks(); }
-  // Navigate to the next month and reload tasks
-  nextMonth() { this.viewDate.update((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1)); this.loadTasks(); }
-  // Jump to the current month and reload tasks
-  goToday()   { this.viewDate.set(new Date()); this.loadTasks(); }
+  // Navigate to the previous month and reload tasks + Google events
+  prevMonth() {
+    this.viewDate.update((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
+    this.loadTasks(); this.loadGoogleEvents();
+  }
+  // Navigate to the next month and reload tasks + Google events
+  nextMonth() {
+    this.viewDate.update((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1));
+    this.loadTasks(); this.loadGoogleEvents();
+  }
+  // Jump to the current month and reload tasks + Google events
+  goToday() {
+    this.viewDate.set(new Date());
+    this.loadTasks(); this.loadGoogleEvents();
+  }
 
   // Open the day detail side panel for the clicked cell
   openDay(cell: CalendarDay) {
@@ -523,5 +634,22 @@ export class CalendarComponent implements OnInit {
     this.http.get<Task[]>(`${environment.apiUrl}/dashboard/calendar`, {
       params: { year: String(d.getFullYear()), month: String(d.getMonth() + 1) }, // Backend expects 1-indexed month
     }).subscribe((t) => this.tasks.set(t)); // Update the tasks signal which triggers grid recomputation
+  }
+
+  // Fetch all Google Calendar events for the currently viewed month (plus a small overflow
+  // on each side so multi-day events that start before/end after the month still render).
+  private loadGoogleEvents() {
+    if (!this.gcalService.connected()) {
+      this.googleEvents.set([]);
+      return;
+    }
+    const d = this.viewDate();
+    const from = new Date(d.getFullYear(), d.getMonth(), 1);
+    const to = new Date(d.getFullYear(), d.getMonth() + 1, 0); // last day of month
+    const fmt = (x: Date) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+    this.gcalService.listEvents(fmt(from), fmt(to)).subscribe({
+      next: (events) => this.googleEvents.set(events),
+      error: () => this.googleEvents.set([]),
+    });
   }
 }

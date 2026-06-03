@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Res } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Post, Query, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { GoogleCalendarService } from './google-calendar.service';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -50,5 +50,21 @@ export class GoogleCalendarController {
   async syncAll(@CurrentUser('id') userId: string) {
     const result = await this.gcalService.syncAllTasks(userId);
     return result;
+  }
+
+  // GET /api/google/events?from=YYYY-MM-DD&to=YYYY-MM-DD
+  // Returns events from ALL of the user's subscribed Google calendars in the given range —
+  // bookings auto-added from third-party apps, festivals on subscribed holiday calendars,
+  // birthdays, etc. Events the app itself pushed are filtered out to avoid duplicates.
+  @Get('events')
+  async events(
+    @CurrentUser('id') userId: string,
+    @Query('from') from: string,
+    @Query('to') to: string,
+  ) {
+    if (!from || !to || !/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+      throw new BadRequestException('from and to query params required as YYYY-MM-DD');
+    }
+    return this.gcalService.listEvents(userId, from, to);
   }
 }

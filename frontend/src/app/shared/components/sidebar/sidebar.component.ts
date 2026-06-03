@@ -62,6 +62,18 @@ import { ToastService } from '../../../core/services/toast.service';
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             <span>Daily Routine</span>
           </a>
+          <!-- Journal link — day-end reflections, one entry per day -->
+          <a routerLink="/journal" routerLinkActive="active" class="nav-link">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+            <span>Journal</span>
+          </a>
+
+          <!-- Freelance section: project pipeline + payments -->
+          <span class="nav-section">Freelance</span>
+          <a routerLink="/projects" routerLinkActive="active" class="nav-link">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20 7h-3V5a2 2 0 00-2-2H9a2 2 0 00-2 2v2H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><line x1="12" y1="11" x2="12" y2="15"/></svg>
+            <span>Projects</span>
+          </a>
         </nav>
 
       </div>

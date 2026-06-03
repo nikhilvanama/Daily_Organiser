@@ -80,6 +80,24 @@ export const routes: Routes = [
           import('./features/habits/habit-list/habit-list.component').then((m) => m.HabitListComponent),
       },
       {
+        path: 'journal',
+        // Journal — day-end reflections; one entry per day
+        loadComponent: () =>
+          import('./features/journal/journal-page/journal-page.component').then((m) => m.JournalPageComponent),
+      },
+      {
+        path: 'projects',
+        // Freelance project tracker — list view with stats + filters
+        loadComponent: () =>
+          import('./features/projects/project-list/project-list.component').then((m) => m.ProjectListComponent),
+      },
+      {
+        path: 'projects/:id',
+        // Project detail — info, payments, edit
+        loadComponent: () =>
+          import('./features/projects/project-detail/project-detail.component').then((m) => m.ProjectDetailComponent),
+      },
+      {
         path: 'calendar',
         loadComponent: () =>
           import('./features/calendar/calendar.component').then((m) => m.CalendarComponent),
