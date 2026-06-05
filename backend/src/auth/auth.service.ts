@@ -1,8 +1,8 @@
-// Import BadRequestException for duplicate email/username errors during registration
+// Import ConflictException for duplicate email/username errors during registration (409 — resource already exists)
 // Import Injectable to register this service in NestJS dependency injection
 // Import UnauthorizedException for invalid credentials during login and expired/missing tokens during refresh
 import {
-  BadRequestException,
+  ConflictException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -43,7 +43,7 @@ export class AuthService {
       (u: any) => u.email === dto.email || u.username === dto.username,
     );
     // If a user with the same email or username already exists, reject the registration
-    if (existing) throw new BadRequestException('Email or username already taken');
+    if (existing) throw new ConflictException('Email or username already taken');
 
     // Generate a new UUID to serve as the unique identifier for this user in the database
     const id = randomUUID();

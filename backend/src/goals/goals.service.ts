@@ -70,7 +70,7 @@ export class GoalsService {
     // Verify the goal exists and belongs to the authenticated user
     await this.ensureOwnership(userId, id);
     // Apply the partial update to the goal in Firebase with an updated timestamp
-    await this.firebase.update(`goals/${id}`, { ...dto, updatedAt: new Date().toISOString() });
+    await this.firebase.update(`goals/${id}`, this.definedOnly({ ...dto, updatedAt: new Date().toISOString() }));
     // Fetch the fully updated goal record
     const updated = await this.firebase.get<any>(`goals/${id}`);
     // Attach milestones and return the enriched updated goal
@@ -130,7 +130,7 @@ export class GoalsService {
 
   async updateMilestone(userId: string, goalId: string, milestoneId: string, dto: Partial<CreateMilestoneDto>) {
     await this.ensureOwnership(userId, goalId);
-    await this.firebase.update(`milestones/${milestoneId}`, { ...dto, updatedAt: new Date().toISOString() });
+    await this.firebase.update(`milestones/${milestoneId}`, this.definedOnly({ ...dto, updatedAt: new Date().toISOString() }));
     const goal = await this.firebase.get<any>(`goals/${goalId}`);
     return this.attachMilestones(goal);
   }
@@ -264,6 +264,15 @@ export class GoalsService {
     return all
       .filter((mg: any) => mg.milestoneId === milestoneId)
       .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  }
+
+  // Strips undefined values from a payload — Firebase Admin SDK rejects undefined.
+  private definedOnly(obj: Record<string, any>): Record<string, any> {
+    const out: Record<string, any> = {};
+    for (const [k, v] of Object.entries(obj)) {
+      if (v !== undefined) out[k] = v;
+    }
+    return out;
   }
 
   // Private helper that verifies a goal exists and belongs to the specified user; throws exceptions if not

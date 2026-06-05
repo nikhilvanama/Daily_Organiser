@@ -89,7 +89,12 @@ export class HabitsService {
 
   async update(userId: string, id: string, dto: UpdateHabitDto, today?: string) {
     await this.ensureOwnership(userId, id);
-    const patch: Record<string, any> = { ...dto, updatedAt: new Date().toISOString() };
+    // Defined-only copy — Firebase rejects undefined values, which class-transformer
+    // can leave on optional fields after validation.
+    const patch: Record<string, any> = { updatedAt: new Date().toISOString() };
+    for (const [k, v] of Object.entries(dto)) {
+      if (v !== undefined) patch[k] = v;
+    }
     if (dto.weekdays) patch.weekdays = Array.from(new Set(dto.weekdays)).sort();
     await this.firebase.update(`habits/${id}`, patch);
     const updated = await this.firebase.get<HabitRecord>(`habits/${id}`);

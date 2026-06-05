@@ -25,25 +25,34 @@ export class CategoriesService {
     return all.filter((c: any) => c.userId === userId).sort((a: any, b: any) => a.name.localeCompare(b.name));
   }
 
-  // Creates a new category for the authenticated user with an optional color and icon
+  // Creates a new category for the authenticated user with an optional color and icon.
+  // Important: Firebase Admin SDK rejects `undefined` property values, so we copy only
+  // defined fields from the DTO instead of spreading (which carries undefined keys).
   async create(userId: string, dto: CreateCategoryDto) {
-    // Generate a unique UUID for the new category
     const id = randomUUID();
-    // Build the complete category record; defaults color to indigo (#6366f1) if not provided
-    const category = { id, ...dto, color: dto.color ?? '#6366f1', userId, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-    // Write the category record to Firebase at categories/{id}
+    const category: Record<string, any> = {
+      id,
+      userId,
+      color: dto.color ?? '#6366f1',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    for (const [k, v] of Object.entries(dto)) {
+      if (v !== undefined) category[k] = v;
+    }
     await this.firebase.ref(`categories/${id}`).set(category);
-    // Return the newly created category
     return category;
   }
 
   // Updates an existing category with the provided fields (partial update)
   async update(userId: string, id: string, dto: UpdateCategoryDto) {
-    // Verify the category exists and belongs to the authenticated user before allowing modifications
     await this.ensureOwnership(userId, id);
-    // Apply the partial update to the category in Firebase (FirebaseService adds updatedAt automatically)
-    await this.firebase.update(`categories/${id}`, dto);
-    // Return the fully updated category record from Firebase
+    // Same defined-only filter as create — Firebase update rejects undefined values too.
+    const patch: Record<string, any> = {};
+    for (const [k, v] of Object.entries(dto)) {
+      if (v !== undefined) patch[k] = v;
+    }
+    await this.firebase.update(`categories/${id}`, patch);
     return this.firebase.get(`categories/${id}`);
   }
 

@@ -285,8 +285,12 @@ export class TasksService {
   async update(userId: string, id: string, dto: UpdateTaskDto) {
     // Verify the task exists and belongs to the authenticated user before allowing modifications
     await this.ensureOwnership(userId, id);
-    // Spread the DTO fields into a data object and add the updatedAt timestamp
-    const data: Record<string, any> = { ...dto, updatedAt: new Date().toISOString() };
+    // Defined-only copy — Firebase Admin SDK rejects undefined property values, which
+    // class-transformer can leave on optional DTO fields after validation.
+    const data: Record<string, any> = { updatedAt: new Date().toISOString() };
+    for (const [k, v] of Object.entries(dto)) {
+      if (v !== undefined) data[k] = v;
+    }
     // If the task is being marked as DONE, record the completion timestamp
     if (dto.status === 'DONE') data['completedAt'] = new Date().toISOString();
     // If the status is changing to something other than DONE, clear the completedAt timestamp
