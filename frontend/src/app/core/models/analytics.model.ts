@@ -4,14 +4,12 @@ export interface AnalyticsDailyActivity {
   date: string;        // YYYY-MM-DD
   tasks: number;
   habits: number;
-  focusMinutes: number;
   journal: boolean;
 }
 
 export interface AnalyticsByWeekday {
   weekday: number;     // 0=Sun..6=Sat
   tasks: number;
-  focusMinutes: number;
 }
 
 export interface AnalyticsTopCategory {
@@ -35,13 +33,6 @@ export interface AnalyticsSummary {
     bestStreak: number;
     bestStreakHabit: string | null;
     activeHabits: number;
-  };
-  focus: {
-    sessions: number;
-    minutes: number;
-    minutesPrev: number;
-    delta: number;
-    avgPerDay: number;
   };
   journal: {
     entries: number;

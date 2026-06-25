@@ -79,7 +79,6 @@ export class TopbarComponent {
     if (path.includes('habits')) return 'Daily Routine'; // Habits page
     if (path.includes('journal')) return 'Journal'; // Journal page
     if (path.includes('projects')) return 'Projects'; // Freelance projects
-    if (path.includes('focus')) return 'Focus'; // Pomodoro
     if (path.includes('analytics')) return 'Analytics'; // Analytics page
     if (path.includes('calendar')) return 'Calendar'; // Calendar page
     return 'Daily Organizer'; // Fallback title

@@ -39,13 +39,6 @@ import { AnalyticsRange, AnalyticsSummary } from '../../../core/models/analytics
             <span class="muted">{{ summary()!.habits.activeHabits }} active habit{{ summary()!.habits.activeHabits === 1 ? '' : 's' }}</span>
           </div>
           <div class="stat-card">
-            <span class="stat-num">{{ formatMinutes(summary()!.focus.minutes) }}</span>
-            <span class="stat-label">Focused time</span>
-            <span class="delta" [class.up]="summary()!.focus.delta > 0" [class.down]="summary()!.focus.delta < 0">
-              {{ summary()!.focus.sessions }} sessions
-            </span>
-          </div>
-          <div class="stat-card">
             <span class="stat-num">{{ summary()!.journal.entries }}</span>
             <span class="stat-label">Journal entries</span>
             <span class="muted">{{ summary()!.journal.ratio * 100 | number:'1.0-0' }}% of days</span>
@@ -67,14 +60,11 @@ import { AnalyticsRange, AnalyticsSummary } from '../../../core/models/analytics
         <!-- Daily activity chart -->
         <div class="card chart-card">
           <h3>Daily activity</h3>
-          <p class="muted">Tasks done + minutes focused, last {{ daysInRange() }} days</p>
+          <p class="muted">Tasks done, last {{ daysInRange() }} days</p>
           <div class="bar-chart" [style.--bar-count]="summary()!.dailyActivity.length">
             @for (d of summary()!.dailyActivity; track d.date) {
-              <div class="bar-col" [title]="d.date + ' · ' + d.tasks + ' tasks · ' + d.focusMinutes + 'm focus'">
+              <div class="bar-col" [title]="d.date + ' · ' + d.tasks + ' tasks'">
                 <div class="bar-stack">
-                  @if (focusMax() > 0) {
-                    <div class="bar focus" [style.height.%]="(d.focusMinutes / focusMax()) * 100"></div>
-                  }
                   @if (tasksMax() > 0) {
                     <div class="bar tasks" [style.height.%]="(d.tasks / tasksMax()) * 100"></div>
                   }
@@ -87,7 +77,6 @@ import { AnalyticsRange, AnalyticsSummary } from '../../../core/models/analytics
             }
           </div>
           <div class="legend">
-            <span class="legend-item"><span class="swatch focus"></span> Focus minutes</span>
             <span class="legend-item"><span class="swatch tasks"></span> Tasks done</span>
             <span class="legend-item"><span class="swatch journal"></span> Journal</span>
           </div>
@@ -103,8 +92,8 @@ import { AnalyticsRange, AnalyticsSummary } from '../../../core/models/analytics
                 <div class="wd-col">
                   <div class="wd-bar-wrap">
                     <div class="wd-bar"
-                      [style.height.%]="(w.focusMinutes / Math.max(maxWeekdayMinutes(), 1)) * 100"
-                      [title]="weekdayLabel(w.weekday) + ': ' + w.tasks + ' tasks · ' + w.focusMinutes + 'm focus'"></div>
+                      [style.height.%]="(w.tasks / Math.max(maxWeekdayTasks(), 1)) * 100"
+                      [title]="weekdayLabel(w.weekday) + ': ' + w.tasks + ' tasks'"></div>
                   </div>
                   <span class="wd-label">{{ weekdayLabel(w.weekday).slice(0, 3) }}</span>
                   <span class="wd-meta">{{ w.tasks }}t</span>
@@ -258,9 +247,8 @@ export class AnalyticsPageComponent implements OnInit {
     return r === '7d' ? 7 : r === '30d' ? 30 : r === '90d' ? 90 : 365;
   });
 
-  focusMax = computed(() => Math.max(1, ...(this.summary()?.dailyActivity ?? []).map((d) => d.focusMinutes)));
   tasksMax = computed(() => Math.max(1, ...(this.summary()?.dailyActivity ?? []).map((d) => d.tasks)));
-  maxWeekdayMinutes = computed(() => Math.max(...(this.summary()?.byWeekday ?? []).map((w) => w.focusMinutes), 1));
+  maxWeekdayTasks = computed(() => Math.max(...(this.summary()?.byWeekday ?? []).map((w) => w.tasks), 1));
   showDayLabels = computed(() => this.daysInRange() <= 30);
 
   ngOnInit() { this.load(); }

@@ -98,12 +98,6 @@ export const routes: Routes = [
           import('./features/projects/project-detail/project-detail.component').then((m) => m.ProjectDetailComponent),
       },
       {
-        path: 'focus',
-        // Focus / Pomodoro page — timer with task selector, today's sessions, settings
-        loadComponent: () =>
-          import('./features/focus/focus-page/focus-page.component').then((m) => m.FocusPageComponent),
-      },
-      {
         path: 'analytics',
         // Personal analytics — weekly/monthly stats across tasks/habits/focus/journal/projects
         loadComponent: () =>

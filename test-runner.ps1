@@ -401,57 +401,6 @@ Test-Step "Update isSelf to true clears client and payment fields" {
 }
 
 # ===========================
-# 8. FOCUS
-# ===========================
-Write-Host "`n--- FOCUS ---" -ForegroundColor Cyan
-
-$origTrackedMins = 0
-Test-Step "Capture original trackedMins on task" {
-  $r = Invoke-RestMethod -Method Get -Uri "$base/tasks/$($task.id)" -Headers $hdr
-  if ($null -eq $r.trackedMins) { $script:origTrackedMins = 0 } else { $script:origTrackedMins = [int]$r.trackedMins }
-  $true
-}
-
-Test-Step "Record WORK session with taskId" {
-  $body = @{ type='WORK'; plannedMinutes=25; actualMinutes=23; completed=$true; startedAt='2026-06-04T09:00:00Z'; endedAt='2026-06-04T09:23:00Z'; taskId=$task.id } | ConvertTo-Json
-  $r = Invoke-RestMethod -Method Post -Uri "$base/focus/sessions" -Body $body -Headers $hdr
-  if ($r.type -ne 'WORK') { throw "type wrong" }
-  $true
-}
-
-Test-Step "WORK session bumps task trackedMins" {
-  $r = Invoke-RestMethod -Method Get -Uri "$base/tasks/$($task.id)" -Headers $hdr
-  if ($null -eq $r.trackedMins) { $newMins = 0 } else { $newMins = [int]$r.trackedMins }
-  if ($newMins -ne ($origTrackedMins + 23)) { throw "expected $($origTrackedMins + 23), got $newMins" }
-  $true
-}
-
-Test-Step "Record SHORT_BREAK session without task" {
-  $body = @{ type='SHORT_BREAK'; plannedMinutes=5; actualMinutes=5; completed=$true; startedAt='2026-06-04T09:25:00Z'; endedAt='2026-06-04T09:30:00Z' } | ConvertTo-Json
-  $r = Invoke-RestMethod -Method Post -Uri "$base/focus/sessions" -Body $body -Headers $hdr
-  if ($r.type -ne 'SHORT_BREAK') { throw "type wrong" }
-  $true
-}
-
-Test-Step "Invalid session type returns 400" {
-  $body = @{ type='INVALID'; plannedMinutes=25; actualMinutes=23; completed=$true; startedAt='2026-06-04T09:00:00Z'; endedAt='2026-06-04T09:23:00Z' } | ConvertTo-Json
-  Expect-Status -wantStatus 400 -call { Invoke-RestMethod -Method Post -Uri "$base/focus/sessions" -Body $body -Headers $hdr }
-}
-
-Test-Step "Negative actualMinutes returns 400" {
-  $body = @{ type='WORK'; plannedMinutes=25; actualMinutes=-5; completed=$true; startedAt='2026-06-04T09:00:00Z'; endedAt='2026-06-04T09:23:00Z' } | ConvertTo-Json
-  Expect-Status -wantStatus 400 -call { Invoke-RestMethod -Method Post -Uri "$base/focus/sessions" -Body $body -Headers $hdr }
-}
-
-Test-Step "Today summary includes recorded sessions" {
-  $today = (Get-Date).ToString('yyyy-MM-dd')
-  $r = Invoke-RestMethod -Method Get -Uri "$base/focus/today?today=$today" -Headers $hdr
-  # Note: the 2026-06-04 sessions above will only show if today is 2026-06-04
-  if ($null -eq $r.workSessions) { throw "no workSessions field" }
-  $true
-}
-
-# ===========================
 # 9. ANALYTICS
 # ===========================
 Write-Host "`n--- ANALYTICS ---" -ForegroundColor Cyan
