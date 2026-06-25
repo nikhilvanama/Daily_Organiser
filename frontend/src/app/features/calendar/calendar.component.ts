@@ -79,7 +79,12 @@ interface CalendarDay {
                (click)="openDay(cell)">
             <!-- Day number: highlighted with accent color if it is today -->
             <div class="cal-date-row">
-              <span class="cal-date">{{ cell.date | date:'d' }}</span>
+              <span class="cal-date-block">
+                <span class="cal-date">{{ cell.date | date:'d' }}</span>
+                @if (isBirthday(cell.date) && cell.isCurrentMonth) {
+                  <span class="birthday-icon" title="Birthday">🎂</span>
+                }
+              </span>
               @if (isWorkDay(cell.date) && getOfficeHours() && cell.isCurrentMonth && !isDayOff(cell.date) && !isTripDay(cell)) {
                 <span class="office-tag">🏢 {{ getOfficeHours() }}</span>
               }
@@ -317,11 +322,10 @@ interface CalendarDay {
     .cal-cell.weekend .cal-date { color: var(--accent); font-weight: 600; }
     .weekend-label { color: var(--accent) !important; font-weight: 700 !important; }
 
-    /* Birthday highlight */
-    .cal-cell.birthday { position: relative; }
-    .cal-cell.birthday::before {
-      content: '🎂'; position: absolute; top: 4px; right: 6px; font-size: 0.75rem;
-    }
+    /* Birthday: pink date number + inline 🎂 next to it (no longer absolute-positioned;
+       was overlapping the holiday/leave/trip tags on the right side of the cell). */
+    .cal-date-block { display: inline-flex; align-items: center; gap: 4px; }
+    .birthday-icon { font-size: 0.85rem; line-height: 1; }
     .cal-cell.birthday .cal-date { color: #ec4899 !important; font-weight: 700; }
 
     /* Date row: date number left, office hours right */
