@@ -74,22 +74,33 @@ export class GoogleCalendarService {
     });
   }
 
-  // When a Google API call returns an `invalid_grant` (revoked / scope-mismatched refresh token),
-  // mark the connection as disconnected in Firebase so the UI prompts a reconnect instead of
-  // silently failing forever. Returns true if the error was an invalid_grant we handled.
-  private async handleAuthError(userId: string, err: any): Promise<boolean> {
-    const msg = (err?.message || err?.response?.data?.error || '').toString();
-    if (msg.includes('invalid_grant') || err?.response?.data?.error === 'invalid_grant') {
-      console.warn(`Google Calendar: token revoked / scope-changed for user ${userId} — marking disconnected`);
-      await this.firebase.update(`users/${userId}`, {
-        googleAccessToken: null,
-        googleRefreshToken: null,
-        googleTokenExpiry: null,
-        googleCalendarConnected: false,
-      });
-      return true;
-    }
+  // Classify Google API errors that mean "this stored token won't work, no matter how often
+  // we retry." 401s, invalid_grant, and invalid_token fall into this bucket. 403 is
+  // intentionally excluded — Google returns 403 for per-calendar permission denials too,
+  // and we don't want one bad calendar to nuke the whole connection.
+  private isAuthError(err: any): boolean {
+    const code = err?.code ?? err?.response?.status ?? err?.response?.data?.error?.code;
+    const errorField = err?.response?.data?.error;
+    const msg = (err?.message || '').toString();
+    if (code === 401) return true;
+    if (msg.includes('invalid_grant') || msg.includes('invalid_token')) return true;
+    if (typeof errorField === 'string' && (errorField === 'invalid_grant' || errorField === 'invalid_token')) return true;
     return false;
+  }
+
+  // When a Google API call returns an auth error (revoked / scope-mismatched refresh token,
+  // 401, etc.), mark the connection as disconnected in Firebase so the UI prompts a reconnect
+  // instead of silently failing forever. Returns true if the error was handled.
+  private async handleAuthError(userId: string, err: any): Promise<boolean> {
+    if (!this.isAuthError(err)) return false;
+    console.warn(`[gcal] auth error for user ${userId} (${err?.message}) — clearing stored connection`);
+    await this.firebase.update(`users/${userId}`, {
+      googleAccessToken: null,
+      googleRefreshToken: null,
+      googleTokenExpiry: null,
+      googleCalendarConnected: false,
+    });
+    return true;
   }
 
   // Get an authorized OAuth2Client for a user (handles token refresh automatically)
@@ -270,7 +281,8 @@ export class GoogleCalendarService {
       const timeMax = toEnd.toISOString();
 
       // Step 1: enumerate the user's subscribed calendars. If the calendarList scope wasn't
-      // granted (older connection), fall back to just the primary calendar.
+      // granted (older connection), fall back to just the primary calendar — but re-throw
+      // auth errors so the outer catch can clear the dead connection.
       let calendarIds: { id: string; summary: string }[];
       try {
         const list = await calendar.calendarList.list();
@@ -278,12 +290,18 @@ export class GoogleCalendarService {
           .filter((c) => c.id)
           .map((c) => ({ id: c.id!, summary: c.summary || c.id! }));
         if (calendarIds.length === 0) calendarIds = [{ id: 'primary', summary: 'Primary' }];
-      } catch {
+        console.log(`[gcal] listEvents user=${userId} calendars=${calendarIds.length}`);
+      } catch (err: any) {
+        const msg = err?.message || '';
+        console.warn(`[gcal] calendarList.list failed (${msg}) — falling back to primary only`);
+        if (this.isAuthError(err)) throw err;
         calendarIds = [{ id: 'primary', summary: 'Primary' }];
       }
 
-      // Step 2: fetch events from each calendar in parallel. Per-calendar errors are swallowed
-      // so one bad calendar doesn't break the whole response.
+      // Step 2: fetch events from each calendar in parallel. Per-calendar errors are
+      // swallowed (one bad calendar shouldn't tank the whole response) UNLESS the error
+      // looks like an auth failure (invalid_grant / 401) — those propagate so the outer
+      // catch clears the dead connection and the UI prompts a reconnect.
       const results = await Promise.all(
         calendarIds.map((c) =>
           calendar.events
@@ -296,9 +314,15 @@ export class GoogleCalendarService {
               maxResults: 250,
             })
             .then((r) => ({ events: r.data.items ?? [], calendarName: c.summary }))
-            .catch(() => ({ events: [], calendarName: c.summary })),
+            .catch((err: any) => {
+              console.warn(`[gcal] events.list failed for calendar "${c.summary}": ${err?.message}`);
+              if (this.isAuthError(err)) throw err;
+              return { events: [], calendarName: c.summary };
+            }),
         ),
       );
+      const totalRaw = results.reduce((sum, r) => sum + r.events.length, 0);
+      console.log(`[gcal] listEvents user=${userId} fetched=${totalRaw} events across ${calendarIds.length} calendars`);
 
       // Step 3: build a set of Google event IDs that originated from our own pushes, so we
       // don't double-count them when the user has an app-task and the Google event for it.

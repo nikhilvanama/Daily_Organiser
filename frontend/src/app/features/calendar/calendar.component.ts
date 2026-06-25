@@ -80,11 +80,14 @@ interface CalendarDay {
             <!-- Day number: highlighted with accent color if it is today -->
             <div class="cal-date-row">
               <span class="cal-date">{{ cell.date | date:'d' }}</span>
-              @if (isWorkDay(cell.date) && getOfficeHours() && cell.isCurrentMonth && !isDayOff(cell.date)) {
+              @if (isWorkDay(cell.date) && getOfficeHours() && cell.isCurrentMonth && !isDayOff(cell.date) && !isTripDay(cell)) {
                 <span class="office-tag">🏢 {{ getOfficeHours() }}</span>
               }
               @if (isDayOff(cell.date) && cell.isCurrentMonth) {
                 <span class="off-tag">{{ getDayOffLabel(cell.date) }}</span>
+              }
+              @if (isTripDay(cell) && cell.isCurrentMonth) {
+                <span class="trip-tag">✈ Trip</span>
               }
             </div>
             <div class="cal-tasks">
@@ -327,6 +330,10 @@ interface CalendarDay {
       font-size: 0.55rem; color: var(--text-muted); opacity: 0.6;
       white-space: nowrap;
     }
+    .trip-tag {
+      font-size: 0.55rem; color: #3b82f6; opacity: 0.9; font-weight: 600;
+      white-space: nowrap;
+    }
     .off-tag {
       font-size: 0.55rem; color: #f97316; opacity: 0.8;
       white-space: nowrap;
@@ -498,6 +505,12 @@ export class CalendarComponent implements OnInit {
     this.gcalService.checkStatus().subscribe({
       next: ({ connected }) => { if (connected) this.loadGoogleEvents(); },
     });
+  }
+
+  // True when any task on this cell is a trip plan. Used to render the ✈ Trip tag
+  // and to suppress the office-hours overlay (you're not at the office on a trip day).
+  isTripDay(cell: CalendarDay): boolean {
+    return cell.tasks.some((t) => t.type === 'trip');
   }
 
   isWeekendDay(date: Date): boolean {
