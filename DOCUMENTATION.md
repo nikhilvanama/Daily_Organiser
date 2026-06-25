@@ -22,6 +22,8 @@
    - [Journal](#86-journal)
    - [Projects (freelance tracker)](#87-projects-freelance-tracker)
    - [Google Calendar integration (two-way)](#88-google-calendar-integration-two-way)
+   - [Trips (Kanban)](#89-trips-kanban)
+   - [Buy List (Kanban)](#810-buy-list-kanban)
 9. [Recurring patterns you'll see in the code](#9-recurring-patterns-youll-see-in-the-code)
 10. [Adding a new feature module](#10-adding-a-new-feature-module)
 11. [Running the project locally](#11-running-the-project-locally)
@@ -65,7 +67,9 @@ If your needs overlap, this is for you. If you need team collaboration, a differ
 | **Daily Routine (Habits)** | Per-weekday recurring habits with time intervals, current streak, 30-day heatmap, date navigation to backfill missed days, optimistic toggle for instant UI |
 | **Journal** | One reflection entry per day, with mood emoji, title, body, streak of consecutive days journaled, and browse-past-entries list |
 | **Projects** (freelance) | Project pipeline (LEAD → QUOTED → IN_PROGRESS → DELIVERED → PAID / LOST / ON_HOLD), per-project payments, deadlines, progress %, portfolio links, outstanding-balance and monthly-income stats |
-| **Calendar** | Monthly grid showing plans + Google Calendar events (festivals, holidays, restaurant/movie bookings) plotted by date; weekends/birthdays/holidays/leaves overlay |
+| **Trips** | Kanban board for travel plans (Bucket List → Planning → Booked → Visited). Drag-and-drop between columns. Planning/Booked/Visited trips with dates auto-sync to the calendar and trigger the habit trip-day exclusion. Past BOOKED trips auto-promote to Visited |
+| **Buy List** | Kanban board for things to remember to buy (Want → Considering → Bought → Skipped). Drag-and-drop between columns. Auto-stamps "bought on" date when moved to Bought |
+| **Calendar** | Monthly grid showing plans + Google Calendar events (festivals, holidays, restaurant/movie bookings) plotted by date; weekends/birthdays/holidays/leaves/✈trip overlays |
 | **Categories** | User-defined color-coded labels for grouping tasks |
 | **Google Calendar sync** | Two-way: pushes app plans to your primary Google calendar, AND pulls events from all your subscribed calendars (holidays, birthdays, third-party bookings) into the app's calendar view |
 | **Profile** | Edit display name, email, password, employment + office hours, weekend days, date of birth |
@@ -284,6 +288,8 @@ app/
 │   │   ├── habit.model.ts
 │   │   ├── journal.model.ts
 │   │   ├── project.model.ts
+│   │   ├── trip.model.ts
+│   │   ├── buy-item.model.ts
 │   │   └── category.model.ts
 │   └── services/                ← singleton classes injectable everywhere
 │       ├── auth.service.ts        ← login/register/refresh, current user signal
@@ -327,6 +333,14 @@ app/
     │   ├── project-list/        ← pipeline view with stats and status filter chips
     │   ├── project-form/        ← create/edit project modal
     │   └── project-detail/      ← project info, payments, edit, status changer
+    ├── trips/
+    │   ├── trip.service.ts
+    │   ├── trip-board/          ← Kanban board with drag-and-drop
+    │   └── trip-form/           ← create/edit/delete trip modal
+    ├── buy-list/
+    │   ├── buy-list.service.ts
+    │   ├── buy-list-board/      ← Kanban board with drag-and-drop
+    │   └── buy-list-form/       ← create/edit/delete item modal
     ├── calendar/                ← monthly grid (renders app plans + Google events)
     ├── categories/              ← category service only (UI is in shared/)
     └── profile/                 ← edit profile + change password
@@ -357,6 +371,8 @@ src/
 ├── habits/                      ← /api/habits/* + check-ins, streaks, heatmap
 ├── journal/                     ← /api/journal/* — daily reflections (one entry per date)
 ├── projects/                    ← /api/projects/* + nested payments (freelance tracker)
+├── trips/                       ← /api/trips/* — Kanban for travel plans + auto-syncs to calendar
+├── buy-list/                    ← /api/buy-list/* — Kanban for things to buy
 ├── categories/                  ← /api/categories/* CRUD
 ├── dashboard/                   ← /api/dashboard/stats|activity|calendar (aggregations)
 ├── google-calendar/             ← /api/google/* OAuth + bidirectional sync
@@ -435,6 +451,8 @@ Every child entity stores a reference to its parent as a string ID field. We use
 | `habitCheckins.habitId` | `habits/<id>` | `enrich(habit)` filters check-ins for streak + heatmap |
 | `journal.userId` + `journal.date` | (composite uniqueness) | Service ensures one entry per (user, date) |
 | `projectPayments.projectId` | `projects/<id>` | `enrich(project)` filters payments + computes balance |
+| `trips.taskId` | `tasks/<id>` | When a trip moves to Planning/Booked/Visited with a startDate, the trips service creates a matching `type='trip'` task and stores its ID. Calendar + habit trip-exclusion pick up that task automatically |
+| `buyItems` (no FKs) | — | Buy items are standalone — no relationships |
 
 #### What "joining" looks like in code
 
@@ -1024,8 +1042,83 @@ If the **refresh token itself is dead** (revoked by the user, expired due to ina
 |-------|-------|-----|
 | `Error 400: redirect_uri_mismatch` | The `GOOGLE_REDIRECT_URI` env var doesn't exactly match what's listed in the Google Cloud OAuth client's "Authorized redirect URIs" | Add `http://localhost:3000/api/google/callback` to the client in Google Cloud Console |
 | `invalid_grant` (in backend logs) | Refresh token revoked or scope-mismatched | User must disconnect + reconnect once |
-| Toggle reads "G Cal on" but events don't appear | Same as above — token is stored but dead | New `handleAuthError` will auto-clear it; user reconnects |
+| Toggle reads "G Cal on" but events don't appear | Same as above — token is stored but dead | Per-calendar API errors that are auth-related (401 / invalid_grant / invalid_token) now re-throw so the outer catch runs `handleAuthError` and clears the connection. User reconnects. Diagnostic logs print `[gcal] listEvents user=… calendars=N fetched=M` so you can see the call land |
 | Festivals / birthdays not pulled in | Scope insufficient (only `calendar.events` was granted, not `calendar.readonly` + `calendar.calendarlist.readonly`) | Disconnect + reconnect; approve all permissions on the consent screen |
+
+> **Why 403 isn't treated as a connection-killer**: Google returns 403 for per-calendar permission denials too (e.g. you don't own one of the subscribed calendars). Auto-clearing on 403 would kill the whole connection because of one bad calendar. So `isAuthError` only matches 401 / invalid_grant / invalid_token.
+
+---
+
+### 8.9 Trips (Kanban)
+
+A Kanban board for travel plans with four lanes: **Bucket List → Planning → Booked → Visited**. Cards are drag-and-droppable between columns. Clicking a card opens an edit modal with a Delete button (red, bottom-left).
+
+**Schema**:
+```
+trips/<id> {
+  id, userId, title, destination, description,
+  status: BUCKET | PLANNING | BOOKED | VISITED | CANCELLED,
+  startDate, endDate,
+  companions, budget, currency,
+  notes, references: string[],  // inspiration links (reels, blogs)
+  taskId: string | null,        // FK to auto-created task in /tasks/*
+  createdAt, updatedAt
+}
+```
+
+**Endpoints** under `/api/trips`: standard CRUD (`GET`, `POST`, `PATCH /:id`, `DELETE /:id`).
+
+#### Calendar sync (the "smart" part)
+
+Any trip with a `startDate` AND status in `PLANNING | BOOKED | VISITED` gets a **linked task** in the `/tasks/*` collection (type='trip', dueDate=startDate, endDate=endDate, location=destination, description=notes). The trip's `taskId` field points to that task.
+
+What this unlocks for free:
+- The linked task shows on `/calendar` with the regular task chip
+- The calendar cell shows a `✈ Trip` overlay (similar to office hours / leave tags)
+- The habit module's trip-day auto-exclusion (see [8.3](#83-daily-routine-habits)) sees the trip and pauses streaks for those dates
+- The plan also appears in `/tasks` (My Plans), so the user can edit it like any other task
+
+**Sync behavior**:
+- **Create / move to Planning|Booked|Visited with dates** → `syncLinkedTask` creates or updates the task
+- **Move back to Bucket List or Cancel** → the existing task is deleted, `taskId` cleared (no orphan plan on calendar)
+- **Delete the trip** → linked task is also deleted (cascade)
+- **First read after this feature shipped** → `findAll` runs a one-time backfill: any trip that should have a plan but doesn't (created under the old "only BOOKED" rule) gets its task created automatically
+
+#### Auto-promote past trips to Visited
+
+Every `findAll` scans for BOOKED trips whose end date (or start date if no end) is before today and writes them back as `VISITED`. So if the user forgets to drag a finished trip to the Visited column, it'll be there on the next page load.
+
+#### Drag-and-drop (native HTML5, no library)
+
+Each card sets `draggable="true"` with `dragstart` / `dragend` handlers; each lane has `dragover` / `drop` handlers. State held in two signals: `draggingId` (which card is being dragged) and `draggingOver` (which lane the cursor is in). When dropped on a different column, the trip's status is updated via the regular `PATCH /api/trips/:id` — same path used by the form. Visual feedback: dragging card becomes 40% transparent and rotates 2°; the target lane gets a green dashed outline.
+
+#### Bug history: the "disappearing trip"
+
+Initial release had a bug where trips saved with no inspiration links would disappear after a page reload. Root cause: Firebase Realtime DB drops empty arrays on write (`references: []` is stored as no-field). On read-back, `references` was `undefined`. The frontend template hit `t.references.length` and threw inside `@for`, silently dropping the whole card from the render. Fixed by adding a `normalize()` helper in the service that backfills `references: trip.references ?? []` on every read/create/update response.
+
+### 8.10 Buy List (Kanban)
+
+A Kanban board for things you need to buy. Four lanes: **Want → Considering → Bought → Skipped**. Same UX as Trips (drag-and-drop, click-card-to-edit, delete button inside the form), but simpler — no calendar integration, no auto-promotion.
+
+**Schema**:
+```
+buyItems/<id> {
+  id, userId, name, category,
+  status: WANT | CONSIDERING | BOUGHT | SKIPPED,
+  urgency: LOW | MEDIUM | HIGH,
+  estimatedPrice, boughtPrice, currency,
+  store, link, notes,
+  boughtAt: string | null,
+  createdAt, updatedAt
+}
+```
+
+**Endpoints** under `/api/buy-list`: standard CRUD.
+
+**Behavior nuances**:
+- Moving an item to **Bought** auto-stamps `boughtAt = today` if the client didn't specify one. Moving away from Bought clears `boughtAt` + `boughtPrice` (so they don't linger as stale data).
+- Cards show estimated price for unbought items, actual paid price for bought items, an urgency pill (color-coded HIGH/MEDIUM/LOW) for active items, and a 🔗 quick-link if a product URL is set.
+- Sort order: WANT → CONSIDERING → BOUGHT → SKIPPED; within each, HIGH urgency first, then newest.
 
 ---
 

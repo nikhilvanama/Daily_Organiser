@@ -16,7 +16,9 @@ A personal productivity app for managing plans, goals, daily habits, and a calen
 | **Daily Routine (Habits)** | Per-weekday habit tracker with streaks, 30-day heatmap, backfill past dates, time intervals |
 | **Journal** | One reflection entry per day with mood emoji, streak of consecutive days journaled, past-entries browser |
 | **Projects (freelance)** | Project pipeline (LEAD → QUOTED → IN_PROGRESS → DELIVERED → PAID/LOST/ON_HOLD) with per-project payments, outstanding balance, deadlines, progress, portfolio links |
-| **Calendar** | Monthly grid showing plans + Google Calendar events (festivals, holidays, bookings) plotted by date; office-hours / weekends / birthdays / leaves overlay |
+| **Trips** | Kanban board (Bucket List → Planning → Booked → Visited) with drag-and-drop. Planning/Booked/Visited trips with dates auto-sync to the calendar AND trigger the habit trip-day exclusion. Past trips auto-move to Visited |
+| **Buy List** | Kanban board (Want → Considering → Bought → Skipped) with drag-and-drop. Tracks urgency, estimated vs actual price, store, product link |
+| **Calendar** | Monthly grid showing plans + Google Calendar events (festivals, holidays, bookings) plotted by date; office-hours / weekends / birthdays / leaves / ✈ trip overlays |
 | **Categories** | User-defined color-coded labels shared by tasks |
 | **Google Calendar sync** | Two-way: push app plans to Google AND pull events from your subscribed Google calendars (holidays, birthdays, third-party bookings) for read-only display |
 | **Dark / Light mode** | Auto-detect system preference, manual toggle, persisted |
@@ -88,6 +90,8 @@ All routes are prefixed with `/api` and require a valid JWT in the `Authorizatio
 | Habits | `GET/POST /habits`, `PATCH/DELETE /habits/:id`, `POST /habits/:id/checkin[?today=…]`, `POST /habits/:id/checkin/:date[?today=…]` |
 | Journal | `GET /journal`, `GET /journal/:date`, `PUT /journal/:date`, `DELETE /journal/:date` |
 | Projects | `GET/POST /projects`, `GET/PATCH/DELETE /projects/:id`, `POST /projects/:id/payments`, `DELETE /projects/:projectId/payments/:paymentId` |
+| Trips | `GET/POST /trips`, `GET/PATCH/DELETE /trips/:id` |
+| Buy List | `GET/POST /buy-list`, `GET/PATCH/DELETE /buy-list/:id` |
 | Categories | `GET/POST /categories`, `PATCH/DELETE /categories/:id` |
 | Dashboard | `GET /dashboard/stats`, `GET /dashboard/activity`, `GET /dashboard/calendar?year=…&month=…` |
 | Google Calendar | `GET /google/auth`, `GET /google/callback`, `GET /google/status`, `POST /google/disconnect`, `POST /google/sync-all`, `GET /google/events?from=…&to=…` |
@@ -113,6 +117,8 @@ frontend/src/app/
     ├── habits/         list (Daily Routine), form, service
     ├── journal/        day-end reflection page, service
     ├── projects/       list (pipeline), form, detail (payments), service
+    ├── trips/          Kanban board (drag-and-drop) + form, service
+    ├── buy-list/       Kanban board (drag-and-drop) + form, service
     ├── calendar/       monthly grid (app plans + Google events)
     ├── categories/     category service
     └── profile/        edit profile
@@ -125,6 +131,8 @@ backend/src/
 ├── habits/             habits + check-ins, streak + heatmap computation
 ├── journal/            daily reflections (one entry per date, PUT-upsert)
 ├── projects/           freelance projects + nested payments, status pipeline
+├── trips/              Kanban for travel plans; auto-syncs Planning/Booked/Visited to /tasks
+├── buy-list/           Kanban for things to remember to buy
 ├── categories/         CRUD
 ├── dashboard/          stats / activity / calendar aggregations
 ├── google-calendar/    OAuth + two-way sync (push tasks, pull external events)
