@@ -67,12 +67,26 @@ export class TripsService {
     return this.normalize(trip);
   }
 
-  // Firebase Realtime DB drops empty arrays on write (stores them as no-field).
-  // When the record comes back, fields that were [] are undefined. The frontend
-  // then crashes when it tries to access .length on the missing array, and the
-  // whole card silently disappears from the render. Backfill the default here.
+  // Firebase Realtime DB drops empty arrays and null fields on write (stores them as
+  // no-field). When the record comes back, those fields are undefined. Backfill to the
+  // contract the frontend expects:
+  //  - references → [] (frontend crashes on undefined.length inside @for)
+  //  - all nullable string/number fields → null (so the type stays string|null, not |undefined)
+  // This matters when the user clears a date / destination / etc. — without normalization
+  // the cleared field comes back as missing instead of null, hiding the clear from the UI.
   private normalize(trip: TripRecord): TripRecord {
-    return { ...trip, references: trip.references ?? [] };
+    return {
+      ...trip,
+      references: trip.references ?? [],
+      destination: trip.destination ?? null,
+      description: trip.description ?? null,
+      startDate: trip.startDate ?? null,
+      endDate: trip.endDate ?? null,
+      companions: trip.companions ?? null,
+      budget: trip.budget ?? null,
+      notes: trip.notes ?? null,
+      taskId: trip.taskId ?? null,
+    };
   }
 
   async create(userId: string, dto: CreateTripDto): Promise<TripRecord> {

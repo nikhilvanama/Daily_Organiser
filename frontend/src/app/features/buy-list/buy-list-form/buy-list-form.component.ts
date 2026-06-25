@@ -171,20 +171,30 @@ export class BuyListFormComponent implements OnInit, OnChanges {
     if (this.form.invalid) return;
     this.loading = true;
     const raw = this.form.value;
+    // For edits, optional fields cleared by the user need to send `null` (not undefined)
+    // so the backend actually clears them. JSON drops undefined; null tells Firebase to
+    // delete the field on update.
+    const isEdit = !!this.item;
+    const blankOrNull = (v: string | null | undefined) => {
+      const trimmed = (v ?? '').trim();
+      if (trimmed) return trimmed;
+      return isEdit ? null : undefined;
+    };
     const dto: any = {
       name: raw.name!,
-      category: raw.category?.trim() || undefined,
+      category: blankOrNull(raw.category),
       status: raw.status ?? 'WANT',
       urgency: raw.urgency ?? 'MEDIUM',
-      estimatedPrice: raw.estimatedPrice ?? undefined,
+      estimatedPrice: raw.estimatedPrice ?? (isEdit ? null : undefined),
       currency: raw.currency || 'INR',
-      store: raw.store?.trim() || undefined,
-      link: raw.link?.trim() || undefined,
-      notes: raw.notes?.trim() || undefined,
+      store: blankOrNull(raw.store),
+      link: blankOrNull(raw.link),
+      notes: blankOrNull(raw.notes),
     };
     if (raw.status === 'BOUGHT') {
-      dto.boughtPrice = raw.boughtPrice ?? undefined;
+      dto.boughtPrice = raw.boughtPrice ?? (isEdit ? null : undefined);
       if (raw.boughtAt) dto.boughtAt = raw.boughtAt;
+      else if (isEdit) dto.boughtAt = null;
     }
     const op$ = this.item
       ? this.buyService.update(this.item.id, dto)

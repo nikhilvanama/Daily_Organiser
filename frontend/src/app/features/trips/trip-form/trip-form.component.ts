@@ -186,16 +186,26 @@ export class TripFormComponent implements OnInit, OnChanges {
     if (this.form.invalid) return;
     this.loading = true;
     const raw = this.form.value;
-    const dto = {
+    // For optional fields, send `null` (not `undefined`) when the user clears them.
+    // JSON drops undefined properties from the body, which means the backend never sees
+    // "this field was cleared" and the old value sticks. null is treated as "delete
+    // this field" by Firebase RTDB on update, which is exactly what we want.
+    const isEdit = !!this.trip;
+    const blankOrNull = (v: string | null | undefined) => {
+      const trimmed = (v ?? '').trim();
+      if (trimmed) return trimmed;
+      return isEdit ? null : undefined;
+    };
+    const dto: any = {
       title: raw.title!,
-      destination: raw.destination?.trim() || undefined,
+      destination: blankOrNull(raw.destination),
       status: raw.status ?? 'BUCKET',
-      startDate: raw.startDate || undefined,
-      endDate: raw.endDate || undefined,
-      companions: raw.companions?.trim() || undefined,
-      budget: raw.budget ?? undefined,
+      startDate: raw.startDate ? raw.startDate : (isEdit ? null : undefined),
+      endDate: raw.endDate ? raw.endDate : (isEdit ? null : undefined),
+      companions: blankOrNull(raw.companions),
+      budget: raw.budget ?? (isEdit ? null : undefined),
       currency: raw.currency || 'INR',
-      notes: raw.notes?.trim() || undefined,
+      notes: blankOrNull(raw.notes),
       references: this.references.map((l) => l.trim()).filter(Boolean),
     };
     const op$ = this.trip
