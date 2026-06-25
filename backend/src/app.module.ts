@@ -18,6 +18,10 @@ import { HabitsModule } from './habits/habits.module';
 import { JournalModule } from './journal/journal.module';
 // ProjectsModule — Freelance project tracker with payments, deadlines, statuses
 import { ProjectsModule } from './projects/projects.module';
+// TripsModule — Kanban board for travel plans (bucket list → planning → booked → visited)
+import { TripsModule } from './trips/trips.module';
+// BuyListModule — Kanban board for things to buy (want → considering → bought)
+import { BuyListModule } from './buy-list/buy-list.module';
 // AnalyticsModule — Cross-module aggregations for the Analytics page
 import { AnalyticsModule } from './analytics/analytics.module';
 // CategoriesModule — CRUD for user-defined categories (Work, Personal, Travel, etc.)
@@ -46,6 +50,8 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     HabitsModule,     // /api/habits/* — daily/weekly habits + check-ins + streaks
     JournalModule,    // /api/journal/* — daily reflections
     ProjectsModule,   // /api/projects/* — freelance projects + payments
+    TripsModule,      // /api/trips/* — Kanban board for travel plans
+    BuyListModule,    // /api/buy-list/* — shopping wishlist Kanban
     AnalyticsModule,  // /api/analytics/* — cross-module summary stats
     CategoriesModule, // /api/categories/* — user categories
     DashboardModule,  // /api/dashboard/* — stats, activity, calendar data

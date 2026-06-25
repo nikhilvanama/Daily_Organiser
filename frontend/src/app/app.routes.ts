@@ -98,6 +98,18 @@ export const routes: Routes = [
           import('./features/projects/project-detail/project-detail.component').then((m) => m.ProjectDetailComponent),
       },
       {
+        path: 'trips',
+        // Trips Kanban — bucket list, planning, booked (auto-syncs to calendar), visited
+        loadComponent: () =>
+          import('./features/trips/trip-board/trip-board.component').then((m) => m.TripBoardComponent),
+      },
+      {
+        path: 'buy-list',
+        // Buy List Kanban — things to remember to buy
+        loadComponent: () =>
+          import('./features/buy-list/buy-list-board/buy-list-board.component').then((m) => m.BuyListBoardComponent),
+      },
+      {
         path: 'analytics',
         // Personal analytics — weekly/monthly stats across tasks/habits/focus/journal/projects
         loadComponent: () =>
