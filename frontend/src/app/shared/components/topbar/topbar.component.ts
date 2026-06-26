@@ -14,10 +14,16 @@ import { ToastService } from '../../../core/services/toast.service';
       <div class="topbar-left">
         <nav class="breadcrumb">
           @if (breadcrumb().section) {
-            <span class="bc-section">{{ breadcrumb().section }}</span>
+            <span class="bc-dim">{{ breadcrumb().section }}</span>
             <span class="bc-sep">›</span>
           }
-          <span class="bc-page">{{ breadcrumb().page }}</span>
+          @if (breadcrumb().detail) {
+            <a [routerLink]="breadcrumb().pageLink" class="bc-dim bc-link">{{ breadcrumb().page }}</a>
+            <span class="bc-sep">›</span>
+            <span class="bc-current">{{ breadcrumb().detail }}</span>
+          } @else {
+            <span class="bc-current">{{ breadcrumb().page }}</span>
+          }
         </nav>
       </div>
 
@@ -69,9 +75,11 @@ import { ToastService } from '../../../core/services/toast.service';
     }
 
     .breadcrumb { display: flex; align-items: center; gap: 7px; }
-    .bc-section { font-size: 0.78rem; font-weight: 500; color: var(--text-secondary); }
-    .bc-sep { font-size: 0.8rem; color: var(--text-secondary); opacity: 0.45; }
-    .bc-page { font-size: 1rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.015em; }
+    .bc-dim { font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); }
+    .bc-link { text-decoration: none; transition: color 0.15s; }
+    .bc-link:hover { color: var(--text-primary); }
+    .bc-sep { font-size: 0.8rem; color: var(--text-secondary); opacity: 0.4; }
+    .bc-current { font-size: 1rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.015em; }
 
     .topbar-right { display: flex; align-items: center; gap: 6px; }
 
@@ -168,7 +176,16 @@ export class TopbarComponent implements OnInit {
     return u?.displayName ?? u?.username ?? 'User';
   }
 
-  private pathToBreadcrumb(path: string): { section: string; page: string } {
+  private pathToBreadcrumb(path: string): { section: string; page: string; pageLink?: string; detail?: string } {
+    const segs = path.split('/').filter(Boolean);
+
+    if (segs[0] === 'projects' && segs[1])
+      return { section: 'Trackers', page: 'Projects', pageLink: '/projects', detail: this.unslugify(segs[1]) };
+    if (segs[0] === 'goals' && segs[1])
+      return { section: 'Trackers', page: 'Goals', pageLink: '/goals', detail: this.unslugify(segs[1]) };
+    if (segs[0] === 'tasks' && segs[1])
+      return { section: 'Overview', page: 'My Plans', pageLink: '/tasks', detail: this.unslugify(segs[1]) };
+
     if (path.includes('dashboard'))  return { section: 'Overview',   page: 'Dashboard' };
     if (path.includes('tasks'))      return { section: 'Overview',   page: 'My Plans' };
     if (path.includes('calendar'))   return { section: 'Overview',   page: 'Calendar' };
@@ -182,5 +199,9 @@ export class TopbarComponent implements OnInit {
     if (path.includes('portfolio'))  return { section: 'Portfolio',  page: 'My Portfolio' };
     if (path.includes('profile'))    return { section: '',           page: 'Profile' };
     return { section: '', page: 'Daily Organizer' };
+  }
+
+  private unslugify(slug: string): string {
+    return slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   }
 }
