@@ -1,6 +1,7 @@
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '../sidebar/sidebar.component';
+import { TopbarComponent } from '../topbar/topbar.component';
 import { ToastContainerComponent } from '../toast-container/toast-container.component';
 import { ThemeService } from '../../../core/services/theme.service';
 import { IdleService } from '../../../core/services/idle.service';
@@ -8,7 +9,7 @@ import { IdleService } from '../../../core/services/idle.service';
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [RouterOutlet, SidebarComponent, ToastContainerComponent],
+  imports: [RouterOutlet, SidebarComponent, TopbarComponent, ToastContainerComponent],
   template: `
     <div class="layout">
       <!-- Mobile top bar -->
@@ -40,6 +41,7 @@ import { IdleService } from '../../../core/services/idle.service';
 
       <!-- Main content -->
       <div class="layout-main">
+        <app-topbar />
         <main class="layout-content">
           <router-outlet />
         </main>
