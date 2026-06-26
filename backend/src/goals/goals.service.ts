@@ -12,6 +12,7 @@ import { UpdateGoalDto } from './dto/update-goal.dto';
 import { CreateMilestoneDto } from './dto/create-milestone.dto';
 // Import randomUUID to generate unique IDs for goals, milestones, and mini-goals
 import { randomUUID } from 'crypto';
+import { slugify, UUID_RE } from '../common/slugify';
 
 // @Injectable() marks this class as a NestJS service that can be injected into GoalsController
 @Injectable()
@@ -30,15 +31,14 @@ export class GoalsService {
     return Promise.all(userGoals.map((g: any) => this.attachMilestones(g)));
   }
 
-  // Retrieves a single goal by ID with milestones and mini-goals, verifying ownership
-  async findOne(userId: string, id: string) {
-    // Fetch the goal from Firebase by its unique ID
-    const goal = await this.firebase.get<any>(`goals/${id}`);
-    // If the goal does not exist, throw a 404 error
+  async findOne(userId: string, idOrSlug: string) {
+    if (UUID_RE.test(idOrSlug)) {
+      const goal = await this.firebase.get<any>(`goals/${idOrSlug}`);
+      if (goal && goal.userId === userId) return this.attachMilestones(goal);
+    }
+    const all = await this.firebase.getList<any>('goals');
+    const goal = all.find((g: any) => g.userId === userId && slugify(g.title) === idOrSlug);
     if (!goal) throw new NotFoundException('Goal not found');
-    // If the goal belongs to a different user, throw a 403 error
-    if (goal.userId !== userId) throw new ForbiddenException();
-    // Attach milestones and mini-goals and return the enriched goal
     return this.attachMilestones(goal);
   }
 

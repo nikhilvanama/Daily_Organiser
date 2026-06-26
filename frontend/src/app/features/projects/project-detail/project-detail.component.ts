@@ -299,12 +299,14 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
   paymentLabel = computed(() => PAYMENT_STATUSES.find((p) => p.value === this.project()?.paymentStatus)?.label ?? this.project()?.paymentStatus ?? '');
 
   ngOnInit() {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (!id) { this.router.navigate(['/projects']); return; }
-    this.loadProject(id);
-    // Keep in sync with cache updates from list mutations
+    const slug = this.route.snapshot.paramMap.get('id');
+    if (!slug) { this.router.navigate(['/projects']); return; }
+    this.loadProject(slug);
+    // Keep in sync using the real UUID (not the slug) once the project has loaded
     this.sub = this.projectService.projects$.subscribe((list) => {
-      const found = list.find((p) => p.id === id);
+      const current = this.project();
+      if (!current) return;
+      const found = list.find((p) => p.id === current.id);
       if (found) this.project.set(found);
     });
   }
@@ -355,7 +357,7 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
   onSaved() {
     this.showForm = false;
     const p = this.project();
-    if (p) this.loadProject(p.id);
+    if (p) this.loadProject(p.id); // reload by real UUID — backend handles both UUID and slug
     this.toast.success('Project updated');
   }
 

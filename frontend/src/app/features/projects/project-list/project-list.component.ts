@@ -2,6 +2,7 @@ import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ProjectService } from '../project.service';
+import { slugify } from '../../../core/utils/slugify';
 import { PAYMENT_STATUSES, PaymentStatus, Project, PROJECT_STATUSES, PROJECT_TYPES, ProjectStatus } from '../../../core/models/project.model';
 import { ModalComponent } from '../../../shared/components/modal/modal.component';
 import { ProjectFormComponent } from '../project-form/project-form.component';
@@ -69,7 +70,7 @@ import { ToastService } from '../../../core/services/toast.service';
       } @else {
         <div class="project-list">
           @for (p of filtered(); track p.id) {
-            <a [routerLink]="['/projects', p.id]" class="project-row">
+            <a [routerLink]="['/projects', toSlug(p.title)]" class="project-row">
               <div class="pill-stack">
                 <span class="status-pill" [style.background]="statusColor(p.status) + '22'" [style.color]="statusColor(p.status)">
                   {{ statusLabel(p.status) }}
@@ -178,6 +179,7 @@ import { ToastService } from '../../../core/services/toast.service';
   `],
 })
 export class ProjectListComponent implements OnInit, OnDestroy {
+  readonly toSlug = slugify;
   private projectService = inject(ProjectService);
   private toast = inject(ToastService);
   private sub: Subscription | null = null;

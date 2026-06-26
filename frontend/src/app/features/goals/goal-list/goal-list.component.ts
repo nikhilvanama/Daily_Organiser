@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { AsyncPipe, DecimalPipe } from '@angular/common';
 // GoalService provides the goals$ observable and CRUD methods
 import { GoalService } from '../goal.service';
+import { slugify } from '../../../core/utils/slugify';
 // ModalComponent wraps the goal form in a dialog
 import { ModalComponent } from '../../../shared/components/modal/modal.component';
 // GoalFormComponent renders the goal creation/edit form inside the modal
@@ -46,7 +47,7 @@ import { Goal } from '../../../core/models/goal.model';
           <div class="goal-card card">
             <!-- Card header: goal title (link to detail) + status badge -->
             <div class="goal-card-header">
-              <a [routerLink]="['/goals', goal.id]" class="goal-title">{{ goal.title }}</a>
+              <a [routerLink]="['/goals', toSlug(goal.title)]" class="goal-title">{{ goal.title }}</a>
               <span class="badge goal-status-{{ goal.status.toLowerCase() }}">{{ goal.status }}</span>
             </div>
             <!-- Optional description: clamped to 2 lines with ellipsis overflow -->
@@ -153,7 +154,7 @@ import { Goal } from '../../../core/models/goal.model';
   `],
 })
 export class GoalListComponent implements OnInit {
-  // Expose GoalService publicly so the template can subscribe to goals$ via async pipe
+  readonly toSlug = slugify;
   goalService = inject(GoalService);
   // ToastService for success/error feedback
   private toast = inject(ToastService);

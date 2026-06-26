@@ -8,6 +8,7 @@ import { FirebaseService } from '../prisma/firebase.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 // Import UpdateTaskDto which extends CreateTaskDto with all fields optional for partial updates
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { slugify, UUID_RE } from '../common/slugify';
 // Import randomUUID to generate unique task IDs since Firebase Realtime Database doesn't auto-generate UUIDs
 import { randomUUID } from 'crypto';
 import { GoogleCalendarService } from '../google-calendar/google-calendar.service';
@@ -217,14 +218,14 @@ export class TasksService {
   }
 
   // Retrieves a single task by ID, verifying that it belongs to the authenticated user
-  async findOne(userId: string, id: string) {
-    // Fetch the task from Firebase by its unique ID
-    const task = await this.firebase.get<any>(`tasks/${id}`);
-    // If the task does not exist, throw a 404 error
+  async findOne(userId: string, idOrSlug: string) {
+    if (UUID_RE.test(idOrSlug)) {
+      const task = await this.firebase.get<any>(`tasks/${idOrSlug}`);
+      if (task && task.userId === userId) return this.withCategory(task);
+    }
+    const all = await this.firebase.getList<any>('tasks');
+    const task = all.find((t: any) => t.userId === userId && slugify(t.title) === idOrSlug);
     if (!task) throw new NotFoundException('Task not found');
-    // If the task belongs to a different user, throw a 403 error to prevent unauthorized access
-    if (task.userId !== userId) throw new ForbiddenException();
-    // Attach the category object and return the enriched task
     return this.withCategory(task);
   }
 

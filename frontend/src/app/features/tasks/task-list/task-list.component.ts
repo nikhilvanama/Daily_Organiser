@@ -8,6 +8,7 @@ import { DatePipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 // TaskService provides the tasks$ observable and CRUD methods
 import { TaskService } from '../task.service';
+import { slugify } from '../../../core/utils/slugify';
 // ModalComponent wraps the task form in a dialog
 import { ModalComponent } from '../../../shared/components/modal/modal.component';
 // TaskFormComponent renders the plan creation/edit form inside the modal
@@ -92,7 +93,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
                 <!-- Main content: title (links to detail page) + metadata (date, time, category) -->
                 <div class="plan-main">
                   <div class="plan-top">
-                    <a [routerLink]="['/tasks', plan.id]" class="plan-title">{{ plan.title }}</a>
+                    <a [routerLink]="['/tasks', toSlug(plan.title)]" class="plan-title">{{ plan.title }}</a>
                     @if (plan.location) {
                       <span class="plan-loc">{{ plan.location }}</span>
                     }
@@ -231,7 +232,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
   `],
 })
 export class TaskListComponent implements OnInit {
-  // Expose TaskService publicly so the template can subscribe to tasks$ via async pipe
+  readonly toSlug = slugify;
   taskService = inject(TaskService);
   // ToastService for success/error feedback after mutations
   private toast = inject(ToastService);

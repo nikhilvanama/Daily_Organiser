@@ -4,6 +4,7 @@ import { FirebaseService } from '../prisma/firebase.service';
 import { CreateProjectDto, PaymentStatus, ProjectStatus } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { CreatePaymentDto } from './dto/create-payment.dto';
+import { slugify, UUID_RE } from '../common/slugify';
 
 type ProjectRecord = {
   id: string;
@@ -80,10 +81,21 @@ export class ProjectsService {
       });
   }
 
-  async findOne(userId: string, id: string) {
-    const project = await this.firebase.get<ProjectRecord>(`projects/${id}`);
+  async findOne(userId: string, idOrSlug: string) {
+    // Try direct UUID lookup first (fast path)
+    if (UUID_RE.test(idOrSlug)) {
+      const project = await this.firebase.get<ProjectRecord>(`projects/${idOrSlug}`);
+      if (project && project.userId === userId) {
+        const allPayments = await this.firebase.getList<PaymentRecord>('projectPayments');
+        return this.enrich(project, allPayments.filter((p) => p.userId === userId));
+      }
+    }
+    // Slug search: find user project whose title slugifies to idOrSlug
+    const all = await this.firebase.getList<ProjectRecord>('projects');
+    const project = all.find(
+      (p) => p.userId === userId && !p.archived && slugify(p.title) === idOrSlug,
+    );
     if (!project) throw new NotFoundException('Project not found');
-    if (project.userId !== userId) throw new ForbiddenException();
     const allPayments = await this.firebase.getList<PaymentRecord>('projectPayments');
     return this.enrich(project, allPayments.filter((p) => p.userId === userId));
   }
