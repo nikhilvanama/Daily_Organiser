@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -18,7 +19,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         </div>
       </div>
 
-      <!-- ═══ SCROLLABLE NAV ═══ -->
+      <!-- Scrollable nav -->
       <div class="sidebar-nav-area">
         <nav class="sidebar-nav">
           <span class="nav-section">Overview</span>
@@ -75,6 +76,14 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         </nav>
       </div>
 
+      <!-- Fixed bottom: sign out -->
+      <div class="sidebar-bottom">
+        <button class="logout-btn" (click)="auth.logout()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>Sign out</span>
+        </button>
+      </div>
+
     </aside>
   `,
   styles: [`
@@ -91,13 +100,13 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 
     .sidebar { width: 250px; min-width: 250px; height: 100vh; background: var(--sidebar-bg); display: flex; flex-direction: column; border-right: 1px solid var(--sidebar-border); overflow: hidden; }
 
-    /* ── Header (logo only) ── */
+    /* Header */
     .sidebar-header { flex-shrink: 0; padding: 1rem 0.75rem 0.75rem; border-bottom: 1px solid var(--sidebar-border); }
     .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 4px 8px; }
     .logo-icon { width: 34px; height: 34px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(16,185,129,0.35); flex-shrink: 0; }
     .logo-text { color: #fff; font-weight: 700; font-size: 0.95rem; letter-spacing: -0.01em; }
 
-    /* ── Scrollable nav ── */
+    /* Scrollable nav */
     .sidebar-nav-area { flex: 1; overflow-y: auto; padding: 0.5rem 0.75rem 1rem; }
     .sidebar-nav { display: flex; flex-direction: column; gap: 2px; }
     .nav-section { display: block; color: var(--sidebar-text-dim); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 10px 12px 5px; }
@@ -105,7 +114,13 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
     .nav-link:hover { background: var(--sidebar-hover); color: #fff; }
     .nav-link.active { background: var(--sidebar-active-bg); color: var(--sidebar-active-text); font-weight: 600; }
     .nav-link.active::before { content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px; background: var(--sidebar-active-text); border-radius: 0 3px 3px 0; }
+
+    /* Fixed bottom logout */
+    .sidebar-bottom { flex-shrink: 0; padding: 0.75rem; border-top: 1px solid var(--sidebar-border); }
+    .logout-btn { display: flex; align-items: center; gap: 9px; width: 100%; padding: 9px 12px; border-radius: 8px; background: none; border: none; color: var(--sidebar-text-dim); font-size: 0.82rem; font-family: inherit; cursor: pointer; transition: all 0.15s; }
+    .logout-btn:hover { background: rgba(239,68,68,0.08); color: #ef4444; }
   `],
 })
 export class SidebarComponent {
+  auth = inject(AuthService);
 }
