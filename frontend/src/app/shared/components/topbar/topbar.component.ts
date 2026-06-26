@@ -12,7 +12,13 @@ import { ToastService } from '../../../core/services/toast.service';
   template: `
     <header class="topbar">
       <div class="topbar-left">
-        <h1 class="page-title">{{ title() }}</h1>
+        <nav class="breadcrumb">
+          @if (breadcrumb().section) {
+            <span class="bc-section">{{ breadcrumb().section }}</span>
+            <span class="bc-sep">›</span>
+          }
+          <span class="bc-page">{{ breadcrumb().page }}</span>
+        </nav>
       </div>
 
       <div class="topbar-right">
@@ -62,10 +68,10 @@ import { ToastService } from '../../../core/services/toast.service';
       box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
 
-    .page-title {
-      font-size: 1.05rem; font-weight: 700; color: var(--text-primary);
-      margin: 0; letter-spacing: -0.02em;
-    }
+    .breadcrumb { display: flex; align-items: center; gap: 7px; }
+    .bc-section { font-size: 0.78rem; font-weight: 500; color: var(--text-secondary); }
+    .bc-sep { font-size: 0.8rem; color: var(--text-secondary); opacity: 0.45; }
+    .bc-page { font-size: 1rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.015em; }
 
     .topbar-right { display: flex; align-items: center; gap: 6px; }
 
@@ -119,12 +125,12 @@ export class TopbarComponent implements OnInit {
   private toast = inject(ToastService);
   private router = inject(Router);
 
-  title = signal(this.pathToTitle(window.location.pathname));
+  breadcrumb = signal(this.pathToBreadcrumb(window.location.pathname));
   syncing = false;
 
   constructor() {
     this.router.events.subscribe((e) => {
-      if (e instanceof NavigationEnd) this.title.set(this.pathToTitle(e.urlAfterRedirects));
+      if (e instanceof NavigationEnd) this.breadcrumb.set(this.pathToBreadcrumb(e.urlAfterRedirects));
     });
   }
 
@@ -162,19 +168,19 @@ export class TopbarComponent implements OnInit {
     return u?.displayName ?? u?.username ?? 'User';
   }
 
-  private pathToTitle(path: string): string {
-    if (path.includes('dashboard'))  return 'Dashboard';
-    if (path.includes('tasks'))      return 'My Plans';
-    if (path.includes('goals'))      return 'Goals';
-    if (path.includes('habits'))     return 'Daily Routine';
-    if (path.includes('journal'))    return 'Journal';
-    if (path.includes('projects'))   return 'Projects';
-    if (path.includes('trips'))      return 'Trips';
-    if (path.includes('buy-list'))   return 'Buy List';
-    if (path.includes('analytics'))  return 'Analytics';
-    if (path.includes('calendar'))   return 'Calendar';
-    if (path.includes('portfolio'))  return 'My Portfolio';
-    if (path.includes('profile'))    return 'Profile';
-    return 'Daily Organizer';
+  private pathToBreadcrumb(path: string): { section: string; page: string } {
+    if (path.includes('dashboard'))  return { section: 'Overview',   page: 'Dashboard' };
+    if (path.includes('tasks'))      return { section: 'Overview',   page: 'My Plans' };
+    if (path.includes('calendar'))   return { section: 'Overview',   page: 'Calendar' };
+    if (path.includes('analytics'))  return { section: 'Overview',   page: 'Analytics' };
+    if (path.includes('goals'))      return { section: 'Trackers',   page: 'Goals' };
+    if (path.includes('habits'))     return { section: 'Trackers',   page: 'Daily Routine' };
+    if (path.includes('journal'))    return { section: 'Trackers',   page: 'Journal' };
+    if (path.includes('projects'))   return { section: 'Trackers',   page: 'Projects' };
+    if (path.includes('trips'))      return { section: 'Wishlists',  page: 'Trips' };
+    if (path.includes('buy-list'))   return { section: 'Wishlists',  page: 'Buy List' };
+    if (path.includes('portfolio'))  return { section: 'Portfolio',  page: 'My Portfolio' };
+    if (path.includes('profile'))    return { section: '',           page: 'Profile' };
+    return { section: '', page: 'Daily Organizer' };
   }
 }
