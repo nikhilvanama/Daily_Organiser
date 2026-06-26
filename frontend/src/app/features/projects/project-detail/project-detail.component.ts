@@ -3,7 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { ProjectService } from '../project.service';
-import { PAYMENT_STATUSES, PaymentStatus, Project, ProjectPayment, PROJECT_STATUSES, ProjectStatus } from '../../../core/models/project.model';
+import { PAYMENT_STATUSES, Project, ProjectPayment, PROJECT_STATUSES, PROJECT_TYPES } from '../../../core/models/project.model';
 import { ModalComponent } from '../../../shared/components/modal/modal.component';
 import { ProjectFormComponent } from '../project-form/project-form.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -30,45 +30,11 @@ import { ToastService } from '../../../core/services/toast.service';
         <div class="title-block">
           <h1>{{ project()!.title }}</h1>
           <div class="title-meta">
-            <span class="status-pill"
-              [style.background]="statusColor() + '22'"
-              [style.color]="statusColor()">{{ statusLabel() }}</span>
             @if (project()!.isSelf) {
               <span class="status-pill self">🏠 Self project</span>
-            } @else {
-              <span class="status-pill"
-                [style.background]="paymentColor() + '22'"
-                [style.color]="paymentColor()">{{ paymentLabel() }}</span>
             }
-            @if (project()!.clientName) { <span class="muted">· {{ project()!.clientName }}</span> }
+            @if (project()!.clientName) { <span class="muted">{{ project()!.clientName }}</span> }
             @if (project()!.clientContact) { <span class="muted">· {{ project()!.clientContact }}</span> }
-            @if (project()!.isOverdue) { <span class="overdue-pill">⚠ Overdue</span> }
-          </div>
-        </div>
-
-        <!-- Quick status & progress controls -->
-        <div class="card quick-controls">
-          <div class="control-block">
-            <label class="label">Project status</label>
-            <select class="input" [value]="project()!.status" (change)="updateStatus($any($event.target).value)">
-              @for (s of statuses; track s.value) {
-                <option [value]="s.value">{{ s.label }}</option>
-              }
-            </select>
-          </div>
-          @if (!project()!.isSelf) {
-            <div class="control-block">
-              <label class="label">Payment status</label>
-              <select class="input" [value]="project()!.paymentStatus" (change)="updatePaymentStatus($any($event.target).value)">
-                @for (p of paymentStatuses; track p.value) {
-                  <option [value]="p.value">{{ p.label }}</option>
-                }
-              </select>
-            </div>
-          }
-          <div class="control-block">
-            <label class="label">Progress · {{ project()!.progress }}%</label>
-            <input type="range" min="0" max="100" step="5" [value]="project()!.progress" (input)="onProgressInput($any($event.target).value)" (change)="updateProgress($any($event.target).value)" />
           </div>
         </div>
 
@@ -83,19 +49,49 @@ import { ToastService } from '../../../core/services/toast.service';
             }
 
             <div class="kv-grid">
-              @if (!project()!.isSelf && project()!.quotedAmount !== null) {
+              <div>
+                <span class="muted">Project status</span>
+                <span class="status-pill"
+                  [style.background]="statusColor() + '22'"
+                  [style.color]="statusColor()">{{ statusLabel() }}</span>
+              </div>
+              <!-- Only render Payment status if non-self AND we have a real status value -->
+              @if (!project()!.isSelf && project()!.paymentStatus && project()!.paymentStatus !== 'NOT_APPLICABLE') {
+                <div>
+                  <span class="muted">Payment status</span>
+                  <span class="status-pill"
+                    [style.background]="paymentColor() + '22'"
+                    [style.color]="paymentColor()">{{ paymentLabel() }}</span>
+                </div>
+              }
+              @if (project()!.projectType) {
+                <div><span class="muted">Type</span> <strong>{{ projectTypeLabel(project()!.projectType!) }}</strong></div>
+              }
+              <!-- Only render Quoted if it's actually a non-zero positive number -->
+              @if (!project()!.isSelf && project()!.quotedAmount && project()!.quotedAmount! > 0) {
                 <div><span class="muted">Quoted</span> <strong>{{ formatMoney(project()!.quotedAmount!, project()!.currency) }}</strong></div>
               }
+              <!-- Strict truthiness — empty strings shouldn't paint an empty value row -->
               @if (project()!.startDate) {
                 <div><span class="muted">Start</span> <strong>{{ project()!.startDate }}</strong></div>
               }
               @if (project()!.deadline) {
-                <div><span class="muted">Deadline</span> <strong [class.overdue-text]="project()!.isOverdue">{{ project()!.deadline }}</strong></div>
+                <div><span class="muted">End date</span> <strong>{{ project()!.deadline }}</strong></div>
               }
               @if (project()!.deliveredAt) {
                 <div><span class="muted">Delivered</span> <strong>{{ formatDate(project()!.deliveredAt!) }}</strong></div>
               }
             </div>
+
+            <!-- Friendly nudge when the user hasn't filled in any payment/quote info yet -->
+            @if (!project()!.isSelf
+                && !project()!.quotedAmount
+                && (!project()!.paymentStatus || project()!.paymentStatus === 'PENDING' || project()!.paymentStatus === 'NOT_INVOICED')
+                && project()!.payments.length === 0) {
+              <div class="empty-hint">
+                💰 No quote or payment info yet — click <strong>Edit</strong> (top-right) to add the quoted amount and payment status, then record payments on the right.
+              </div>
+            }
 
             @if (project()!.portfolioLinks.length > 0) {
               <h4>Portfolio / samples</h4>
@@ -211,19 +207,28 @@ import { ToastService } from '../../../core/services/toast.service';
     .received { color: var(--accent); }
     .balance { color: #f97316; }
 
-    .quick-controls { display: flex; gap: 1.5rem; padding: 1rem 1.25rem; align-items: center; flex-wrap: wrap; }
-    .control-block { display: flex; flex-direction: column; gap: 4px; min-width: 200px; flex: 1; }
-    .control-block input[type="range"] { width: 100%; }
-    .label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
-
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     .section { padding: 1.25rem 1.5rem; }
-    .section h3 { font-size: 1rem; font-weight: 600; margin: 0 0 0.75rem; }
+    /* Section headings: bigger, weightier, with a subtle bottom rule so they read as
+       card titles rather than just bold body text. */
+    .section h3 {
+      font-size: 1.15rem; font-weight: 700; margin: 0 0 1rem;
+      padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);
+      color: var(--text-primary); letter-spacing: -0.01em;
+    }
     .section h4 { font-size: 0.85rem; font-weight: 600; margin: 1rem 0 0.5rem; color: var(--text-secondary); }
     .desc { font-size: 0.9rem; color: var(--text-primary); line-height: 1.55; white-space: pre-wrap; margin: 0; }
 
-    .kv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-top: 1rem; font-size: 0.85rem; }
-    .kv-grid > div { display: flex; flex-direction: column; gap: 2px; }
+    .kv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem 1rem; margin-top: 1rem; font-size: 0.85rem; }
+    .kv-grid > div { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+    .kv-grid .status-pill { font-size: 0.72rem; font-weight: 600; padding: 3px 10px; border-radius: 6px; }
+
+    .empty-hint {
+      margin-top: 1rem; padding: 12px 14px;
+      background: var(--bg-hover); border: 1px dashed var(--border); border-radius: 8px;
+      font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;
+    }
+    .empty-hint strong { color: var(--text-primary); }
 
     .links-list { display: flex; flex-direction: column; gap: 4px; }
     .link-item { display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px; background: var(--bg-hover); border-radius: 6px; font-size: 0.82rem; color: var(--text-primary); text-decoration: none; max-width: 100%; }
@@ -282,8 +287,11 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
     method: [''],
   });
 
-  statuses = PROJECT_STATUSES;
-  paymentStatuses = PAYMENT_STATUSES.filter((p) => p.value !== 'NOT_APPLICABLE');
+  // Map a stored projectType code (e.g. 'WEB_APP') to its human label ('Web application').
+  // Falls back to the raw value so any future custom types still display something.
+  projectTypeLabel(value: string): string {
+    return PROJECT_TYPES.find((t) => t.value === value)?.label ?? value;
+  }
 
   statusColor = computed(() => PROJECT_STATUSES.find((s) => s.value === this.project()?.status)?.color ?? '#94a3b8');
   statusLabel = computed(() => PROJECT_STATUSES.find((s) => s.value === this.project()?.status)?.label ?? this.project()?.status ?? '');
@@ -307,37 +315,6 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
     this.projectService.getOne(id).subscribe({
       next: (p) => { this.project.set(p); this.loading.set(false); },
       error: () => this.loading.set(false),
-    });
-  }
-
-  updateStatus(status: ProjectStatus) {
-    const p = this.project();
-    if (!p) return;
-    this.projectService.update(p.id, { status }).subscribe({
-      next: (u) => { this.project.set(u); this.toast.success('Status updated'); },
-    });
-  }
-
-  updatePaymentStatus(paymentStatus: PaymentStatus) {
-    const p = this.project();
-    if (!p) return;
-    this.projectService.update(p.id, { paymentStatus }).subscribe({
-      next: (u) => { this.project.set(u); this.toast.success('Payment status updated'); },
-    });
-  }
-
-  // Show the live slider value without firing API calls on every tick.
-  onProgressInput(value: string) {
-    const p = this.project();
-    if (p) this.project.set({ ...p, progress: Number(value) });
-  }
-
-  updateProgress(value: string) {
-    const p = this.project();
-    if (!p) return;
-    const progress = Number(value);
-    this.projectService.update(p.id, { progress }).subscribe({
-      next: (u) => this.project.set(u),
     });
   }
 

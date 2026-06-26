@@ -1,8 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { ToastContainerComponent } from '../toast-container/toast-container.component';
 import { ThemeService } from '../../../core/services/theme.service';
+import { IdleService } from '../../../core/services/idle.service';
 
 @Component({
   selector: 'app-layout',
@@ -96,9 +97,20 @@ import { ThemeService } from '../../../core/services/theme.service';
     }
   `],
 })
-export class LayoutComponent {
+export class LayoutComponent implements OnInit, OnDestroy {
   themeService = inject(ThemeService);
+  private idle = inject(IdleService);
   sidebarOpen = signal(false);
+
+  ngOnInit() {
+    // The layout is only mounted for authenticated users (route is behind authGuard),
+    // so this is the right place to start the idle-timeout watcher.
+    this.idle.start();
+  }
+
+  ngOnDestroy() {
+    this.idle.stop();
+  }
 
   closeSidebarOnNav(event: Event) {
     const target = event.target as HTMLElement;

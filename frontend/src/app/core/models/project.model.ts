@@ -14,6 +14,19 @@ export const PROJECT_STATUSES: { value: ProjectStatus; label: string; color: str
 
 export type PaymentStatus = 'NOT_INVOICED' | 'PENDING' | 'PARTIAL' | 'PAID' | 'NOT_APPLICABLE';
 
+export const PROJECT_TYPES: { value: string; label: string }[] = [
+  { value: 'WEBSITE',          label: 'Website' },
+  { value: 'WEB_APP',          label: 'Web application' },
+  { value: 'WEB_DESIGN',       label: 'Web design (mockups only)' },
+  { value: 'LANDING_PAGE',     label: 'Landing page' },
+  { value: 'ECOMMERCE',        label: 'E-commerce' },
+  { value: 'BUSINESS_PROFILE', label: 'Business profile' },
+  { value: 'MOBILE_APP',       label: 'Mobile app' },
+  { value: 'BRANDING',         label: 'Logo & branding' },
+  { value: 'MAINTENANCE',      label: 'Maintenance & support' },
+  { value: 'CONSULTING',       label: 'Consulting' },
+];
+
 export const PAYMENT_STATUSES: { value: PaymentStatus; label: string; color: string }[] = [
   { value: 'NOT_INVOICED',   label: 'Not invoiced',  color: '#94a3b8' }, // slate
   { value: 'PENDING',        label: 'Pending',       color: '#eab308' }, // yellow
@@ -39,6 +52,7 @@ export interface Project {
   userId: string;
   title: string;
   isSelf: boolean;
+  projectType: string | null;
   clientName: string | null;
   clientContact: string | null;
   description: string | null;
@@ -52,6 +66,13 @@ export interface Project {
   progress: number;
   portfolioLinks: string[];
   archived: boolean;
+  showInPortfolio: boolean;
+  publicSummary: string | null;
+  thumbnailUrl: string | null;
+  liveUrl: string | null;
+  repoUrl: string | null;
+  figmaUrl: string | null;
+  tags: string[];
   createdAt: string;
   updatedAt: string;
   // --- derived server-side ---
@@ -64,6 +85,7 @@ export interface Project {
 export interface CreateProjectDto {
   title: string;
   isSelf?: boolean;
+  projectType?: string;
   clientName?: string;
   clientContact?: string;
   description?: string;
@@ -75,6 +97,13 @@ export interface CreateProjectDto {
   deadline?: string;
   progress?: number;
   portfolioLinks?: string[];
+  showInPortfolio?: boolean;
+  publicSummary?: string;
+  thumbnailUrl?: string;
+  liveUrl?: string;
+  repoUrl?: string;
+  figmaUrl?: string;
+  tags?: string[];
 }
 
 export type UpdateProjectDto = Partial<CreateProjectDto> & { archived?: boolean };

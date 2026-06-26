@@ -10,6 +10,7 @@ type ProjectRecord = {
   userId: string;
   title: string;
   isSelf: boolean;
+  projectType: string | null;
   clientName: string | null;
   clientContact: string | null;
   description: string | null;
@@ -23,6 +24,13 @@ type ProjectRecord = {
   progress: number;
   portfolioLinks: string[];
   archived: boolean;
+  showInPortfolio: boolean;
+  publicSummary: string | null;
+  thumbnailUrl: string | null;
+  liveUrl: string | null;
+  repoUrl: string | null;
+  figmaUrl: string | null;
+  tags: string[];
   createdAt: string;
   updatedAt: string;
 };
@@ -88,6 +96,7 @@ export class ProjectsService {
       userId,
       title: dto.title,
       isSelf,
+      projectType: dto.projectType ?? null,
       // Self projects don't carry client/payment fields, even if the client sends them.
       clientName: isSelf ? null : dto.clientName ?? null,
       clientContact: isSelf ? null : dto.clientContact ?? null,
@@ -102,6 +111,13 @@ export class ProjectsService {
       progress: dto.progress ?? 0,
       portfolioLinks: dto.portfolioLinks ?? [],
       archived: false,
+      showInPortfolio: dto.showInPortfolio ?? false,
+      publicSummary: dto.publicSummary ?? null,
+      thumbnailUrl: dto.thumbnailUrl ?? null,
+      liveUrl: dto.liveUrl ?? null,
+      repoUrl: dto.repoUrl ?? null,
+      figmaUrl: dto.figmaUrl ?? null,
+      tags: dto.tags ?? [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -239,6 +255,13 @@ export class ProjectsService {
       totalReceived: Math.round(totalReceived * 100) / 100,
       balance: Math.round(balance * 100) / 100,
       isOverdue,
+      showInPortfolio: project.showInPortfolio ?? false,
+      publicSummary: project.publicSummary ?? null,
+      thumbnailUrl: project.thumbnailUrl ?? null,
+      liveUrl: project.liveUrl ?? null,
+      repoUrl: project.repoUrl ?? null,
+      figmaUrl: project.figmaUrl ?? null,
+      tags: project.tags ?? [],
     };
   }
 }

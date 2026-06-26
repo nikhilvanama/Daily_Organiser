@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portfolio</title>
+  <link id="theme-css" rel="stylesheet" href="themes/classic.css" />
+  <script src="config.js"></script>
+  <script src="app.js" defer></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; }
+    #loading { display: flex; align-items: center; justify-content: center; min-height: 100vh; font-size: 1.125rem; opacity: 0.6; }
+    #error { display: flex; align-items: center; justify-content: center; min-height: 100vh; flex-direction: column; gap: 1rem; padding: 2rem; text-align: center; }
+    #error h2 { font-size: 1.5rem; }
+    #error p { opacity: 0.6; }
+    #app { display: none; }
+  </style>
+</head>
+<body>
+  <div id="loading">Loading portfolio...</div>
+  <div id="error" hidden>
+    <h2>Portfolio not found</h2>
+    <p>This portfolio is not published or the slug is incorrect.</p>
+  </div>
+
+  <div id="app">
+    <nav id="navbar">
+      <div class="nav-inner">
+        <span id="nav-name" class="nav-brand"></span>
+        <div class="nav-links">
+          <a href="#experience">Experience</a>
+          <a href="#skills">Skills</a>
+          <a href="#education">Education</a>
+          <a href="#certifications">Certifications</a>
+          <a href="#projects">Projects</a>
+          <a href="#achievements">Achievements</a>
+          <a href="#contact">Contact</a>
+        </div>
+        <button id="theme-switcher" class="theme-btn" title="Switch theme">&#9680;</button>
+      </div>
+    </nav>
+
+    <section id="hero">
+      <div class="container">
+        <div class="hero-inner">
+          <div id="hero-content">
+            <div id="available-badge" class="available-badge" hidden>Available for hire</div>
+            <h1 id="hero-name"></h1>
+            <p id="hero-headline" class="hero-headline"></p>
+            <p id="hero-bio" class="hero-bio"></p>
+            <div id="hero-meta" class="hero-meta"></div>
+            <div id="hero-interests" class="interests-section" hidden>
+              <p class="interests-label">Interests:</p>
+              <div id="interests-chips" class="interests-chips"></div>
+            </div>
+            <div id="hero-actions" class="hero-actions"></div>
+            <div id="hero-socials" class="hero-socials"></div>
+          </div>
+          <div id="hero-avatar-wrap" hidden>
+            <img id="hero-avatar" class="hero-avatar" alt="Profile" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="experience" class="section">
+      <div class="container">
+        <h2 class="section-title">Experience</h2>
+        <div id="experience-list" class="timeline"></div>
+      </div>
+    </section>
+
+    <section id="skills" class="section">
+      <div class="container">
+        <h2 class="section-title">Skills</h2>
+        <div id="skills-content"></div>
+      </div>
+    </section>
+
+    <section id="education" class="section">
+      <div class="container">
+        <h2 class="section-title">Education</h2>
+        <div id="education-list" class="timeline"></div>
+      </div>
+    </section>
+
+    <section id="certifications" class="section">
+      <div class="container">
+        <h2 class="section-title">Certifications</h2>
+        <div id="certifications-grid" class="cards-grid"></div>
+      </div>
+    </section>
+
+    <section id="projects" class="section">
+      <div class="container">
+        <h2 class="section-title">Projects</h2>
+        <div id="projects-grid" class="cards-grid"></div>
+      </div>
+    </section>
+
+    <section id="achievements" class="section">
+      <div class="container">
+        <h2 class="section-title">Achievements</h2>
+        <div id="achievements-list"></div>
+      </div>
+    </section>
+
+    <section id="contact" class="section contact-section">
+      <div class="container">
+        <h2 class="section-title">Contact</h2>
+        <div id="contact-content"></div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="container">
+        <p>Built with Daily Organizer Portfolio</p>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

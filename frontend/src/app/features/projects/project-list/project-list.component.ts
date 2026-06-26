@@ -2,7 +2,7 @@ import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ProjectService } from '../project.service';
-import { PAYMENT_STATUSES, PaymentStatus, Project, PROJECT_STATUSES, ProjectStatus } from '../../../core/models/project.model';
+import { PAYMENT_STATUSES, PaymentStatus, Project, PROJECT_STATUSES, PROJECT_TYPES, ProjectStatus } from '../../../core/models/project.model';
 import { ModalComponent } from '../../../shared/components/modal/modal.component';
 import { ProjectFormComponent } from '../project-form/project-form.component';
 import { ToastService } from '../../../core/services/toast.service';
@@ -69,7 +69,7 @@ import { ToastService } from '../../../core/services/toast.service';
       } @else {
         <div class="project-list">
           @for (p of filtered(); track p.id) {
-            <a [routerLink]="['/projects', p.id]" class="project-row" [class.overdue]="p.isOverdue">
+            <a [routerLink]="['/projects', p.id]" class="project-row">
               <div class="pill-stack">
                 <span class="status-pill" [style.background]="statusColor(p.status) + '22'" [style.color]="statusColor(p.status)">
                   {{ statusLabel(p.status) }}
@@ -85,15 +85,12 @@ import { ToastService } from '../../../core/services/toast.service';
               <div class="proj-main">
                 <div class="proj-top">
                   <span class="proj-title">{{ p.title }}</span>
+                  @if (p.projectType) { <span class="proj-type">{{ projectTypeLabel(p.projectType) }}</span> }
                   @if (p.clientName) { <span class="proj-client">· {{ p.clientName }}</span> }
                 </div>
                 <div class="proj-meta">
                   @if (p.deadline) {
-                    <span class="meta-item" [class.overdue-text]="p.isOverdue">
-                      📅 {{ p.deadline }}
-                      @if (p.isOverdue) { · overdue }
-                      @else { · {{ daysUntil(p.deadline) }} }
-                    </span>
+                    <span class="meta-item">📅 {{ p.deadline }}</span>
                   }
                   @if (!p.isSelf) {
                     @if (p.quotedAmount !== null && p.quotedAmount > 0) {
@@ -160,6 +157,7 @@ import { ToastService } from '../../../core/services/toast.service';
     .proj-main { flex: 1; min-width: 0; }
     .proj-top { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
     .proj-title { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
+    .proj-type { font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: var(--bg-hover); color: var(--text-secondary); }
     .proj-client { font-size: 0.82rem; color: var(--text-secondary); }
     .proj-meta { display: flex; gap: 14px; font-size: 0.74rem; color: var(--text-muted); margin-top: 4px; flex-wrap: wrap; }
     .meta-item.received { color: var(--accent); }
@@ -229,6 +227,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
   statusColor(s: ProjectStatus): string { return PROJECT_STATUSES.find((x) => x.value === s)?.color ?? '#94a3b8'; }
   statusLabel(s: ProjectStatus): string { return PROJECT_STATUSES.find((x) => x.value === s)?.label ?? s; }
+  projectTypeLabel(value: string): string { return PROJECT_TYPES.find((t) => t.value === value)?.label ?? value; }
   paymentColor(s: PaymentStatus): string { return PAYMENT_STATUSES.find((x) => x.value === s)?.color ?? '#94a3b8'; }
   paymentLabel(s: PaymentStatus): string { return PAYMENT_STATUSES.find((x) => x.value === s)?.label ?? s; }
 

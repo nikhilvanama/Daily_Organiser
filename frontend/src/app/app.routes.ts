@@ -125,6 +125,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/profile/profile.component').then((m) => m.ProfileComponent),
       },
+      {
+        path: 'portfolio',
+        loadComponent: () =>
+          import('./features/portfolio/portfolio-page/portfolio-page.component').then((m) => m.PortfolioPageComponent),
+      },
     ],
   },
 
