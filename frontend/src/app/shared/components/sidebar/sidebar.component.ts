@@ -100,9 +100,9 @@ import { AuthService } from '../../../core/services/auth.service';
 
     .sidebar { width: 250px; min-width: 250px; height: 100vh; background: var(--sidebar-bg); display: flex; flex-direction: column; border-right: 1px solid var(--sidebar-border); overflow: hidden; }
 
-    /* Header */
-    .sidebar-header { flex-shrink: 0; padding: 1rem 0.75rem 0.75rem; border-bottom: 1px solid var(--sidebar-border); }
-    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 4px 8px; }
+    /* Header — height matches topbar (64px) */
+    .sidebar-header { flex-shrink: 0; height: 64px; display: flex; align-items: center; padding: 0 0.75rem; border-bottom: 1px solid var(--sidebar-border); }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
     .logo-icon { width: 34px; height: 34px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(16,185,129,0.35); flex-shrink: 0; }
     .logo-text { color: #fff; font-weight: 700; font-size: 0.95rem; letter-spacing: -0.01em; }
 

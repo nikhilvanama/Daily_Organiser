@@ -17,20 +17,19 @@ import { ToastService } from '../../../core/services/toast.service';
 
       <div class="topbar-right">
         <!-- Theme toggle -->
-        <button class="tb-btn" (click)="themeService.toggle()"
+        <button class="tb-icon-btn" (click)="themeService.toggle()"
           [title]="themeService.theme() === 'light' ? 'Switch to dark mode' : 'Switch to light mode'">
           @if (themeService.theme() === 'light') {
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+            <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
           } @else {
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
           }
         </button>
 
-        <!-- Google Calendar button -->
+        <!-- Google Calendar -->
         <button class="tb-gcal" [class.gcal-on]="gcal.connected()" (click)="handleGcal()"
           [title]="gcal.connected() ? (syncing ? 'Syncing...' : 'Sync to Google Calendar') : 'Connect Google Calendar'">
-          <!-- Google G logo -->
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
             <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
@@ -44,11 +43,12 @@ import { ToastService } from '../../../core/services/toast.service';
 
         <div class="tb-sep"></div>
 
-        <!-- User: avatar + display name -->
+        <!-- Profile pill -->
         @if (auth.currentUser()) {
-          <a routerLink="/profile" class="tb-user" title="Profile">
+          <a routerLink="/profile" class="tb-profile" title="View profile">
             <span class="tb-avatar">{{ getUserInitial() }}</span>
             <span class="tb-name">{{ getUserName() }}</span>
+            <svg class="tb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
           </a>
         }
       </div>
@@ -57,50 +57,59 @@ import { ToastService } from '../../../core/services/toast.service';
   styles: [`
     .topbar {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 1.5rem; height: 60px; min-height: 60px; flex-shrink: 0;
+      padding: 0 1.5rem; height: 64px; min-height: 64px; flex-shrink: 0;
       background: var(--bg-primary); border-bottom: 1px solid var(--border);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
-    .page-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin: 0; letter-spacing: -0.01em; }
 
-    .topbar-right { display: flex; align-items: center; gap: 4px; }
-
-    /* Theme icon button */
-    .tb-btn {
-      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
-      background: none; border: none; cursor: pointer; border-radius: 7px;
-      color: var(--text-secondary); transition: background 0.15s, color 0.15s;
+    .page-title {
+      font-size: 1.05rem; font-weight: 700; color: var(--text-primary);
+      margin: 0; letter-spacing: -0.02em;
     }
-    .tb-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
 
-    /* Google Calendar pill button */
+    .topbar-right { display: flex; align-items: center; gap: 6px; }
+
+    /* Icon-only button */
+    .tb-icon-btn {
+      width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      border-radius: 9px; cursor: pointer; color: var(--text-secondary);
+      transition: all 0.15s;
+    }
+    .tb-icon-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border); }
+
+    /* Google Calendar pill */
     .tb-gcal {
-      display: flex; align-items: center; gap: 6px;
-      height: 32px; padding: 0 10px; border-radius: 7px;
-      background: none; border: 1px solid var(--border);
+      display: flex; align-items: center; gap: 7px;
+      height: 36px; padding: 0 12px; border-radius: 9px;
+      background: var(--bg-secondary); border: 1px solid var(--border);
       cursor: pointer; font-family: inherit; color: var(--text-secondary);
-      transition: all 0.15s; position: relative;
+      transition: all 0.15s; white-space: nowrap;
     }
-    .tb-gcal:hover { background: var(--bg-hover); border-color: var(--border); color: var(--text-primary); }
-    .tb-gcal.gcal-on { border-color: rgba(16,185,129,0.35); color: #10b981; }
-    .tb-gcal.gcal-on:hover { background: rgba(16,185,129,0.08); }
-    .gcal-label { font-size: 0.78rem; white-space: nowrap; }
+    .tb-gcal:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .tb-gcal.gcal-on { border-color: rgba(16,185,129,0.4); color: #10b981; background: rgba(16,185,129,0.06); }
+    .tb-gcal.gcal-on:hover { background: rgba(16,185,129,0.12); }
+    .gcal-label { font-size: 0.8rem; font-weight: 500; }
     .gcal-dot { width: 6px; height: 6px; background: #10b981; border-radius: 50%; flex-shrink: 0; }
 
-    .tb-sep { width: 1px; height: 18px; background: var(--border); margin: 0 6px; flex-shrink: 0; }
+    .tb-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
 
-    /* User pill */
-    .tb-user {
+    /* Profile pill — looks like a menu trigger */
+    .tb-profile {
       display: flex; align-items: center; gap: 8px;
-      text-decoration: none; padding: 4px 10px 4px 4px;
-      border-radius: 20px; transition: background 0.15s;
+      height: 36px; padding: 0 10px 0 6px;
+      border-radius: 10px; border: 1px solid var(--border);
+      background: var(--bg-secondary); text-decoration: none;
+      transition: all 0.15s; cursor: pointer;
     }
-    .tb-user:hover { background: var(--bg-hover); }
+    .tb-profile:hover { background: var(--bg-hover); border-color: var(--border); }
     .tb-avatar {
-      width: 28px; height: 28px; background: linear-gradient(135deg, #10b981, #059669);
-      border-radius: 50%; display: flex; align-items: center; justify-content: center;
-      color: white; font-weight: 700; font-size: 0.75rem; flex-shrink: 0;
+      width: 26px; height: 26px; background: linear-gradient(135deg, #10b981, #059669);
+      border-radius: 7px; display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: 700; font-size: 0.72rem; flex-shrink: 0;
     }
     .tb-name { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; }
+    .tb-chevron { color: var(--text-secondary); flex-shrink: 0; }
   `],
 })
 export class TopbarComponent implements OnInit {
