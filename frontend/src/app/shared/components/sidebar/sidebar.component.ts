@@ -107,36 +107,33 @@ import { AuthService } from '../../../core/services/auth.service';
     .logo-text { color: #fff; font-weight: 700; font-size: 0.95rem; letter-spacing: -0.01em; }
 
     /* Scrollable nav */
-    .sidebar-nav-area { flex: 1; overflow-y: auto; padding: 0.5rem 0.75rem 1rem; }
+    .sidebar-nav-area { flex: 1; overflow-y: auto; padding: 0.25rem 0.75rem 1rem; }
     .sidebar-nav { display: flex; flex-direction: column; }
 
     .nav-section {
       display: block; color: var(--sidebar-text-dim);
       font-size: 0.58rem; font-weight: 700; letter-spacing: 0.14em;
-      text-transform: uppercase; padding: 14px 12px 5px;
+      text-transform: uppercase; padding: 20px 14px 6px;
     }
-    .sidebar-nav > .nav-section:first-child { padding-top: 8px; }
+    .sidebar-nav > .nav-section:first-child { padding-top: 10px; }
 
     .nav-link {
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px 12px; margin-bottom: 1px; border-radius: 8px;
-      color: var(--sidebar-text); font-size: 0.855rem; font-weight: 500;
-      text-decoration: none; transition: background 0.15s, color 0.15s; cursor: pointer; position: relative;
+      display: flex; align-items: center; gap: 11px;
+      padding: 10px 14px; margin-bottom: 2px;
+      border-left: 3px solid transparent; border-radius: 0 8px 8px 0;
+      color: var(--sidebar-text); font-size: 0.865rem; font-weight: 500;
+      text-decoration: none; transition: all 0.15s; cursor: pointer;
     }
-    .nav-link svg { flex-shrink: 0; opacity: 0.65; transition: opacity 0.15s; }
-    .nav-link:hover { background: var(--sidebar-hover); color: #e2e8f0; }
-    .nav-link:hover svg { opacity: 1; }
+    .nav-link svg { flex-shrink: 0; opacity: 0.55; transition: opacity 0.15s; }
+    .nav-link:hover { background: var(--sidebar-hover); color: #e2e8f0; border-left-color: rgba(255,255,255,0.08); }
+    .nav-link:hover svg { opacity: 0.9; }
 
     .nav-link.active {
-      background: linear-gradient(90deg, rgba(16,185,129,0.18) 0%, rgba(16,185,129,0.05) 100%);
+      background: rgba(16,185,129,0.1);
+      border-left-color: #10b981;
       color: #34d399; font-weight: 600;
     }
     .nav-link.active svg { opacity: 1; }
-    .nav-link.active::before {
-      content: ''; position: absolute; left: 0; top: 5px; bottom: 5px; width: 3px;
-      background: #10b981; border-radius: 0 4px 4px 0;
-      box-shadow: 0 0 8px rgba(16,185,129,0.55);
-    }
 
     /* Fixed bottom logout */
     .sidebar-bottom { flex-shrink: 0; padding: 0.75rem; border-top: 1px solid var(--sidebar-border); }
