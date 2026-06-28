@@ -43,6 +43,12 @@ export interface AnalyticsSummary {
     revenue: number;
     payments: number;
   };
+  goals: {
+    total: number;
+    completed: number;
+    active: number;
+    avgProgress: number;
+  };
   dailyActivity: AnalyticsDailyActivity[];
   byWeekday: AnalyticsByWeekday[];
   topCategories: AnalyticsTopCategory[];

@@ -32,14 +32,64 @@ import { Subscription } from 'rxjs';
             <span class="card-sub">{{ doneCountSelected() }}/{{ scheduledForSelected().length }} done</span>
           </div>
           <div class="date-nav">
-            <div class="date-display">
-              <span class="date-main">{{ selectedLabel }}</span>
-              <span class="date-sub">
-                @if (selectedDate === todayKey()) { Today }
-                @else if (daysAgo() === 1) { Yesterday }
-                @else { {{ daysAgo() }} days ago }
-              </span>
+            <!-- Calendar picker trigger -->
+            <div class="date-picker-wrap">
+              <button class="date-trigger" (click)="toggleCal($event)">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <div class="date-display">
+                  <span class="date-main">{{ selectedLabel }}</span>
+                  <span class="date-sub">
+                    @if (selectedDate === todayKey()) { Today }
+                    @else if (daysAgo() === 1) { Yesterday }
+                    @else { {{ daysAgo() }} days ago }
+                  </span>
+                </div>
+              </button>
+
+              @if (showCal) {
+                <div class="cal-backdrop" (click)="showCal = false"></div>
+                <div class="cal-popup" (click)="$event.stopPropagation()">
+                  <div class="cal-head">
+                    <button class="cal-nav" (click)="shiftCal(-1)" [disabled]="!canShiftCalBack()" title="Previous month">
+                      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <span class="cal-month-label">{{ calMonthLabel }}</span>
+                    <button class="cal-nav" (click)="shiftCal(1)" [disabled]="!canShiftCalForward()" title="Next month">
+                      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                  </div>
+                  <div class="cal-grid">
+                    @for (dh of calDayHeaders; track dh) {
+                      <span class="cal-dh">{{ dh }}</span>
+                    }
+                    @for (cell of calCells(); track cell.key) {
+                      @if (cell.date) {
+                        <button class="cal-cell"
+                          [class.selected]="cell.isSelected"
+                          [class.is-today]="cell.isToday"
+                          [class.out-range]="!cell.inRange"
+                          [disabled]="!cell.inRange"
+                          (click)="selectCalDate(cell.date)">
+                          <span class="cal-num">{{ cell.day }}</span>
+                          @if (cell.dotStatus !== 'none') {
+                            <span class="cal-dot" [class]="'dot-' + cell.dotStatus"></span>
+                          }
+                        </button>
+                      } @else {
+                        <span class="cal-empty"></span>
+                      }
+                    }
+                  </div>
+                  <div class="cal-legend">
+                    <span class="leg"><span class="cal-dot dot-green"></span>Done</span>
+                    <span class="leg"><span class="cal-dot dot-partial"></span>Partial</span>
+                    <span class="leg"><span class="cal-dot dot-red"></span>Missed</span>
+                    <span class="leg"><span class="cal-dot dot-trip"></span>Trip</span>
+                  </div>
+                </div>
+              }
             </div>
+
             <button class="nav-btn" (click)="shiftDate(-1)" [disabled]="!canShiftBack()" title="Previous day">
               <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
@@ -185,9 +235,66 @@ import { Subscription } from 'rxjs';
     }
     .nav-btn:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); border-color: var(--text-muted); }
     .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-    .date-display { display: flex; flex-direction: column; gap: 1px; align-items: center; min-width: 130px; }
+    .date-picker-wrap { position: relative; }
+    .date-trigger {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      border-radius: 9px; padding: 5px 12px; cursor: pointer;
+      color: inherit; font-family: inherit; transition: all 0.15s;
+    }
+    .date-trigger:hover { background: var(--bg-hover); border-color: var(--text-muted); }
+    .date-trigger > svg:first-child { color: var(--text-muted); flex-shrink: 0; }
+    .cal-chevron { color: var(--text-muted); flex-shrink: 0; }
+    .date-display { display: flex; flex-direction: column; gap: 1px; align-items: flex-start; }
     .date-main { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); }
     .date-sub { font-size: 0.7rem; color: var(--text-muted); }
+
+    /* Calendar popup */
+    .cal-backdrop { position: fixed; inset: 0; z-index: 99; }
+    .cal-popup {
+      position: absolute; top: calc(100% + 8px); right: 0; z-index: 100;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px; width: 252px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    }
+    .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .cal-month-label { font-size: 0.88rem; font-weight: 700; color: var(--text-primary); }
+    .cal-nav {
+      width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--border);
+      background: transparent; color: var(--text-secondary); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: all 0.15s; padding: 0;
+    }
+    .cal-nav:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); }
+    .cal-nav:disabled { opacity: 0.25; cursor: not-allowed; }
+
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+    .cal-dh { text-align: center; font-size: 0.6rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; padding: 4px 0 6px; }
+    .cal-empty { aspect-ratio: 1; }
+    .cal-cell {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+      aspect-ratio: 1; border-radius: 6px; border: 1px solid transparent;
+      background: transparent; cursor: pointer; padding: 2px;
+      transition: background 0.12s; font-family: inherit;
+    }
+    .cal-cell:hover:not(:disabled):not(.selected) { background: var(--bg-hover); }
+    .cal-cell.selected { background: var(--accent); border-color: transparent; }
+    .cal-cell.is-today:not(.selected) { border-color: var(--accent); }
+    .cal-cell.out-range { opacity: 0.2; cursor: not-allowed; }
+    .cal-num { font-size: 0.75rem; font-weight: 500; color: var(--text-primary); line-height: 1; }
+    .cal-cell.selected .cal-num { color: #fff; font-weight: 700; }
+
+    .cal-dot { width: 5px; height: 5px; border-radius: 50%; display: block; flex-shrink: 0; }
+    .dot-green   { background: #34d399; }
+    .dot-partial { background: #fbbf24; }
+    .dot-red     { background: #f87171; }
+    .dot-trip    { background: #60a5fa; }
+
+    .cal-legend {
+      display: flex; gap: 10px; margin-top: 10px; padding-top: 10px;
+      border-top: 1px solid var(--border); flex-wrap: wrap;
+    }
+    .leg { display: flex; align-items: center; gap: 4px; font-size: 0.65rem; color: var(--text-muted); }
+
     .jump-today { padding: 5px 10px; font-size: 0.75rem; }
 
     @media (max-width: 640px) {
@@ -288,6 +395,12 @@ export class HabitListComponent implements OnInit, OnDestroy {
   deletingId = '';
   deletingTitle = '';
 
+  // Calendar picker state
+  showCal = false;
+  calYear = new Date().getFullYear();
+  calMonth = new Date().getMonth();
+  readonly calDayHeaders = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
   todayKey(): string { return this.localTodayKey(); }
 
   // YYYY-MM-DD built from the user's local clock (not UTC).
@@ -329,6 +442,100 @@ export class HabitListComponent implements OnInit, OnDestroy {
   }
 
   goToToday() { this.selectedDate = this.localTodayKey(); }
+
+  // --- Calendar picker ---
+
+  get calMonthLabel(): string {
+    return new Date(this.calYear, this.calMonth, 1)
+      .toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  }
+
+  canShiftCalBack(): boolean {
+    const todayK = this.localTodayKey();
+    const minDate = this.shiftDateKey(todayK, -29);
+    const minD = new Date(minDate + 'T00:00:00');
+    return this.calYear > minD.getFullYear() ||
+      (this.calYear === minD.getFullYear() && this.calMonth > minD.getMonth());
+  }
+
+  canShiftCalForward(): boolean {
+    const now = new Date();
+    return this.calYear < now.getFullYear() ||
+      (this.calYear === now.getFullYear() && this.calMonth < now.getMonth());
+  }
+
+  shiftCal(delta: number) {
+    let m = this.calMonth + delta;
+    let y = this.calYear;
+    if (m < 0) { m = 11; y--; }
+    if (m > 11) { m = 0; y++; }
+    this.calMonth = m;
+    this.calYear = y;
+  }
+
+  toggleCal(e: Event) {
+    e.stopPropagation();
+    this.showCal = !this.showCal;
+    if (this.showCal) {
+      const d = new Date(this.selectedDate + 'T00:00:00');
+      this.calYear = d.getFullYear();
+      this.calMonth = d.getMonth();
+    }
+  }
+
+  selectCalDate(date: string) {
+    this.selectedDate = date;
+    this.showCal = false;
+  }
+
+  calCells(): Array<{ key: string; date: string | null; day: number; isSelected: boolean; isToday: boolean; inRange: boolean; dotStatus: string }> {
+    const firstDow = new Date(this.calYear, this.calMonth, 1).getDay(); // 0=Sun
+    const startOffset = (firstDow + 6) % 7; // Mon-first
+    const daysInMonth = new Date(this.calYear, this.calMonth + 1, 0).getDate();
+    const todayK = this.localTodayKey();
+    const minDate = this.shiftDateKey(todayK, -29);
+    const pad = (n: number) => String(n).padStart(2, '0');
+
+    const cells: Array<{ key: string; date: string | null; day: number; isSelected: boolean; isToday: boolean; inRange: boolean; dotStatus: string }> = [];
+    for (let i = 0; i < startOffset; i++) {
+      cells.push({ key: `e${i}`, date: null, day: 0, isSelected: false, isToday: false, inRange: false, dotStatus: 'none' });
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateKey = `${this.calYear}-${pad(this.calMonth + 1)}-${pad(d)}`;
+      const inRange = dateKey >= minDate && dateKey <= todayK;
+      cells.push({
+        key: dateKey, date: dateKey, day: d,
+        isSelected: dateKey === this.selectedDate,
+        isToday: dateKey === todayK,
+        inRange,
+        dotStatus: inRange ? this.dotStatusFor(dateKey) : 'none',
+      });
+    }
+    return cells;
+  }
+
+  dotStatusFor(date: string): string {
+    if (this.allHabits.length === 0) return 'none';
+    const isOff = this.allHabits.some((h) => h.history.find((d) => d.date === date)?.off);
+    if (isOff) return 'trip';
+    const dow = new Date(date + 'T00:00:00').getDay();
+    const scheduled = this.allHabits.filter((h) => h.weekdays.includes(dow));
+    if (scheduled.length === 0) return 'none';
+    const isToday = date === this.localTodayKey();
+    const done = scheduled.filter((h) =>
+      isToday ? h.doneToday : !!h.history.find((d) => d.date === date)?.done
+    ).length;
+    if (done === scheduled.length) return 'green';
+    if (done > 0) return 'partial';
+    return 'red';
+  }
+
+  private shiftDateKey(dateKey: string, delta: number): string {
+    const d = new Date(dateKey + 'T00:00:00');
+    d.setDate(d.getDate() + delta);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
 
   // Habits whose weekdays include selectedDate's day-of-week, sorted by startTime ascending.
   // Habits without a startTime go to the end.

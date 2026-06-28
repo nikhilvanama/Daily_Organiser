@@ -20,7 +20,7 @@ export class AnalyticsService {
     const prevTo = this.shiftDate(today, -days);
 
     // Fetch all the source data in parallel.
-    const [tasks, habits, checkins, journal, projects, payments, categories] =
+    const [tasks, habits, checkins, journal, projects, payments, categories, goals] =
       await Promise.all([
         this.firebase.getList<any>('tasks'),
         this.firebase.getList<any>('habits'),
@@ -29,6 +29,7 @@ export class AnalyticsService {
         this.firebase.getList<any>('projects'),
         this.firebase.getList<any>('projectPayments'),
         this.firebase.getList<any>('categories'),
+        this.firebase.getList<any>('goals'),
       ]);
 
     const userTasks = tasks.filter((t: any) => t.userId === userId);
@@ -41,6 +42,7 @@ export class AnalyticsService {
     const userProjects = projects.filter((p: any) => p.userId === userId);
     const userPayments = payments.filter((p: any) => p.userId === userId);
     const userCategories = categories.filter((c: any) => c.userId === userId);
+    const userGoals = goals.filter((g: any) => g.userId === userId);
 
     // --- Tasks ---
     const completedInRange = userTasks.filter(
@@ -168,6 +170,13 @@ export class AnalyticsService {
       byWeekday,
       topCategories,
       insights,
+      goals: {
+        total: userGoals.length,
+        completed: userGoals.filter((g: any) => (g.progress ?? 0) >= 100).length,
+        active: userGoals.filter((g: any) => (g.progress ?? 0) > 0 && (g.progress ?? 0) < 100).length,
+        avgProgress: userGoals.length === 0 ? 0
+          : Math.round(userGoals.reduce((s: number, g: any) => s + (g.progress ?? 0), 0) / userGoals.length),
+      },
     };
   }
 

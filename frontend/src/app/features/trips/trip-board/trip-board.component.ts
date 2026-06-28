@@ -61,7 +61,7 @@ import { ToastService } from '../../../core/services/toast.service';
                     @if (t.startDate) {
                       <div class="card-dates">
                         <span>🗓 {{ formatDate(t.startDate) }}{{ t.endDate && t.endDate !== t.startDate ? ' → ' + formatDate(t.endDate) : '' }}</span>
-                        @if (durationDays(t) !== null) { <span class="card-pill">{{ durationDays(t) }}d</span> }
+                        <span class="card-pill">{{ t.startDate.slice(0, 4) }}</span>
                       </div>
                     }
 
@@ -99,13 +99,16 @@ import { ToastService } from '../../../core/services/toast.service';
       (cancelled)="deletingTrip = null" />
   `,
   styles: [`
-    /* Horizontal scrolling board container */
-    .board-scroll { overflow-x: auto; padding-bottom: 4px; }
-    .board { display: grid; grid-template-columns: repeat(4, minmax(260px, 1fr)); gap: 0.75rem; min-width: 1080px; }
+    :host { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+    .page { height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* Board fills remaining height; scrolls in both axes for overflow */
+    .board-scroll { flex: 1; overflow: auto; min-height: 0; padding-bottom: 1rem; }
+    .board { display: grid; grid-template-columns: repeat(4, minmax(260px, 1fr)); gap: 0.75rem; min-width: 1080px; height: 100%; }
 
     .lane {
       background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; min-height: 200px;
+      padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; overflow: hidden;
     }
     .lane-header { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
     .lane-title-block { display: flex; align-items: center; gap: 6px; min-width: 0; }
@@ -119,7 +122,7 @@ import { ToastService } from '../../../core/services/toast.service';
     }
     .lane-add:hover { border-color: var(--lane-color); color: var(--lane-color); }
     .lane-tagline { font-size: 0.7rem; color: var(--text-muted); margin: 0 0 0.25rem; padding-left: 14px; }
-    .lane-cards { display: flex; flex-direction: column; gap: 6px; }
+    .lane-cards { display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto; min-height: 0; }
     .lane-empty { padding: 0.75rem; text-align: center; color: var(--text-muted); font-size: 0.78rem; border: 1px dashed var(--border); border-radius: 8px; }
 
     .trip-card {
@@ -138,7 +141,7 @@ import { ToastService } from '../../../core/services/toast.service';
     .card-meta { display: flex; gap: 8px; flex-wrap: wrap; font-size: 0.7rem; color: var(--text-muted); }
 
     /* Lane visual states for drag-and-drop */
-    .lane-cards { min-height: 60px; padding: 4px; margin: -4px; border-radius: 8px; transition: background 0.15s, outline-color 0.15s; outline: 2px dashed transparent; }
+    .lane-cards { min-height: 60px; padding: 4px; margin: -4px; border-radius: 8px; transition: background 0.15s, outline-color 0.15s; outline: 2px dashed transparent; scrollbar-width: thin; }
     .lane-cards.drop-target { background: rgba(16, 185, 129, 0.08); outline-color: rgba(16, 185, 129, 0.45); }
 
     @media (max-width: 900px) {
@@ -171,7 +174,25 @@ export class TripBoardComponent implements OnInit, OnDestroy {
   ngOnDestroy() { this.sub?.unsubscribe(); }
 
   tripsByStatus(status: TripStatus): Trip[] {
-    return this.trips().filter((t) => t.status === status);
+    const filtered = this.trips().filter((t) => t.status === status);
+    if (status === 'BUCKET') {
+      return filtered.sort((a, b) => a.title.localeCompare(b.title));
+    }
+    if (status === 'VISITED') {
+      return filtered.sort((a, b) => {
+        if (!a.startDate && !b.startDate) return 0;
+        if (!a.startDate) return 1;
+        if (!b.startDate) return -1;
+        return b.startDate.localeCompare(a.startDate); // newest first
+      });
+    }
+    // Planning / Booked: nearest upcoming date first, nulls last
+    return filtered.sort((a, b) => {
+      if (!a.startDate && !b.startDate) return 0;
+      if (!a.startDate) return 1;
+      if (!b.startDate) return -1;
+      return a.startDate.localeCompare(b.startDate);
+    });
   }
 
   openAdd() {

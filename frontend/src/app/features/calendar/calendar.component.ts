@@ -46,8 +46,43 @@ interface CalendarDay {
         <button class="btn-ghost nav-btn" (click)="prevMonth()">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
-        <!-- Current month and year display -->
-        <h2>{{ viewDate() | date:'MMMM y' }}</h2>
+
+        <!-- Month/year title — click to open the month picker -->
+        <div class="month-nav-wrap">
+          <button class="month-title-btn" (click)="togglePicker()">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="opacity:0.6">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            {{ viewDate() | date:'MMMM y' }}
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"
+                 [style.transform]="showMonthPicker() ? 'rotate(180deg)' : 'none'" style="transition:transform 0.2s">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+
+          @if (showMonthPicker()) {
+            <div class="picker-backdrop" (click)="closePicker()"></div>
+            <div class="month-picker">
+              <div class="picker-year-nav">
+                <button class="picker-year-btn" (click)="pickerYear.update(y => y - 1)">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <span class="picker-year-label">{{ pickerYear() }}</span>
+                <button class="picker-year-btn" (click)="pickerYear.update(y => y + 1)">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
+              <div class="picker-months">
+                @for (m of monthNames; track m; let i = $index) {
+                  <button class="picker-month" [class.active]="isCurrentPickerMonth(i)" (click)="jumpToMonth(i)">
+                    {{ m }}
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
         <!-- Next month button -->
         <button class="btn-ghost nav-btn" (click)="nextMonth()">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
@@ -239,8 +274,56 @@ interface CalendarDay {
   styles: [`
     /* Calendar header: horizontal flex with centered month/year title */
     .cal-header { display: flex; align-items: center; gap: 0.75rem; }
-    .cal-header h2 { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); margin: 0; min-width: 180px; text-align: center; }
     .nav-btn { padding: 6px 10px; }
+
+    /* Month title button — triggers the picker */
+    .month-nav-wrap { position: relative; }
+    .month-title-btn {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg-secondary); border: 1.5px solid var(--border); border-radius: 10px;
+      padding: 7px 16px; cursor: pointer; color: var(--text-primary);
+      font: 700 1.1rem/1.4 'Inter', sans-serif; transition: all 0.15s; white-space: nowrap;
+      box-shadow: var(--shadow-sm);
+    }
+    .month-title-btn:hover { background: var(--bg-hover); border-color: var(--accent); color: var(--accent); }
+    .month-title-btn:hover svg { color: var(--accent); }
+    .month-title-btn svg { color: var(--text-secondary); flex-shrink: 0; transition: color 0.15s; }
+
+    /* Transparent backdrop — catches outside clicks to close the picker */
+    .picker-backdrop { position: fixed; inset: 0; z-index: 100; }
+
+    /* Month picker dropdown */
+    .month-picker {
+      position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+      box-shadow: var(--shadow-lg); z-index: 101; padding: 0.75rem; width: 232px;
+      animation: picker-in 0.12s ease;
+    }
+    @keyframes picker-in { from { opacity: 0; transform: translateX(-50%) translateY(-6px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+    .picker-year-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 2px 4px; margin-bottom: 0.5rem;
+    }
+    .picker-year-label { font-size: 0.9rem; font-weight: 700; color: var(--text-primary); }
+    .picker-year-btn {
+      display: flex; align-items: center; justify-content: center;
+      background: transparent; border: 1px solid var(--border); border-radius: 6px;
+      width: 28px; height: 28px; cursor: pointer; color: var(--text-secondary); transition: all 0.15s;
+    }
+    .picker-year-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--text-muted); }
+
+    .picker-months { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+    .picker-month {
+      padding: 9px 4px; border-radius: 8px; border: 1px solid transparent;
+      background: transparent; cursor: pointer; font-size: 0.78rem; font-weight: 500;
+      color: var(--text-secondary); text-align: center; transition: all 0.15s; font-family: inherit;
+    }
+    .picker-month:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .picker-month.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
+
+    /* "Today" button pushed to the right */
+    .today-btn { margin-left: auto; font-size: 0.82rem; }
     /* "Today" button pushed to the right */
     .today-btn { margin-left: auto; font-size: 0.82rem; }
     /* 7-column grid: 1px gap creates grid lines via the card's background color */
@@ -412,7 +495,7 @@ interface CalendarDay {
     .icon-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
 
     @media (max-width: 768px) {
-      .cal-header h2 { font-size: 1rem; min-width: 120px; }
+      .month-title-btn { font-size: 0.9rem; padding: 5px 10px; }
       .cal-cell { min-height: 70px; padding: 4px; }
       .cal-date { font-size: 0.7rem; width: 20px; height: 20px; }
       .cal-label { padding: 6px 2px; font-size: 0.6rem; }
@@ -429,16 +512,37 @@ export class CalendarComponent implements OnInit {
   gcalService = inject(GoogleCalendarService);
 
   dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   viewDate = signal(new Date());
   tasks = signal<Task[]>([]);
-  // Events pulled from connected Google Calendars (festivals, holidays, bookings, etc.).
   googleEvents = signal<GoogleExternalEvent[]>([]);
-  // Toggle for whether to display Google events in cells / day panel. Persisted to localStorage.
   showGoogleEvents = signal<boolean>(localStorage.getItem('do_show_google_events') !== 'false');
   selectedDay = signal<CalendarDay | null>(null);
   showAddTask = false;
   dayNote = '';
   prefillTask: any = null;
+
+  // Month picker
+  showMonthPicker = signal(false);
+  pickerYear = signal(new Date().getFullYear());
+
+  togglePicker() {
+    if (!this.showMonthPicker()) this.pickerYear.set(this.viewDate().getFullYear());
+    this.showMonthPicker.update(v => !v);
+  }
+  closePicker() { this.showMonthPicker.set(false); }
+
+  isCurrentPickerMonth(monthIndex: number): boolean {
+    const v = this.viewDate();
+    return this.pickerYear() === v.getFullYear() && monthIndex === v.getMonth();
+  }
+
+  jumpToMonth(monthIndex: number) {
+    this.viewDate.set(new Date(this.pickerYear(), monthIndex, 1));
+    this.showMonthPicker.set(false);
+    this.loadTasks();
+    this.loadGoogleEvents();
+  }
 
   toggleGoogleEvents() {
     const next = !this.showGoogleEvents();

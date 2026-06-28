@@ -107,7 +107,8 @@ a { color: inherit; text-decoration: none; }
 /* Images: responsive by default, block display removes bottom spacing */
 img { max-width: 100%; display: block; }
 
-/* Custom scrollbar styling: thin and subtle to not distract from content */
+/* Custom scrollbar styling: thin and theme-matched */
+* { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }

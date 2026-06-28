@@ -16,8 +16,14 @@ export class PortfolioService {
   }
 
   upsertBasics(dto: PortfolioBasics) {
-    return this.http.put<PortfolioBasics>(`${this.base}/basics`, dto).pipe(
-      tap(() => { const p = this.portfolio$.value; if (p) this.portfolio$.next({ ...p, basics: { ...p.basics, ...dto } }); }),
+    // Only send DTO-whitelisted fields — ValidationPipe rejects unknown keys (e.g. updatedAt)
+    const payload: Record<string, any> = {};
+    const src = dto as Record<string, any>;
+    for (const k of ['slug','name','headline','bio','avatar','location','email','phone','resumeUrl','availableForHire','published']) {
+      if (src[k] !== undefined) payload[k] = src[k];
+    }
+    return this.http.put<PortfolioBasics>(`${this.base}/basics`, payload).pipe(
+      tap(() => { const p = this.portfolio$.value; if (p) this.portfolio$.next({ ...p, basics: { ...p.basics, ...payload } }); }),
     );
   }
 

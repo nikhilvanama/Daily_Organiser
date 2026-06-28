@@ -51,6 +51,8 @@ export class PortfolioService {
     const existing = await this.firebase.get<any>(`portfolios/${userId}/basics`);
     const oldSlug = existing?.slug;
     const patch: any = { ...(existing ?? {}), ...dto, updatedAt: new Date().toISOString() };
+    // Remove undefined values Firebase rejects
+    Object.keys(patch).forEach(k => patch[k] === undefined && delete patch[k]);
     await this.firebase.ref(`portfolios/${userId}/basics`).set(patch);
     // Maintain slug index for public lookup
     if (dto.slug && dto.slug !== oldSlug) {
@@ -63,8 +65,9 @@ export class PortfolioService {
   // ---------- Settings ----------
   async upsertSettings(userId: string, dto: UpsertSettingsDto) {
     const existing = await this.firebase.get<any>(`portfolios/${userId}/settings`);
-    const patch = { ...(existing ?? DEFAULT_SETTINGS), ...dto, updatedAt: new Date().toISOString() };
+    const patch: any = { ...(existing ?? DEFAULT_SETTINGS), ...dto, updatedAt: new Date().toISOString() };
     if (dto.showSections) patch.showSections = { ...(existing?.showSections ?? DEFAULT_SETTINGS.showSections), ...dto.showSections };
+    Object.keys(patch).forEach(k => patch[k] === undefined && delete patch[k]);
     await this.firebase.ref(`portfolios/${userId}/settings`).set(patch);
     return patch;
   }
@@ -78,7 +81,8 @@ export class PortfolioService {
   // ---------- Generic CRUD helpers ----------
   private async addItem(userId: string, collection: string, data: any) {
     const id = randomUUID();
-    const record = { ...data, id, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    const record: any = { ...data, id, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    Object.keys(record).forEach(k => record[k] === undefined && delete record[k]);
     await this.firebase.ref(`portfolios/${userId}/${collection}/${id}`).set(record);
     return record;
   }

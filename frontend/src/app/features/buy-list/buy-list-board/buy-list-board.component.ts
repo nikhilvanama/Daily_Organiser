@@ -108,12 +108,15 @@ import { ToastService } from '../../../core/services/toast.service';
       (cancelled)="deletingItem = null" />
   `,
   styles: [`
-    .board-scroll { overflow-x: auto; padding-bottom: 4px; }
-    .board { display: grid; grid-template-columns: repeat(4, minmax(240px, 1fr)); gap: 0.75rem; min-width: 1000px; }
+    :host { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+    .page { height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+
+    .board-scroll { flex: 1; overflow: auto; min-height: 0; padding-bottom: 1rem; }
+    .board { display: grid; grid-template-columns: repeat(4, minmax(240px, 1fr)); gap: 0.75rem; min-width: 1000px; height: 100%; }
 
     .lane {
       background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; min-height: 200px;
+      padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; overflow: hidden;
     }
     .lane-header { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
     .lane-title-block { display: flex; align-items: center; gap: 6px; min-width: 0; }
@@ -127,7 +130,7 @@ import { ToastService } from '../../../core/services/toast.service';
     }
     .lane-add:hover { border-color: var(--lane-color); color: var(--lane-color); }
     .lane-tagline { font-size: 0.7rem; color: var(--text-muted); margin: 0 0 0.25rem; padding-left: 14px; }
-    .lane-cards { display: flex; flex-direction: column; gap: 6px; }
+    .lane-cards { display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto; min-height: 0; }
     .lane-empty { padding: 0.75rem; text-align: center; color: var(--text-muted); font-size: 0.78rem; border: 1px dashed var(--border); border-radius: 8px; }
 
     .buy-card {
@@ -150,7 +153,7 @@ import { ToastService } from '../../../core/services/toast.service';
     .bought-date { font-size: 0.7rem; color: var(--text-muted); }
 
     /* Lane visual states for drag-and-drop */
-    .lane-cards { min-height: 60px; padding: 4px; margin: -4px; border-radius: 8px; transition: background 0.15s, outline-color 0.15s; outline: 2px dashed transparent; }
+    .lane-cards { min-height: 60px; padding: 4px; margin: -4px; border-radius: 8px; transition: background 0.15s, outline-color 0.15s; outline: 2px dashed transparent; scrollbar-width: thin; }
     .lane-cards.drop-target { background: rgba(16, 185, 129, 0.08); outline-color: rgba(16, 185, 129, 0.45); }
   `],
 })

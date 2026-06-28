@@ -1,10 +1,14 @@
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { filter, map, startWith } from 'rxjs/operators';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { TopbarComponent } from '../topbar/topbar.component';
 import { ToastContainerComponent } from '../toast-container/toast-container.component';
 import { ThemeService } from '../../../core/services/theme.service';
 import { IdleService } from '../../../core/services/idle.service';
+
+const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
 
 @Component({
   selector: 'app-layout',
@@ -42,7 +46,7 @@ import { IdleService } from '../../../core/services/idle.service';
       <!-- Main content -->
       <div class="layout-main">
         <app-topbar />
-        <main class="layout-content">
+        <main class="layout-content" [class.board-route]="isBoardRoute()">
           <router-outlet />
         </main>
       </div>
@@ -54,6 +58,7 @@ import { IdleService } from '../../../core/services/idle.service';
     .layout { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
     .layout-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg-secondary); min-width: 0; }
     .layout-content { flex: 1; overflow-y: auto; padding: 2rem 2.5rem; }
+    .layout-content.board-route { padding-bottom: 0; overflow: hidden; }
 
     .sidebar-wrap { flex-shrink: 0; }
     .mobile-topbar { display: none; }
@@ -102,7 +107,17 @@ import { IdleService } from '../../../core/services/idle.service';
 export class LayoutComponent implements OnInit, OnDestroy {
   themeService = inject(ThemeService);
   private idle = inject(IdleService);
+  private router = inject(Router);
   sidebarOpen = signal(false);
+
+  isBoardRoute = toSignal(
+    this.router.events.pipe(
+      filter(e => e instanceof NavigationEnd),
+      map(e => BOARD_ROUTES.has((e as NavigationEnd).urlAfterRedirects)),
+      startWith(BOARD_ROUTES.has(this.router.url)),
+    ),
+    { initialValue: BOARD_ROUTES.has(this.router.url) },
+  );
 
   ngOnInit() {
     // The layout is only mounted for authenticated users (route is behind authGuard),

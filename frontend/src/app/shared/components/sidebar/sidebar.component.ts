@@ -113,12 +113,12 @@ import { AuthService } from '../../../core/services/auth.service';
     .nav-section {
       display: block; color: var(--sidebar-text-dim);
       font-size: 0.58rem; font-weight: 700; letter-spacing: 0.14em;
-      text-transform: uppercase; padding: 20px 14px 6px;
+      text-transform: uppercase; padding: 12px 14px 4px;
     }
     .sidebar-nav > .nav-section:first-child { padding-top: 10px; }
 
     .nav-link {
-      display: flex; align-items: center; gap: 11px;
+      display: flex; align-items: center; gap: 12px;
       padding: 10px 14px; margin-bottom: 2px;
       border-left: 3px solid transparent; border-radius: 0 8px 8px 0;
       color: var(--sidebar-text); font-size: 0.865rem; font-weight: 500;
