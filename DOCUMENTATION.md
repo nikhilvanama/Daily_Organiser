@@ -67,9 +67,9 @@ If your needs overlap, this is for you. If you need team collaboration, a differ
 | **Daily Routine (Habits)** | Per-weekday recurring habits with time intervals, current streak, 30-day heatmap, date navigation to backfill missed days, optimistic toggle for instant UI |
 | **Journal** | One reflection entry per day, with mood emoji, title, body, streak of consecutive days journaled, and browse-past-entries list |
 | **Projects** (freelance) | Project pipeline (LEAD → QUOTED → IN_PROGRESS → DELIVERED → PAID / LOST / ON_HOLD), per-project payments, deadlines, progress %, portfolio links, outstanding-balance and monthly-income stats |
-| **Trips** | Kanban board for travel plans (Bucket List → Planning → Booked → Visited). Drag-and-drop between columns. Planning/Booked/Visited trips with dates auto-sync to the calendar and trigger the habit trip-day exclusion. Past BOOKED trips auto-promote to Visited |
-| **Buy List** | Kanban board for things to remember to buy (Want → Considering → Bought → Skipped). Drag-and-drop between columns. Auto-stamps "bought on" date when moved to Bought |
-| **Calendar** | Monthly grid showing plans + Google Calendar events (festivals, holidays, restaurant/movie bookings) plotted by date; weekends/birthdays/holidays/leaves/✈trip overlays |
+| **Trips** | Kanban board for travel plans (Bucket List → Planning → Booked → Visited). Drag-and-drop between columns. Columns fill viewport height with internal card scrolling. Cards sorted by: Bucket List → A-Z, Planning/Booked → nearest date first, Visited → newest first. Year pill on each dated card. Trips with dates auto-sync to calendar and trigger habit trip-day exclusion. Past BOOKED trips auto-promote to Visited |
+| **Buy List** | Kanban board for things to remember to buy (Want → Considering → Bought → Skipped). Drag-and-drop between columns. Viewport-height columns with internal card scrolling. Auto-stamps "bought on" date when moved to Bought |
+| **Calendar** | Monthly grid showing plans + Google Calendar events (festivals, holidays, restaurant/movie bookings) plotted by date; weekends/birthdays/holidays/leaves/✈trip overlays. Custom month-picker dropdown (click the month title) lets you jump to any month/year without stepping through one at a time |
 | **Categories** | User-defined color-coded labels for grouping tasks |
 | **Google Calendar sync** | Two-way: pushes app plans to your primary Google calendar, AND pulls events from all your subscribed calendars (holidays, birthdays, third-party bookings) into the app's calendar view |
 | **Profile** | Edit display name, email, password, employment + office hours, weekend days, date of birth |
@@ -868,6 +868,15 @@ The frontend's `CalendarComponent` renders a 6×7 grid (Sun-Sat columns). Each d
 
 Holiday and leave toggles are stored locally per date.
 
+#### Month picker
+
+The month/year title in the calendar header is a clickable button. Clicking it opens a **month-picker dropdown** with:
+- Previous/next year buttons (chevrons) to navigate years
+- A 4×3 grid of month abbreviations (Jan–Dec)
+- The currently-displayed month highlighted in accent color
+
+Selecting a month jumps directly to it, reloads tasks and Google Calendar events for that month, and closes the picker. Clicking outside (the backdrop) also closes it. This avoids having to step through months one by one with the prev/next arrows.
+
 ### 8.5 Dashboard
 
 The most aggregated page. It loads in parallel:
@@ -1053,6 +1062,29 @@ If the **refresh token itself is dead** (revoked by the user, expired due to ina
 
 A Kanban board for travel plans with four lanes: **Bucket List → Planning → Booked → Visited**. Cards are drag-and-droppable between columns. Clicking a card opens an edit modal with a Delete button (red, bottom-left).
 
+#### Viewport-height layout
+
+The board uses a full-viewport-height layout: the four lanes fill the available screen height (no page-level scroll), and cards scroll **inside each lane independently**. This is achieved by:
+- `:host { height: 100% }` on the component propagates the computed height from `.layout-content`
+- `.board-scroll { flex: 1; overflow: auto }` fills remaining height and scrolls the whole board horizontally when all four lanes can't fit
+- Each `.lane { overflow: hidden }` and `.lane-cards { flex: 1; overflow-y: auto; min-height: 0 }` confine card scroll to the lane itself
+
+The layout shell adds `overflow: hidden` to `.layout-content` when on a board route (`/trips` or `/buy-list`) to prevent the page from double-scrolling.
+
+#### Card sort order
+
+Cards within each lane are automatically sorted:
+| Lane | Sort |
+|------|------|
+| Bucket List | Alphabetical A-Z by title |
+| Planning | Nearest upcoming date first, no-date entries last |
+| Booked | Nearest upcoming date first, no-date entries last |
+| Visited | Newest first (descending by start date), no-date entries last |
+
+#### Card display
+
+Each dated card shows a **year pill** (e.g. `2026`) instead of a duration — the duration was misleading for open-ended or single-day trips.
+
 **Schema**:
 ```
 trips/<id> {
@@ -1099,6 +1131,8 @@ Initial release had a bug where trips saved with no inspiration links would disa
 ### 8.10 Buy List (Kanban)
 
 A Kanban board for things you need to buy. Four lanes: **Want → Considering → Bought → Skipped**. Same UX as Trips (drag-and-drop, click-card-to-edit, delete button inside the form), but simpler — no calendar integration, no auto-promotion.
+
+The board uses the same **viewport-height lane layout** as Trips — lanes fill available screen height, cards scroll internally within each lane, and no page-level scroll occurs on the board itself.
 
 **Schema**:
 ```
