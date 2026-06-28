@@ -64,11 +64,11 @@ interface CalendarDay {
             <div class="picker-backdrop" (click)="closePicker()"></div>
             <div class="month-picker">
               <div class="picker-year-nav">
-                <button class="picker-year-btn" (click)="pickerYear.update(y => y - 1)">
+                <button class="picker-year-btn" (click)="prevPickerYear()">
                   <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
                 <span class="picker-year-label">{{ pickerYear() }}</span>
-                <button class="picker-year-btn" (click)="pickerYear.update(y => y + 1)">
+                <button class="picker-year-btn" (click)="nextPickerYear()">
                   <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
                 </button>
               </div>
@@ -531,6 +531,8 @@ export class CalendarComponent implements OnInit {
     this.showMonthPicker.update(v => !v);
   }
   closePicker() { this.showMonthPicker.set(false); }
+  prevPickerYear() { this.pickerYear.update(y => y - 1); }
+  nextPickerYear() { this.pickerYear.update(y => y + 1); }
 
   isCurrentPickerMonth(monthIndex: number): boolean {
     const v = this.viewDate();
