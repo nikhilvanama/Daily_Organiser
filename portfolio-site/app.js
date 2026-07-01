@@ -277,8 +277,11 @@ function renderContact(basics, socials) {
 
 async function loadPortfolio() {
   try {
-    const res = await fetch(`${CONFIG.API_BASE}/public/portfolio/${CONFIG.SLUG}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30000); // 30s — Render cold-start
+    const res = await fetch(`${CONFIG.API_BASE}/public/portfolio/${CONFIG.SLUG}`, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error(`HTTP ${res.status} from ${CONFIG.API_BASE}`);
     const data = await res.json();
     portfolioData = data;
 
@@ -343,7 +346,10 @@ async function loadPortfolio() {
   } catch (err) {
     console.error('Failed to load portfolio:', err);
     document.getElementById('loading').style.display = 'none';
-    document.getElementById('error').hidden = false;
+    const errorEl = document.getElementById('error');
+    errorEl.hidden = false;
+    // Show the real error so it's easy to diagnose (CORS, timeout, 404, etc.)
+    document.getElementById('error-detail').textContent = String(err);
   }
 }
 
