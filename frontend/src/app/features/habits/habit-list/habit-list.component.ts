@@ -140,9 +140,24 @@ import { Subscription } from 'rxjs';
 
       @if (allHabits.length > 0) {
         <div class="card">
-          <div class="other-header"><h3>All habits · 30-day history</h3></div>
+          <div class="all-habits-header">
+            <h3>All habits · 30-day history</h3>
+            <div class="filter-chips">
+              <button class="filter-chip" [class.active]="habitFilter === 'all'" (click)="habitFilter = 'all'">All</button>
+              <button class="filter-chip" [class.active]="habitFilter === 'everyday'" (click)="habitFilter = 'everyday'">Every day</button>
+              <button class="filter-chip" [class.active]="habitFilter === 'weekdays'" (click)="habitFilter = 'weekdays'">Weekdays</button>
+              <button class="filter-chip" [class.active]="habitFilter === 'weekends'" (click)="habitFilter = 'weekends'">Weekends</button>
+              <span class="chip-sep"></span>
+              @for (d of dayFilterOptions; track d.value) {
+                <button class="filter-chip" [class.active]="habitFilter === d.value" (click)="habitFilter = d.value">{{ d.label }}</button>
+              }
+            </div>
+          </div>
           <div class="habit-grid">
-            @for (h of allHabits; track h.id) {
+            @if (filteredAllHabits.length === 0) {
+              <p class="filter-empty">No habits match this filter.</p>
+            }
+            @for (h of filteredAllHabits; track h.id) {
               <div class="habit-card">
                 <div class="hc-top">
                   <span class="check-icon" [style.background]="h.color + '22'" [style.color]="h.color">{{ h.icon }}</span>
@@ -303,6 +318,19 @@ import { Subscription } from 'rxjs';
     }
     .other-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); }
     .other-header h3 { font-size: 0.92rem; font-weight: 600; }
+
+    .all-habits-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 0.6rem; }
+    .all-habits-header h3 { font-size: 0.92rem; font-weight: 600; }
+    .filter-chips { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+    .filter-chip {
+      font-size: 0.7rem; font-weight: 500; padding: 3px 10px; border-radius: 99px;
+      border: 1px solid var(--border); background: transparent; color: var(--text-muted);
+      cursor: pointer; transition: all 0.15s; font-family: inherit;
+    }
+    .filter-chip:hover { border-color: var(--text-muted); color: var(--text-primary); }
+    .filter-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .chip-sep { width: 1px; height: 14px; background: var(--border); margin: 0 3px; flex-shrink: 0; }
+    .filter-empty { padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.85rem; grid-column: 1 / -1; }
     .other-list { padding: 0.5rem 0.75rem; }
     .other-row { display: flex; align-items: center; gap: 10px; padding: 9px 8px; border-radius: 8px; }
     .other-row:hover { background: var(--bg-hover); }
@@ -384,6 +412,31 @@ export class HabitListComponent implements OnInit, OnDestroy {
   private sub: Subscription | null = null;
 
   allHabits: Habit[] = [];
+
+  habitFilter = 'all';
+
+  readonly dayFilterOptions = [
+    { label: 'Mon', value: '1' },
+    { label: 'Tue', value: '2' },
+    { label: 'Wed', value: '3' },
+    { label: 'Thu', value: '4' },
+    { label: 'Fri', value: '5' },
+    { label: 'Sat', value: '6' },
+    { label: 'Sun', value: '0' },
+  ];
+
+  get filteredAllHabits(): Habit[] {
+    switch (this.habitFilter) {
+      case 'everyday': return this.allHabits.filter(h => h.weekdays.length === 7);
+      case 'weekdays': return this.allHabits.filter(h => h.weekdays.length === 5 && [1,2,3,4,5].every(d => h.weekdays.includes(d)));
+      case 'weekends': return this.allHabits.filter(h => h.weekdays.length === 2 && h.weekdays.includes(0) && h.weekdays.includes(6));
+      default: {
+        const day = parseInt(this.habitFilter, 10);
+        if (!isNaN(day)) return this.allHabits.filter(h => h.weekdays.includes(day));
+        return this.allHabits;
+      }
+    }
+  }
 
   // The date the user is currently viewing/checking. Defaults to local today; can shift back
   // up to 29 days (the heatmap window). Cannot go forward past today.
