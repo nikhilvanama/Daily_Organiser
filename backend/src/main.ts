@@ -26,7 +26,7 @@ async function bootstrap() {
   // Public portfolio routes (/api/public/*) are open to any origin by design; allowing
   // all vercel.app subdomains covers preview deploys without listing each one.
   app.enableCors({
-    origin: (origin, callback) => {
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       const allowed = [
         'http://localhost:4200',
         'http://localhost:5000',
