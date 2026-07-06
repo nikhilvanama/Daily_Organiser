@@ -26,4 +26,8 @@ export class CreateGoalDto {
   @IsArray()
   @IsString({ each: true })
   resources?: string[];
+
+  @IsOptional()
+  @IsString()
+  link?: string;
 }

@@ -42,6 +42,11 @@ import { Goal } from '../../../core/models/goal.model';
           <input class="input" type="date" formControlName="targetDate" />
         </div>
       </div>
+      <!-- Optional single link — shown as a clickable icon on the goal card -->
+      <div class="form-group">
+        <label class="label">Link</label>
+        <input class="input" formControlName="link" placeholder="https://... (optional)" />
+      </div>
       <!-- Resources: links, references, or notes -->
       <div class="form-group">
         <label class="label">Resources</label>
@@ -88,6 +93,7 @@ export class GoalFormComponent implements OnInit, OnChanges {
     description: [''],
     status: ['ACTIVE'],
     targetDate: [''],
+    link: [''],
   });
 
   ngOnInit() { this.fillForm(); }
@@ -103,10 +109,11 @@ export class GoalFormComponent implements OnInit, OnChanges {
         description: this.goal.description ?? '',
         status: this.goal.status,
         targetDate: this.goal.targetDate ? this.goal.targetDate.split('T')[0] : '',
+        link: this.goal.link ?? '',
       });
       this.resources = this.goal.resources?.length ? [...this.goal.resources] : [''];
     } else {
-      this.form.reset({ title: '', description: '', status: 'ACTIVE', targetDate: '' });
+      this.form.reset({ title: '', description: '', status: 'ACTIVE', targetDate: '', link: '' });
       this.resources = [''];
     }
   }
@@ -126,13 +133,14 @@ export class GoalFormComponent implements OnInit, OnChanges {
       status: value.status,
       targetDate: value.targetDate || undefined,
       resources: filteredResources,
+      link: value.link?.trim() || undefined,
     };
 
     const req = this.goal ? this.goalService.update(this.goal.id, dto) : this.goalService.create(dto);
     req.subscribe({
       next: () => {
         this.loading = false;
-        this.form.reset({ title: '', description: '', status: 'ACTIVE', targetDate: '' });
+        this.form.reset({ title: '', description: '', status: 'ACTIVE', targetDate: '', link: '' });
         this.resources = [''];
         this.saved.emit();
       },

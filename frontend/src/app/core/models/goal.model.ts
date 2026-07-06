@@ -46,6 +46,8 @@ export interface Goal {
   targetDate: string | null;
   progress: number;
   resources: string[];
+  link: string | null;
+  order: number;
   userId: string;
   milestones: GoalMilestone[];
   createdAt: string;
@@ -59,6 +61,7 @@ export interface CreateGoalDto {
   status?: GoalStatus;
   targetDate?: string;
   resources?: string[];
+  link?: string;
 }
 
 // DTO for creating a milestone within a goal

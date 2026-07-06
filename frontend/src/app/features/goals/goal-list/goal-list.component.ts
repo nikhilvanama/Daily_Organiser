@@ -1,9 +1,10 @@
 // Import Angular core utilities: Component, inject for DI, OnInit lifecycle, signal for reactive state
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { Subscription } from 'rxjs';
 // RouterLink creates navigable links to individual goal detail pages
 import { RouterLink } from '@angular/router';
-// AsyncPipe subscribes to goals$ BehaviorSubject; DecimalPipe formats progress percentages
-import { AsyncPipe, DecimalPipe } from '@angular/common';
+// DecimalPipe formats progress percentages
+import { DecimalPipe } from '@angular/common';
 // GoalService provides the goals$ observable and CRUD methods
 import { GoalService } from '../goal.service';
 import { slugify } from '../../../core/utils/slugify';
@@ -23,7 +24,7 @@ import { Goal } from '../../../core/models/goal.model';
 @Component({
   selector: 'app-goal-list', // Loaded by the router at /goals
   standalone: true, // Angular 19 standalone component
-  imports: [RouterLink, AsyncPipe, DecimalPipe, ModalComponent, GoalFormComponent, ConfirmDialogComponent],
+  imports: [RouterLink, DecimalPipe, ModalComponent, GoalFormComponent, ConfirmDialogComponent],
   template: `
     <!-- Page container with fade-in animation -->
     <div class="page animate-in">
@@ -32,7 +33,7 @@ import { Goal } from '../../../core/models/goal.model';
         <div>
           <h2>Goals</h2>
           <!-- Display the total count of goals -->
-          <p>{{ (goalService.goals$ | async)?.length ?? 0 }} goals</p>
+          <p>{{ goals().length }} goals</p>
         </div>
         <!-- Opens the modal with an empty GoalFormComponent for creating a new goal -->
         <button class="btn-primary" (click)="showForm = true">
@@ -42,12 +43,26 @@ import { Goal } from '../../../core/models/goal.model';
       </div>
 
       <!-- Responsive card grid: auto-fills columns at 300px minimum width -->
-      <div class="goals-grid">
-        @for (goal of goalService.goals$ | async; track goal.id) {
-          <div class="goal-card card">
-            <!-- Card header: goal title (link to detail) + status badge -->
+      <div class="goals-grid"
+           (dragover)="$event.preventDefault()">
+        @for (goal of goals(); track goal.id) {
+          <div class="goal-card card"
+               [class.dragging]="draggingId() === goal.id"
+               [class.drag-over]="dragOverId() === goal.id && draggingId() !== goal.id"
+               draggable="true"
+               (dragstart)="onDragStart($event, goal.id)"
+               (dragend)="onDragEnd()"
+               (dragenter)="onDragEnter(goal.id)"
+               (dragover)="$event.preventDefault()"
+               (drop)="onDrop($event, goal.id)">
+            <!-- Card header: goal title (link to detail) + link icon + status badge -->
             <div class="goal-card-header">
-              <a [routerLink]="['/goals', toSlug(goal.title)]" class="goal-title">{{ goal.title }}</a>
+              <a [routerLink]="['/goals', toSlug(goal.title)]" class="goal-title" draggable="false">{{ goal.title }}</a>
+              @if (goal.link) {
+                <a class="goal-link-icon" [href]="goal.link" target="_blank" rel="noopener" title="Open link" draggable="false" (click)="$event.stopPropagation()">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                </a>
+              }
               <span class="badge goal-status-{{ goal.status.toLowerCase() }}">{{ goal.status }}</span>
             </div>
             <!-- Optional description: clamped to 2 lines with ellipsis overflow -->
@@ -151,21 +166,91 @@ import { Goal } from '../../../core/models/goal.model';
     .icon-btn.danger:hover { background: #fef2f2; color: var(--red); }
     /* Empty state: full-width card spanning all grid columns */
     .empty-full { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 3rem; color: var(--text-muted); grid-column: 1 / -1; }
+
+    /* Drag-and-drop visual states */
+    .goal-card { cursor: grab; transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s; }
+    .goal-card:active { cursor: grabbing; }
+    .goal-card.dragging { opacity: 0.35; transform: rotate(1.5deg); }
+    .goal-card.drag-over { outline: 2px dashed var(--accent); outline-offset: -2px; }
+
+    /* Link icon on card */
+    .goal-link-icon {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 24px; height: 24px; border-radius: 6px;
+      color: var(--text-muted); text-decoration: none; flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    .goal-link-icon:hover { color: var(--accent); background: var(--bg-secondary); }
   `],
 })
-export class GoalListComponent implements OnInit {
+export class GoalListComponent implements OnInit, OnDestroy {
   readonly toSlug = slugify;
   goalService = inject(GoalService);
-  // ToastService for success/error feedback
   private toast = inject(ToastService);
+  private sub: Subscription | null = null;
 
-  // Controls visibility of the create/edit modal
+  goals = signal<Goal[]>([]);
+
+  // Drag state: which card is being dragged and which one is currently
+  // underneath the cursor (for the dashed-outline drop indicator).
+  draggingId = signal<string | null>(null);
+  dragOverId = signal<string | null>(null);
+
   showForm = false;
-  // Holds the goal being edited (null for new goal creation)
   editingGoal: Goal | null = null;
 
-  // On init, fetch all goals from the backend
-  ngOnInit() { this.goalService.loadAll().subscribe(); }
+  ngOnInit() {
+    this.sub = this.goalService.goals$.subscribe((g) => this.goals.set(g));
+    this.goalService.loadAll().subscribe();
+  }
+
+  ngOnDestroy() { this.sub?.unsubscribe(); }
+
+  // --- Drag and drop (native HTML5, no external library) ---
+
+  onDragStart(ev: DragEvent, id: string) {
+    this.draggingId.set(id);
+    if (ev.dataTransfer) {
+      ev.dataTransfer.effectAllowed = 'move';
+      ev.dataTransfer.setData('text/plain', id);
+    }
+  }
+
+  onDragEnter(id: string) {
+    if (this.draggingId() && this.draggingId() !== id) this.dragOverId.set(id);
+  }
+
+  onDragEnd() {
+    this.draggingId.set(null);
+    this.dragOverId.set(null);
+  }
+
+  onDrop(ev: DragEvent, targetId: string) {
+    ev.preventDefault();
+    const sourceId = ev.dataTransfer?.getData('text/plain') || this.draggingId();
+    this.draggingId.set(null);
+    this.dragOverId.set(null);
+    if (!sourceId || sourceId === targetId) return;
+
+    const current = this.goals();
+    const sourceIdx = current.findIndex((g) => g.id === sourceId);
+    const targetIdx = current.findIndex((g) => g.id === targetId);
+    if (sourceIdx === -1 || targetIdx === -1) return;
+
+    // Optimistic reorder — insert source at target's position
+    const next = [...current];
+    const [moved] = next.splice(sourceIdx, 1);
+    next.splice(targetIdx, 0, moved);
+    this.goals.set(next);
+
+    this.goalService.reorderGoals(next.map((g) => g.id)).subscribe({
+      error: () => {
+        // Roll back on failure
+        this.goals.set(current);
+        this.toast.error('Failed to reorder');
+      },
+    });
+  }
 
   // Open the edit modal pre-filled with the selected goal's data
   editGoal(goal: Goal) { this.editingGoal = goal; this.showForm = true; }

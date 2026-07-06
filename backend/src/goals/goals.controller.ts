@@ -29,6 +29,13 @@ export class GoalsController {
     return this.goalsService.findAll(userId);
   }
 
+  // PATCH /goals/reorder - Rewrites the `order` field on the current user's goals.
+  // Declared before the :id routes so 'reorder' isn't matched as a goal ID.
+  @Patch('reorder')
+  reorderGoals(@CurrentUser('id') userId: string, @Body() body: { goalIds: string[] }) {
+    return this.goalsService.reorderGoals(userId, body.goalIds);
+  }
+
   // GET /goals/:id - Returns a single goal by ID with its milestones and mini-goals
   @Get(':id')
   findOne(@CurrentUser('id') userId: string, @Param('id') id: string) {

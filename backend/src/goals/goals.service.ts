@@ -20,14 +20,20 @@ export class GoalsService {
   // Inject FirebaseService to perform database operations on goals, milestones, and minigoals collections
   constructor(private firebase: FirebaseService) {}
 
-  // Retrieves all goals for the authenticated user, each with its milestones and mini-goals attached
+  // Retrieves all goals for the authenticated user, each with its milestones and mini-goals attached.
+  // Goals are sorted by the user-defined `order` field (drag-and-drop reorder on the goals page).
+  // Legacy goals without an `order` fall back to createdAt so ordering stays stable.
   async findAll(userId: string) {
-    // Fetch all goals from the 'goals' collection in Firebase
     const goals = await this.firebase.getList<any>('goals');
-    // Filter to only include goals belonging to the authenticated user
     const userGoals = goals
       .filter((g: any) => g.userId === userId)
-      .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      .sort((a: any, b: any) => {
+        const ao = a.order, bo = b.order;
+        if (ao != null && bo != null) return ao - bo;
+        if (ao != null) return -1;
+        if (bo != null) return 1;
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      });
     return Promise.all(userGoals.map((g: any) => this.attachMilestones(g)));
   }
 
@@ -44,20 +50,26 @@ export class GoalsService {
 
   // Creates a new goal for the authenticated user with initial progress at 0%
   async create(userId: string, dto: CreateGoalDto) {
-    // Generate a unique UUID for the new goal
     const id = randomUUID();
-    // Build the complete goal record with defaults for optional fields
+
+    // Auto-assign order = last position so new goals appear at the end of the drag-sortable list.
+    const existing = await this.firebase.getList<any>('goals');
+    const mine = existing.filter((g: any) => g.userId === userId);
+    const maxOrder = mine.length > 0 ? Math.max(...mine.map((g: any) => g.order ?? -1)) : -1;
+
     const goal = {
-      id, // Unique goal identifier used as the Firebase key
-      title: dto.title, // Goal title (required)
+      id,
+      title: dto.title,
       description: dto.description ?? null,
       status: dto.status ?? 'ACTIVE',
       targetDate: dto.targetDate ?? null,
       resources: dto.resources ?? [],
+      link: dto.link ?? null,
       progress: 0,
-      userId, // Foreign key linking this goal to the authenticated user
-      createdAt: new Date().toISOString(), // Timestamp when the goal was created
-      updatedAt: new Date().toISOString(), // Timestamp of the last modification
+      order: maxOrder + 1,
+      userId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
     // Write the goal record to Firebase at goals/{id}
     await this.firebase.ref(`goals/${id}`).set(goal);
@@ -188,6 +200,16 @@ export class GoalsService {
     await this.firebase.update(`goals/${goalId}`, { progress });
 
     return { deleted: true };
+  }
+
+  // Reorders the current user's goals by writing new `order` values based on the array position.
+  async reorderGoals(userId: string, goalIds: string[]) {
+    for (let i = 0; i < goalIds.length; i++) {
+      const goal = await this.firebase.get<any>(`goals/${goalIds[i]}`);
+      if (!goal || goal.userId !== userId) continue; // silently skip anything not owned by the user
+      await this.firebase.update(`goals/${goalIds[i]}`, { order: i, updatedAt: new Date().toISOString() });
+    }
+    return this.findAll(userId);
   }
 
   // Reorders milestones by updating their order fields based on the provided array of IDs

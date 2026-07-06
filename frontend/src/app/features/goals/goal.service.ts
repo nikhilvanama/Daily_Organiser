@@ -44,6 +44,14 @@ export class GoalService {
     );
   }
 
+  // Reorder goals — the backend rewrites the `order` field on each goal so the new
+  // ordering persists across reloads. Callers pass the desired sequence of goal IDs.
+  reorderGoals(goalIds: string[]) {
+    return this.http.patch<Goal[]>(`${this.base}/reorder`, { goalIds }).pipe(
+      tap((goals) => this.goals$.next(goals)),
+    );
+  }
+
   // Delete a goal and remove it from the local cache
   delete(id: string) {
     return this.http.delete(`${this.base}/${id}`).pipe(
