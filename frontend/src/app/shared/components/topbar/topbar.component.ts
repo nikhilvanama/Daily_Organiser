@@ -196,7 +196,6 @@ export class TopbarComponent implements OnInit {
     if (path.includes('projects'))   return { section: 'Trackers',   page: 'Projects' };
     if (path.includes('trips'))      return { section: 'Wishlists',  page: 'Trips' };
     if (path.includes('buy-list'))   return { section: 'Wishlists',  page: 'Buy List' };
-    if (path.includes('portfolio'))  return { section: 'Portfolio',  page: 'My Portfolio' };
     if (path.includes('profile'))    return { section: '',           page: 'Profile' };
     return { section: '', page: 'Daily Organizer' };
   }

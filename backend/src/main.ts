@@ -22,17 +22,14 @@ async function bootstrap() {
     }),
   );
 
-  // Enable CORS — allow local dev, main app, portfolio site, and any env-configured URLs.
-  // Public portfolio routes (/api/public/*) are open to any origin by design; allowing
-  // all vercel.app subdomains covers preview deploys without listing each one.
+  // Enable CORS — allow local dev, the production app, and any env-configured URLs.
+  // Allowing all vercel.app subdomains covers preview deploys without listing each one.
   app.enableCors({
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       const allowed = [
         'http://localhost:4200',
-        'http://localhost:5000',
         'https://daily-organiser-two.vercel.app',
         process.env.FRONTEND_URL,
-        process.env.PORTFOLIO_URL,
       ].filter(Boolean) as string[];
       // Allow requests with no origin (server-to-server, curl, etc.) and any *.vercel.app
       if (!origin || allowed.includes(origin) || /\.vercel\.app$/.test(origin)) {
