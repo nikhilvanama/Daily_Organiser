@@ -49,7 +49,7 @@ import { ToastService } from '../../../core/services/toast.service';
         </div>
       </div>
 
-      <!-- Status filter chips (LEAD intentionally hidden to keep the bar focused) -->
+      <!-- Status filter chips (LEAD intentionally hidden to keep the bar focused) + search -->
       <div class="chip-row">
         <button class="chip" [class.active]="!filterStatus()" (click)="filterStatus.set(null)">All</button>
         @for (s of filterableStatuses; track s.value) {
@@ -57,12 +57,24 @@ import { ToastService } from '../../../core/services/toast.service';
             {{ s.label }} <span class="chip-count">{{ countByStatus(s.value) }}</span>
           </button>
         }
+        <div class="search-box">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="search-input" type="text" placeholder="Search projects…"
+                 [value]="searchQuery()" (input)="searchQuery.set($any($event.target).value)" />
+          @if (searchQuery()) {
+            <button class="search-clear" (click)="searchQuery.set('')" title="Clear search">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          }
+        </div>
       </div>
 
       @if (filtered().length === 0) {
         <div class="card empty-card">
           @if (projects().length === 0) {
             <p>No projects yet. Create your first one!</p>
+          } @else if (searchQuery()) {
+            <p>No projects match "{{ searchQuery() }}".</p>
           } @else {
             <p>No projects match this filter.</p>
           }
@@ -130,7 +142,28 @@ import { ToastService } from '../../../core/services/toast.service';
     .stat-num { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); line-height: 1.1; }
     .stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
 
-    .chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+    .chip-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+
+    /* Search box: sits at the right end of the chip row */
+    .search-box {
+      display: flex; align-items: center; gap: 6px;
+      margin-left: auto; padding: 5px 10px;
+      background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 20px;
+      color: var(--text-muted); transition: border-color 0.15s;
+    }
+    .search-box:focus-within { border-color: var(--accent); }
+    .search-input {
+      border: none; background: transparent; outline: none;
+      font-family: inherit; font-size: 0.8rem; color: var(--text-primary);
+      width: 160px;
+    }
+    .search-input::placeholder { color: var(--text-muted); }
+    .search-clear {
+      display: flex; align-items: center; justify-content: center;
+      background: transparent; border: none; padding: 2px; border-radius: 50%;
+      color: var(--text-muted); cursor: pointer;
+    }
+    .search-clear:hover { color: var(--text-primary); background: var(--bg-hover); }
     .chip {
       padding: 6px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 500;
       border: 1.5px solid var(--border); background: transparent; color: var(--text-secondary);
@@ -175,6 +208,8 @@ import { ToastService } from '../../../core/services/toast.service';
     @media (max-width: 900px) {
       .stats-row { grid-template-columns: repeat(2, 1fr); }
       .proj-progress { display: none; }
+      .search-box { margin-left: 0; width: 100%; }
+      .search-input { flex: 1; width: auto; }
     }
   `],
 })
@@ -189,11 +224,22 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   // Filter bar omits LEAD by design — leads sit at the top by default and clutter the chips row.
   filterableStatuses = PROJECT_STATUSES.filter((s) => s.value !== 'LEAD');
   filterStatus = signal<ProjectStatus | null>(null);
+  searchQuery = signal('');
   showForm = false;
 
   filtered = computed(() => {
     const s = this.filterStatus();
-    return s ? this.projects().filter((p) => p.status === s) : this.projects();
+    const q = this.searchQuery().trim().toLowerCase();
+    let list = s ? this.projects().filter((p) => p.status === s) : this.projects();
+    if (q) {
+      list = list.filter((p) =>
+        p.title.toLowerCase().includes(q) ||
+        (p.clientName ?? '').toLowerCase().includes(q) ||
+        (p.description ?? '').toLowerCase().includes(q) ||
+        (p.projectType ? this.projectTypeLabel(p.projectType).toLowerCase().includes(q) : false)
+      );
+    }
+    return list;
   });
 
   // Outstanding = pending balance across NON-self projects that aren't lost or already fully paid.
