@@ -267,6 +267,9 @@ export class ProjectsService {
       totalReceived: Math.round(totalReceived * 100) / 100,
       balance: Math.round(balance * 100) / 100,
       isOverdue,
+      // Firebase drops empty arrays on write, so a project saved with no links comes
+      // back without the field — backfill it so the frontend can rely on the array.
+      portfolioLinks: project.portfolioLinks ?? [],
       showInPortfolio: project.showInPortfolio ?? false,
       publicSummary: project.publicSummary ?? null,
       thumbnailUrl: project.thumbnailUrl ?? null,

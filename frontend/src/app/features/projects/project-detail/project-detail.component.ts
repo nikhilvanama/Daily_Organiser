@@ -93,7 +93,7 @@ import { ToastService } from '../../../core/services/toast.service';
               </div>
             }
 
-            @if (project()!.portfolioLinks.length > 0) {
+            @if ((project()!.portfolioLinks?.length ?? 0) > 0) {
               <h4>Portfolio / samples</h4>
               <div class="links-list">
                 @for (link of project()!.portfolioLinks; track $index) {

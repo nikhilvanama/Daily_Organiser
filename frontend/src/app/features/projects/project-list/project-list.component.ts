@@ -44,8 +44,8 @@ import { ToastService } from '../../../core/services/toast.service';
           <span class="stat-label">This month</span>
         </div>
         <div class="stat-card">
-          <span class="stat-num">{{ countByStatus('QUOTED') }}</span>
-          <span class="stat-label">Pending quotes</span>
+          <span class="stat-num">{{ formatMoney(totalRevenue()) }}</span>
+          <span class="stat-label">Total revenue</span>
         </div>
       </div>
 
@@ -201,6 +201,11 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     this.projects()
       .filter((p) => !p.isSelf && p.status !== 'LOST' && p.paymentStatus !== 'PAID')
       .reduce((sum, p) => sum + (p.balance ?? 0), 0)
+  );
+
+  // Total revenue = everything ever received across all freelance projects.
+  totalRevenue = computed(() =>
+    this.projects().reduce((sum, p) => sum + (p.totalReceived ?? 0), 0)
   );
 
   receivedThisMonth = computed(() => {
