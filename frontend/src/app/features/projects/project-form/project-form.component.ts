@@ -123,58 +123,6 @@ const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AUD', 'CAD'] as const;
         <button type="button" class="btn-ghost sm" (click)="addLink()">+ Add link</button>
       </div>
 
-      <!-- Portfolio section (collapsible) -->
-      <div class="section-divider">
-        <button type="button" class="section-toggle" (click)="showPortfolio = !showPortfolio">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-          </svg>
-          Portfolio settings
-          <svg class="chevron" [class.open]="showPortfolio" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-      </div>
-
-      @if (showPortfolio) {
-        <label class="self-toggle">
-          <input type="checkbox" formControlName="showInPortfolio" class="toggle-input" />
-          <span class="toggle-track"><span class="toggle-thumb"></span></span>
-          <span class="toggle-label">Show in portfolio</span>
-          <span class="toggle-hint">makes this project visible on your public portfolio site</span>
-        </label>
-
-        <div class="form-group">
-          <label class="label">Public summary</label>
-          <textarea class="input" formControlName="publicSummary" rows="2" placeholder="Public-facing description (leave blank to use project description)"></textarea>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="label">Live URL</label>
-            <input class="input" formControlName="liveUrl" placeholder="https://..." />
-          </div>
-          <div class="form-group">
-            <label class="label">Repo URL</label>
-            <input class="input" formControlName="repoUrl" placeholder="https://github.com/..." />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="label">Figma URL</label>
-            <input class="input" formControlName="figmaUrl" placeholder="https://figma.com/..." />
-          </div>
-          <div class="form-group">
-            <label class="label">Thumbnail URL</label>
-            <input class="input" formControlName="thumbnailUrl" placeholder="https://... (image URL)" />
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="label">Tags (comma-separated)</label>
-          <input class="input" [value]="tagsInput" (input)="tagsInput = $any($event.target).value" placeholder="Angular, NestJS, Firebase..." />
-        </div>
-      }
-
       <div class="form-actions">
         <button type="button" class="btn-ghost" (click)="cancelled.emit()">Cancel</button>
         <button type="submit" class="btn-primary" [disabled]="form.invalid || loading">
@@ -221,11 +169,6 @@ const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AUD', 'CAD'] as const;
     .icon-btn { background: transparent; border: none; padding: 0.25rem; border-radius: 0.25rem; cursor: pointer; color: var(--text-muted); display: flex; }
     .icon-btn.danger:hover { color: #ef4444; background: var(--bg-secondary); }
     .sm { font-size: 0.8rem; padding: 0.375rem 0.75rem; }
-    .section-divider { margin: 0.25rem 0; }
-    .section-toggle { display: flex; align-items: center; gap: 8px; background: none; border: none; font-family: inherit; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; padding: 6px 0; width: 100%; text-align: left; transition: color 0.15s; }
-    .section-toggle:hover { color: var(--text-primary); }
-    .chevron { margin-left: auto; transition: transform 0.2s; }
-    .chevron.open { transform: rotate(180deg); }
     @media (max-width: 520px) { .form-row { grid-template-columns: 1fr; } }
   `],
 })
@@ -238,8 +181,6 @@ export class ProjectFormComponent implements OnInit, OnChanges {
   private projectService = inject(ProjectService);
 
   loading = false;
-  showPortfolio = false;
-  tagsInput = '';
   statuses = PROJECT_STATUSES;
   paymentStatuses = PAYMENT_STATUSES.filter((p) => p.value !== 'NOT_APPLICABLE');
   projectTypes = PROJECT_TYPES;
@@ -260,12 +201,6 @@ export class ProjectFormComponent implements OnInit, OnChanges {
     startDate: [''],
     deadline: [''],
     progress: [0],
-    showInPortfolio: [false],
-    publicSummary: [''],
-    liveUrl: [''],
-    repoUrl: [''],
-    figmaUrl: [''],
-    thumbnailUrl: [''],
   });
 
   ngOnInit() { this.fillForm(); }
@@ -274,19 +209,16 @@ export class ProjectFormComponent implements OnInit, OnChanges {
   private fillForm() {
     if (!this.project) {
       this.portfolioLinks = [''];
-      this.tagsInput = '';
       this.form.reset({
         title: '', isSelf: false, projectType: '',
         clientName: '', clientContact: '', description: '',
         status: 'LEAD', paymentStatus: 'PENDING', quotedAmount: null, currency: 'INR',
         startDate: '', deadline: '', progress: 0,
-        showInPortfolio: false, publicSummary: '', liveUrl: '', repoUrl: '', figmaUrl: '', thumbnailUrl: '',
       });
       return;
     }
     const links = this.project.portfolioLinks ?? [];
     this.portfolioLinks = links.length > 0 ? [...links] : [''];
-    this.tagsInput = (this.project.tags ?? []).join(', ');
     this.form.patchValue({
       title: this.project.title,
       isSelf: this.project.isSelf,
@@ -301,12 +233,6 @@ export class ProjectFormComponent implements OnInit, OnChanges {
       startDate: this.project.startDate ?? '',
       deadline: this.project.deadline ?? '',
       progress: this.project.progress,
-      showInPortfolio: this.project.showInPortfolio ?? false,
-      publicSummary: this.project.publicSummary ?? '',
-      liveUrl: this.project.liveUrl ?? '',
-      repoUrl: this.project.repoUrl ?? '',
-      figmaUrl: this.project.figmaUrl ?? '',
-      thumbnailUrl: this.project.thumbnailUrl ?? '',
     });
   }
 
@@ -334,13 +260,6 @@ export class ProjectFormComponent implements OnInit, OnChanges {
       deadline: raw.deadline || undefined,
       progress: raw.progress ?? 0,
       portfolioLinks: this.portfolioLinks.map((l) => l.trim()).filter(Boolean),
-      showInPortfolio: raw.showInPortfolio ?? false,
-      publicSummary: raw.publicSummary?.trim() || undefined,
-      liveUrl: raw.liveUrl?.trim() || undefined,
-      repoUrl: raw.repoUrl?.trim() || undefined,
-      figmaUrl: raw.figmaUrl?.trim() || undefined,
-      thumbnailUrl: raw.thumbnailUrl?.trim() || undefined,
-      tags: this.tagsInput.split(',').map((t) => t.trim()).filter(Boolean),
     };
     if (!isSelf) {
       dto.clientName = raw.clientName?.trim() || undefined;

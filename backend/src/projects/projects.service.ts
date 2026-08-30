@@ -25,13 +25,6 @@ type ProjectRecord = {
   progress: number;
   portfolioLinks: string[];
   archived: boolean;
-  showInPortfolio: boolean;
-  publicSummary: string | null;
-  thumbnailUrl: string | null;
-  liveUrl: string | null;
-  repoUrl: string | null;
-  figmaUrl: string | null;
-  tags: string[];
   createdAt: string;
   updatedAt: string;
 };
@@ -123,13 +116,6 @@ export class ProjectsService {
       progress: dto.progress ?? 0,
       portfolioLinks: dto.portfolioLinks ?? [],
       archived: false,
-      showInPortfolio: dto.showInPortfolio ?? false,
-      publicSummary: dto.publicSummary ?? null,
-      thumbnailUrl: dto.thumbnailUrl ?? null,
-      liveUrl: dto.liveUrl ?? null,
-      repoUrl: dto.repoUrl ?? null,
-      figmaUrl: dto.figmaUrl ?? null,
-      tags: dto.tags ?? [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -270,13 +256,6 @@ export class ProjectsService {
       // Firebase drops empty arrays on write, so a project saved with no links comes
       // back without the field — backfill it so the frontend can rely on the array.
       portfolioLinks: project.portfolioLinks ?? [],
-      showInPortfolio: project.showInPortfolio ?? false,
-      publicSummary: project.publicSummary ?? null,
-      thumbnailUrl: project.thumbnailUrl ?? null,
-      liveUrl: project.liveUrl ?? null,
-      repoUrl: project.repoUrl ?? null,
-      figmaUrl: project.figmaUrl ?? null,
-      tags: project.tags ?? [],
     };
   }
 }

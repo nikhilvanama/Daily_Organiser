@@ -75,34 +75,4 @@ export class CreateProjectDto {
   @ArrayMaxSize(20)
   @IsString({ each: true })
   portfolioLinks?: string[];
-
-  @IsOptional()
-  @IsBoolean()
-  showInPortfolio?: boolean;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(2000)
-  publicSummary?: string;
-
-  @IsOptional()
-  @IsString()
-  thumbnailUrl?: string;
-
-  @IsOptional()
-  @IsString()
-  liveUrl?: string;
-
-  @IsOptional()
-  @IsString()
-  repoUrl?: string;
-
-  @IsOptional()
-  @IsString()
-  figmaUrl?: string;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  tags?: string[];
 }

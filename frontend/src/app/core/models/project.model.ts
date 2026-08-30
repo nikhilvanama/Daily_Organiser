@@ -66,13 +66,6 @@ export interface Project {
   progress: number;
   portfolioLinks: string[];
   archived: boolean;
-  showInPortfolio: boolean;
-  publicSummary: string | null;
-  thumbnailUrl: string | null;
-  liveUrl: string | null;
-  repoUrl: string | null;
-  figmaUrl: string | null;
-  tags: string[];
   createdAt: string;
   updatedAt: string;
   // --- derived server-side ---
@@ -97,13 +90,6 @@ export interface CreateProjectDto {
   deadline?: string;
   progress?: number;
   portfolioLinks?: string[];
-  showInPortfolio?: boolean;
-  publicSummary?: string;
-  thumbnailUrl?: string;
-  liveUrl?: string;
-  repoUrl?: string;
-  figmaUrl?: string;
-  tags?: string[];
 }
 
 export type UpdateProjectDto = Partial<CreateProjectDto> & { archived?: boolean };
