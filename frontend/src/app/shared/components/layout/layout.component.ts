@@ -8,13 +8,14 @@ import { ToastContainerComponent } from '../toast-container/toast-container.comp
 import { ThemeService } from '../../../core/services/theme.service';
 import { IdleService } from '../../../core/services/idle.service';
 import { GlobalSearchComponent, GlobalSearchService } from '../global-search/global-search.component';
+import { AiChatComponent } from '../ai-chat/ai-chat.component';
 
 const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
 
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [RouterOutlet, SidebarComponent, TopbarComponent, ToastContainerComponent, GlobalSearchComponent],
+  imports: [RouterOutlet, SidebarComponent, TopbarComponent, ToastContainerComponent, GlobalSearchComponent, AiChatComponent],
   template: `
     <div class="layout">
       <!-- Mobile top bar -->
@@ -54,6 +55,7 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
     </div>
     <app-toast-container />
     <app-global-search />
+    <app-ai-chat />
   `,
   styles: [`
     :host { display: block; height: 100vh; }

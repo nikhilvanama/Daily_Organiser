@@ -393,7 +393,8 @@ textarea.input { resize: vertical; min-height: 80px; }
    Each toast has a colored left border indicating its type.
    ═══════════════════════════════════════════════════════════════════ */
 /* Container: fixed position in the bottom-right, stacks toasts vertically */
-.toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; }
+/* Sits above the AI chat FAB (bottom-right, 52px) so toasts never cover it */
+.toast-container { position: fixed; bottom: 88px; right: 1.5rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; }
 /* Individual toast: card-like appearance with slide-up entrance animation */
 .toast {
   display: flex; align-items: center; gap: 10px;

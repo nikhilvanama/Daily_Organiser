@@ -15,7 +15,6 @@ import { ModalComponent } from '../../../shared/components/modal/modal.component
 import { TaskFormComponent } from '../task-form/task-form.component';
 // ToastService shows success/error feedback after task operations
 import { ToastService } from '../../../core/services/toast.service';
-import { AiService } from '../../../core/services/ai.service';
 // Task model and PLAN_TYPES for type-specific icons and colors
 import { Task, PLAN_TYPES } from '../../../core/models/task.model';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -40,18 +39,6 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
         <button class="btn-primary" (click)="showForm = true">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Add Plan
-        </button>
-      </div>
-
-      <!-- AI Quick Add: natural language → structured plan via Gemini -->
-      <div class="card ai-bar">
-        <span class="ai-spark">✨</span>
-        <input class="ai-input" type="text"
-               placeholder='Quick add with AI — try "lunch with Ravi tomorrow 1pm at Paradise"'
-               [value]="aiText" (input)="aiText = $any($event.target).value"
-               (keydown.enter)="aiQuickAdd()" [disabled]="aiLoading" />
-        <button class="btn-primary ai-btn" (click)="aiQuickAdd()" [disabled]="aiLoading || aiText.trim().length < 3">
-          {{ aiLoading ? 'Thinking…' : 'Add' }}
         </button>
       </div>
 
@@ -171,16 +158,6 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
   `,
   styles: [`
     /* Plan type filter chips: horizontal wrapping row */
-    /* AI quick-add bar */
-    .ai-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; }
-    .ai-spark { font-size: 1rem; flex-shrink: 0; }
-    .ai-input {
-      flex: 1; border: none; background: transparent; outline: none;
-      font-family: inherit; font-size: 0.88rem; color: var(--text-primary);
-    }
-    .ai-input::placeholder { color: var(--text-muted); }
-    .ai-btn { padding: 7px 16px; font-size: 0.82rem; flex-shrink: 0; }
-
     .type-filters { display: flex; gap: 6px; flex-wrap: wrap; }
     /* Individual chip: pill-shaped button with border */
     .chip {
@@ -263,37 +240,6 @@ export class TaskListComponent implements OnInit {
   private fb = inject(FormBuilder);
   // Reference to PLAN_TYPES for icons and colors
   planTypes = PLAN_TYPES;
-
-  private aiService = inject(AiService);
-
-  // AI quick-add state
-  aiText = '';
-  aiLoading = false;
-
-  // Send the sentence to the backend (Gemini parses it), then create the plan
-  // through the normal task flow so calendar/Google sync all behave as usual.
-  aiQuickAdd() {
-    const text = this.aiText.trim();
-    if (text.length < 3 || this.aiLoading) return;
-    this.aiLoading = true;
-    this.aiService.quickAdd(text).subscribe({
-      next: (dto) => {
-        this.taskService.create(dto).subscribe({
-          next: (t) => {
-            this.aiLoading = false;
-            this.aiText = '';
-            this.toast.success(`Added: ${t.title}${t.dueDate ? ' · ' + t.dueDate : ''}`);
-            this.loadTasks();
-          },
-          error: () => { this.aiLoading = false; this.toast.error('Parsed it, but saving failed'); },
-        });
-      },
-      error: (err) => {
-        this.aiLoading = false;
-        this.toast.error(err.error?.message ?? 'AI could not understand that');
-      },
-    });
-  }
 
   // Controls visibility of the create/edit modal
   showForm = false;

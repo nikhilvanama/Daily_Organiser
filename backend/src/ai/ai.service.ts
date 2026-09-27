@@ -15,7 +15,14 @@ export interface ParsedPlan {
 }
 
 const VALID_TYPES = ['task', 'trip', 'train', 'dinner', 'meeting', 'event', 'reminder', 'outing', 'health', 'celebration'];
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+
+// Google retires model names over time (gemini-2.0-flash died with a 404), so we
+// try a chain: the -latest alias first, then current stable names. A model that
+// answers 404 (gone) or 503/429 (busy) is skipped; the first one that works is
+// remembered and tried first on subsequent requests.
+const MODEL_CHAIN = ['gemini-flash-latest', 'gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-3-flash-preview'];
+const geminiUrl = (model: string) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
 // AiService turns a natural-language sentence ("lunch with Ravi tomorrow 1pm at
 // Paradise") into a structured plan using the Gemini API's JSON output mode.
@@ -50,30 +57,7 @@ Return ONLY a JSON object with these fields (omit any field you cannot infer —
 
 Sentence: ${JSON.stringify(text.trim())}`;
 
-    let res: Response;
-    try {
-      res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
-        }),
-      });
-    } catch {
-      throw new ServiceUnavailableException('Could not reach the AI service');
-    }
-
-    if (!res.ok) {
-      const body = await res.text().catch(() => '');
-      // 400 with API_KEY_INVALID etc. — surface a clean message, log the detail
-      console.error('Gemini error', res.status, body.slice(0, 500));
-      throw new ServiceUnavailableException(`AI request failed (${res.status})`);
-    }
-
-    const data: any = await res.json();
-    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!raw) throw new ServiceUnavailableException('AI returned no result');
+    const raw = await this.callGemini(apiKey, prompt);
 
     let parsed: any;
     try {
@@ -83,6 +67,61 @@ Sentence: ${JSON.stringify(text.trim())}`;
     }
 
     return this.sanitize(parsed);
+  }
+
+  // Last model that answered successfully — tried first on the next request.
+  private workingModel: string | null = null;
+
+  // Walks the model chain until one answers. 404 = model retired, 503/429 = busy;
+  // both mean "try the next one". Any other error stops immediately (bad key etc.).
+  private async callGemini(apiKey: string, prompt: string): Promise<string> {
+    const chain = this.workingModel
+      ? [this.workingModel, ...MODEL_CHAIN.filter((m) => m !== this.workingModel)]
+      : MODEL_CHAIN;
+
+    let lastStatus = 0;
+    for (const model of chain) {
+      let res: Response;
+      try {
+        res = await fetch(`${geminiUrl(model)}?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
+          }),
+        });
+      } catch {
+        throw new ServiceUnavailableException('Could not reach the AI service');
+      }
+
+      if (res.ok) {
+        const data: any = await res.json();
+        const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (raw) {
+          this.workingModel = model;
+          return raw;
+        }
+        lastStatus = 200; // answered but empty — try the next model
+        continue;
+      }
+
+      lastStatus = res.status;
+      const body = await res.text().catch(() => '');
+      console.error(`Gemini ${model} -> ${res.status}`, body.slice(0, 300));
+      if (res.status === 404 || res.status === 503 || res.status === 429) {
+        if (this.workingModel === model) this.workingModel = null;
+        continue; // retired or busy — try the next model
+      }
+      // 400 (bad key), 403 (no access) — no point trying other models
+      throw new ServiceUnavailableException(`AI request failed (${res.status})`);
+    }
+
+    throw new ServiceUnavailableException(
+      lastStatus === 503 || lastStatus === 429
+        ? 'The AI is busy right now — try again in a minute'
+        : 'No AI model is available right now',
+    );
   }
 
   // Whitelist + validate every field so a hallucinated shape can never reach the
