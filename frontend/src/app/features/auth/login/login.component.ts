@@ -70,12 +70,17 @@ import { ToastService } from '../../../core/services/toast.service';
     </div>
   `,
   styles: [`
-    /* Full-viewport centered layout for the auth page */
+    /* Full-viewport centered layout with the illustrated background (public/login-bg.png) */
     .auth-page {
       min-height: 100vh; display: flex; align-items: center; justify-content: center;
-      background: var(--bg-secondary); padding: 2rem;
+      background: url('/login-bg.png') center / cover no-repeat, var(--bg-secondary);
+      padding: 2rem; position: relative;
     }
-    .auth-card { width: 100%; max-width: 400px; padding: 2.5rem; }
+    /* Veil over the image: keeps the card readable; much darker in dark theme
+       because the illustration itself is light pastel. */
+    .auth-page::before { content: ''; position: absolute; inset: 0; background: rgba(255, 255, 255, 0.12); }
+    [data-theme="dark"] .auth-page::before { background: rgba(9, 9, 11, 0.72); }
+    .auth-card { width: 100%; max-width: 400px; padding: 2.5rem; position: relative; z-index: 1; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18); }
     @media (max-width: 480px) { .auth-card { padding: 1.5rem; } .auth-page { padding: 1rem; } }
     /* Centered header with bottom margin for spacing */
     .header { text-align: center; margin-bottom: 2rem; }

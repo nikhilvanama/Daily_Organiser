@@ -62,9 +62,16 @@ import { ToastService } from '../../../core/services/toast.service';
   `,
   styles: [`
     /* Full-viewport centered layout for the auth page */
-    .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg-secondary); padding: 2rem; }
+    /* Same illustrated background as the login page (public/login-bg.png) */
+    .auth-page {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: url('/login-bg.png') center / cover no-repeat, var(--bg-secondary);
+      padding: 2rem; position: relative;
+    }
+    .auth-page::before { content: ''; position: absolute; inset: 0; background: rgba(255, 255, 255, 0.12); }
+    [data-theme="dark"] .auth-page::before { background: rgba(9, 9, 11, 0.72); }
     /* Auth card: slightly wider than login to accommodate the two-column row */
-    .auth-card { width: 100%; max-width: 440px; padding: 2.5rem; }
+    .auth-card { width: 100%; max-width: 440px; padding: 2.5rem; position: relative; z-index: 1; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18); }
     /* Centered header with bottom margin */
     .header { text-align: center; margin-bottom: 2rem; }
     /* Logo row */
