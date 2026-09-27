@@ -122,6 +122,33 @@ import { AnalyticsRange, AnalyticsSummary } from '../../../core/models/analytics
 
         </div>
 
+        <!-- Weekly Review — the selected range grouped into Mon–Sun weeks -->
+        <div class="card weekly-card">
+          <h3>Weekly Review</h3>
+          <p class="section-sub">Each week of the selected range · tasks, routine check-ins, and journal days</p>
+          @if (weeklyReview().length <= 1 && daysInRange() <= 7) {
+            <p class="empty-section">Switch to 30d or 90d to compare several weeks.</p>
+          }
+          <div class="week-rows">
+            @for (w of weeklyReview(); track w.key) {
+              <div class="week-row" [class.current]="w.isCurrent">
+                <div class="week-label-block">
+                  <span class="week-label">{{ w.label }}</span>
+                  @if (w.isCurrent) { <span class="week-now">This week</span> }
+                </div>
+                <div class="week-stats">
+                  <span class="ws tasks-ws">✓ {{ w.tasks }} task{{ w.tasks === 1 ? '' : 's' }}</span>
+                  <span class="ws habits-ws">⏱ {{ w.habits }} check-in{{ w.habits === 1 ? '' : 's' }}</span>
+                  <span class="ws journal-ws">📓 {{ w.journalDays }}/7 journaled</span>
+                </div>
+                <div class="week-bar" title="Activity vs your best week in this range">
+                  <div class="week-fill" [style.width.%]="w.pct"></div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
         <!-- Daily Activity Chart (SVG) -->
         <div class="card chart-card">
           <div class="chart-header">
@@ -333,6 +360,27 @@ import { AnalyticsRange, AnalyticsSummary } from '../../../core/models/analytics
     .bottom-card { padding: 1.25rem 1.4rem; display: flex; flex-direction: column; }
     .bottom-card h3 { font-size: 0.95rem; font-weight: 700; margin: 0; color: var(--text-primary); }
     .section-sub { font-size: 0.72rem; color: var(--text-muted); margin: 3px 0 1rem; }
+
+    /* Weekly Review */
+    .weekly-card { padding: 1.25rem 1.5rem; }
+    .weekly-card h3 { font-size: 0.95rem; font-weight: 700; margin: 0; }
+    .week-rows { display: flex; flex-direction: column; gap: 4px; }
+    .week-row {
+      display: grid; grid-template-columns: 150px 1fr 140px; gap: 12px; align-items: center;
+      padding: 9px 10px; border-radius: 8px; transition: background 0.12s;
+    }
+    .week-row:hover { background: var(--bg-hover); }
+    .week-row.current { background: var(--accent-subtle); }
+    .week-label-block { display: flex; flex-direction: column; gap: 2px; }
+    .week-label { font-size: 0.8rem; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .week-now { font-size: 0.62rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; }
+    .week-stats { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.75rem; color: var(--text-secondary); }
+    .week-bar { height: 6px; background: var(--bg-secondary); border-radius: 99px; overflow: hidden; }
+    .week-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.4s; }
+    @media (max-width: 700px) {
+      .week-row { grid-template-columns: 1fr; gap: 6px; }
+      .week-bar { display: none; }
+    }
     .empty-section { font-size: 0.82rem; color: var(--text-muted); padding: 1rem 0; }
 
     /* Weekday chart */
@@ -468,6 +516,53 @@ export class AnalyticsPageComponent implements OnInit {
   });
 
   showDateLabels = computed(() => this.daysInRange() <= 30);
+
+  // Groups the range's dailyActivity into Mon-start calendar weeks, newest first.
+  // pct = combined activity relative to the busiest week, for the trend bar.
+  weeklyReview = computed(() => {
+    const days = this.summary()?.dailyActivity ?? [];
+    if (days.length === 0) return [];
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const weeks = new Map<string, { start: Date; tasks: number; habits: number; journalDays: number }>();
+    for (const d of days) {
+      const dt = new Date(d.date + 'T00:00:00');
+      const monOffset = (dt.getDay() + 6) % 7; // Mon=0
+      const ws = new Date(dt);
+      ws.setDate(dt.getDate() - monOffset);
+      const key = `${ws.getFullYear()}-${pad(ws.getMonth() + 1)}-${pad(ws.getDate())}`;
+      const w = weeks.get(key) ?? { start: ws, tasks: 0, habits: 0, journalDays: 0 };
+      w.tasks += d.tasks;
+      w.habits += d.habits;
+      if (d.journal) w.journalDays++;
+      weeks.set(key, w);
+    }
+    const now = new Date();
+    const nowMon = new Date(now);
+    nowMon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    const currentKey = `${nowMon.getFullYear()}-${pad(nowMon.getMonth() + 1)}-${pad(nowMon.getDate())}`;
+
+    const rows = [...weeks.entries()]
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .slice(0, 12)
+      .map(([key, w]) => {
+        const end = new Date(w.start);
+        end.setDate(w.start.getDate() + 6);
+        const fmt = (d: Date) => d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+        return {
+          key,
+          label: `${fmt(w.start)} – ${fmt(end)}`,
+          tasks: w.tasks,
+          habits: w.habits,
+          journalDays: w.journalDays,
+          score: w.tasks + w.habits + w.journalDays,
+          isCurrent: key === currentKey,
+          pct: 0,
+        };
+      });
+    const maxScore = Math.max(1, ...rows.map((r) => r.score));
+    rows.forEach((r) => (r.pct = Math.round((r.score / maxScore) * 100)));
+    return rows;
+  });
 
   ngOnInit() { this.load(); }
 

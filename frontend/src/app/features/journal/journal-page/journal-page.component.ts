@@ -1,4 +1,5 @@
 import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { JournalService } from '../journal.service';
@@ -36,6 +37,48 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
             </span>
           </div>
           <div class="entry-nav">
+            <div class="date-picker-wrap">
+              <button type="button" class="nav-btn cal-trigger" (click)="toggleCal($event)" [class.open]="showCal" title="Pick a date">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              </button>
+
+              @if (showCal) {
+                <div class="cal-backdrop" (click)="showCal = false"></div>
+                <div class="cal-popup" (click)="$event.stopPropagation()">
+                  <div class="cal-head">
+                    <button type="button" class="cal-nav" (click)="shiftCal(-1)" [disabled]="!canShiftCalBack()" title="Previous month">
+                      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <span class="cal-month-label">{{ calMonthLabel }}</span>
+                    <button type="button" class="cal-nav" (click)="shiftCal(1)" [disabled]="!canShiftCalForward()" title="Next month">
+                      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                  </div>
+                  <div class="cal-grid">
+                    @for (dh of calDayHeaders; track dh) {
+                      <span class="cal-dh">{{ dh }}</span>
+                    }
+                    @for (cell of calCells(); track cell.key) {
+                      @if (cell.date) {
+                        <button type="button" class="cal-cell"
+                          [class.selected]="cell.isSelected"
+                          [class.is-today]="cell.isToday"
+                          [class.out-range]="!cell.inRange"
+                          [disabled]="!cell.inRange"
+                          (click)="selectCalDate(cell.date)">
+                          <span class="cal-num">{{ cell.day }}</span>
+                          @if (cell.hasEntry) { <span class="cal-dot"></span> }
+                        </button>
+                      } @else {
+                        <span class="cal-empty"></span>
+                      }
+                    }
+                  </div>
+                  <div class="cal-legend"><span class="leg"><span class="cal-dot"></span>Has entry</span></div>
+                </div>
+              }
+            </div>
+
             <button class="nav-btn" (click)="shiftDate(-1)" [disabled]="!canShiftBack()" title="Previous day">
               <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
@@ -125,6 +168,45 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
     .entry-sub { font-size: 0.72rem; color: var(--text-muted); }
 
     .entry-nav { display: flex; align-items: center; gap: 6px; }
+
+    /* Calendar picker popup (same visual language as the Daily Routine picker) */
+    .date-picker-wrap { position: relative; }
+    .cal-trigger.open { background: var(--bg-hover); color: var(--text-primary); }
+    .cal-backdrop { position: fixed; inset: 0; z-index: 99; }
+    .cal-popup {
+      position: absolute; top: calc(100% + 8px); right: 0; z-index: 100;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px; width: 252px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    }
+    .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .cal-month-label { font-size: 0.88rem; font-weight: 700; color: var(--text-primary); }
+    .cal-nav {
+      width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--border);
+      background: transparent; color: var(--text-secondary); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: all 0.15s; padding: 0;
+    }
+    .cal-nav:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); }
+    .cal-nav:disabled { opacity: 0.25; cursor: not-allowed; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+    .cal-dh { text-align: center; font-size: 0.6rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; padding: 4px 0 6px; }
+    .cal-empty { aspect-ratio: 1; }
+    .cal-cell {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+      aspect-ratio: 1; border-radius: 6px; border: 1px solid transparent;
+      background: transparent; cursor: pointer; padding: 2px;
+      transition: background 0.12s; font-family: inherit;
+    }
+    .cal-cell:hover:not(:disabled):not(.selected) { background: var(--bg-hover); }
+    .cal-cell.selected { background: var(--accent); border-color: transparent; }
+    .cal-cell.is-today:not(.selected) { border-color: var(--accent); }
+    .cal-cell.out-range { opacity: 0.2; cursor: not-allowed; }
+    .cal-num { font-size: 0.75rem; font-weight: 500; color: var(--text-primary); line-height: 1; }
+    .cal-cell.selected .cal-num { color: #fff; font-weight: 700; }
+    .cal-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); display: block; flex-shrink: 0; }
+    .cal-cell.selected .cal-dot { background: #fff; }
+    .cal-legend { display: flex; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+    .leg { display: flex; align-items: center; gap: 4px; font-size: 0.65rem; color: var(--text-muted); }
     .nav-btn {
       width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border);
       background: transparent; color: var(--text-secondary); cursor: pointer; display: flex;
@@ -255,7 +337,16 @@ export class JournalPageComponent implements OnInit, OnDestroy {
     return count;
   });
 
+  private route = inject(ActivatedRoute);
+
   ngOnInit() {
+    // Deep link support: /journal?date=YYYY-MM-DD opens that day's entry
+    // (used by the global search to jump straight to a matched entry).
+    const dateParam = this.route.snapshot.queryParamMap.get('date');
+    if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) && dateParam <= this.journalService.localTodayKey()) {
+      this.selectedDate.set(dateParam);
+    }
+
     // Track word count by listening to body changes; signal proxies via the form
     this.form.valueChanges.subscribe(() => this.wordCount());
 
@@ -280,6 +371,89 @@ export class JournalPageComponent implements OnInit, OnDestroy {
     return this.daysAgo() < 365; // arbitrary cap
   }
   canShiftForward() { return !this.isToday(); }
+
+  // --- Calendar date picker (mirrors the Daily Routine picker; dots = days with entries) ---
+
+  showCal = false;
+  calYear = new Date().getFullYear();
+  calMonth = new Date().getMonth();
+  readonly calDayHeaders = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  get calMonthLabel(): string {
+    return new Date(this.calYear, this.calMonth, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  }
+
+  toggleCal(e: Event) {
+    e.stopPropagation();
+    this.showCal = !this.showCal;
+    if (this.showCal) {
+      const d = new Date(this.selectedDate() + 'T00:00:00');
+      this.calYear = d.getFullYear();
+      this.calMonth = d.getMonth();
+    }
+  }
+
+  private calKey(y: number, m: number, d: number): string {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${y}-${pad(m + 1)}-${pad(d)}`;
+  }
+
+  private calMinDate(): string {
+    const d = new Date();
+    d.setDate(d.getDate() - 365);
+    return this.calKey(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+
+  canShiftCalBack(): boolean {
+    const min = new Date(this.calMinDate() + 'T00:00:00');
+    return this.calYear > min.getFullYear() ||
+      (this.calYear === min.getFullYear() && this.calMonth > min.getMonth());
+  }
+
+  canShiftCalForward(): boolean {
+    const now = new Date();
+    return this.calYear < now.getFullYear() ||
+      (this.calYear === now.getFullYear() && this.calMonth < now.getMonth());
+  }
+
+  shiftCal(delta: number) {
+    let m = this.calMonth + delta;
+    let y = this.calYear;
+    if (m < 0) { m = 11; y--; }
+    if (m > 11) { m = 0; y++; }
+    this.calMonth = m;
+    this.calYear = y;
+  }
+
+  selectCalDate(date: string) {
+    this.selectDate(date);
+    this.showCal = false;
+  }
+
+  calCells(): Array<{ key: string; date: string | null; day: number; isSelected: boolean; isToday: boolean; inRange: boolean; hasEntry: boolean }> {
+    const firstDow = new Date(this.calYear, this.calMonth, 1).getDay(); // 0=Sun
+    const startOffset = (firstDow + 6) % 7; // Mon-first grid
+    const daysInMonth = new Date(this.calYear, this.calMonth + 1, 0).getDate();
+    const todayK = this.journalService.localTodayKey();
+    const minDate = this.calMinDate();
+    const entryDates = new Set(this.entries().map((e) => e.date));
+
+    const cells: Array<{ key: string; date: string | null; day: number; isSelected: boolean; isToday: boolean; inRange: boolean; hasEntry: boolean }> = [];
+    for (let i = 0; i < startOffset; i++) {
+      cells.push({ key: `e${i}`, date: null, day: 0, isSelected: false, isToday: false, inRange: false, hasEntry: false });
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateKey = this.calKey(this.calYear, this.calMonth, d);
+      cells.push({
+        key: dateKey, date: dateKey, day: d,
+        isSelected: dateKey === this.selectedDate(),
+        isToday: dateKey === todayK,
+        inRange: dateKey >= minDate && dateKey <= todayK,
+        hasEntry: entryDates.has(dateKey),
+      });
+    }
+    return cells;
+  }
 
   shiftDate(delta: number) {
     const d = new Date(this.selectedDate() + 'T00:00:00');

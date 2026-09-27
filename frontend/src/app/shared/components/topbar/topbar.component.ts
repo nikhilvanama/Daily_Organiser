@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { ThemeService } from '../../../core/services/theme.service';
+import { GlobalSearchService } from '../global-search/global-search.component';
 import { GoogleCalendarService } from '../../../core/services/google-calendar.service';
 import { ToastService } from '../../../core/services/toast.service';
 
@@ -28,6 +29,11 @@ import { ToastService } from '../../../core/services/toast.service';
       </div>
 
       <div class="topbar-right">
+        <!-- Global search (Ctrl+K) -->
+        <button class="tb-icon-btn" (click)="globalSearch.open()" title="Search everything (Ctrl+K)">
+          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
+
         <!-- Theme toggle -->
         <!-- Cycles light → dark → paper; the icon hints at the NEXT theme -->
         <button class="tb-icon-btn" (click)="themeService.toggle()"
@@ -132,6 +138,7 @@ import { ToastService } from '../../../core/services/toast.service';
 export class TopbarComponent implements OnInit {
   auth = inject(AuthService);
   themeService = inject(ThemeService);
+  globalSearch = inject(GlobalSearchService);
   gcal = inject(GoogleCalendarService);
   private toast = inject(ToastService);
   private router = inject(Router);

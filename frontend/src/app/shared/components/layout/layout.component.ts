@@ -1,4 +1,4 @@
-import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, HostListener, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map, startWith } from 'rxjs/operators';
@@ -7,13 +7,14 @@ import { TopbarComponent } from '../topbar/topbar.component';
 import { ToastContainerComponent } from '../toast-container/toast-container.component';
 import { ThemeService } from '../../../core/services/theme.service';
 import { IdleService } from '../../../core/services/idle.service';
+import { GlobalSearchComponent, GlobalSearchService } from '../global-search/global-search.component';
 
 const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
 
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [RouterOutlet, SidebarComponent, TopbarComponent, ToastContainerComponent],
+  imports: [RouterOutlet, SidebarComponent, TopbarComponent, ToastContainerComponent, GlobalSearchComponent],
   template: `
     <div class="layout">
       <!-- Mobile top bar -->
@@ -52,6 +53,7 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
       </div>
     </div>
     <app-toast-container />
+    <app-global-search />
   `,
   styles: [`
     :host { display: block; height: 100vh; }
@@ -108,7 +110,17 @@ export class LayoutComponent implements OnInit, OnDestroy {
   themeService = inject(ThemeService);
   private idle = inject(IdleService);
   private router = inject(Router);
+  private globalSearch = inject(GlobalSearchService);
   sidebarOpen = signal(false);
+
+  // Ctrl+K (or Cmd+K on Mac) opens the global search from anywhere in the app
+  @HostListener('document:keydown', ['$event'])
+  onKeydown(e: KeyboardEvent) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      this.globalSearch.open();
+    }
+  }
 
   isBoardRoute = toSignal(
     this.router.events.pipe(

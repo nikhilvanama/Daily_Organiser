@@ -134,6 +134,14 @@ import { ACCENT_OPTIONS, AccentOption, ThemeService } from '../../core/services/
             </h3>
 
             <div class="form-group">
+              <label class="toggle-row">
+                <span>Auto theme — light by day (6am–7pm), dark by night</span>
+                <input type="checkbox" class="toggle" [checked]="themeService.autoMode()"
+                       (change)="themeService.setAuto($any($event.target).checked)" />
+              </label>
+            </div>
+
+            <div class="form-group">
               <label class="label">Theme</label>
               <div class="theme-cards">
                 <button type="button" class="theme-card" [class.selected]="themeService.theme() === 'light'" (click)="themeService.setTheme('light')">

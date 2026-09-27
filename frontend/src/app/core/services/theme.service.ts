@@ -38,10 +38,14 @@ export const ACCENT_OPTIONS: AccentOption[] = [
 export class ThemeService {
   private readonly STORAGE_KEY = 'tf_theme';
   private readonly ACCENT_KEY = 'tf_accent';
+  private readonly AUTO_KEY = 'tf_theme_auto';
 
   // Reactive signals — components read these to show the correct active states
   theme = signal<Theme>('light');
   accent = signal<string>('emerald');
+  // Auto mode: light during the day (06:00–18:59), dark at night. Manually
+  // picking a theme switches auto off so the user's explicit choice wins.
+  autoMode = signal<boolean>(false);
 
   constructor() {
     // Restore saved accent first so the first applyTheme() paints the right colors
@@ -49,21 +53,46 @@ export class ThemeService {
     if (savedAccent && ACCENT_OPTIONS.some((a) => a.id === savedAccent)) {
       this.accent.set(savedAccent);
     }
-    // Saved theme preference takes priority over the OS-level dark mode setting
-    const saved = localStorage.getItem(this.STORAGE_KEY) as Theme | null;
-    const preferred = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    this.applyTheme(saved && THEMES.includes(saved) ? saved : preferred);
+    if (localStorage.getItem(this.AUTO_KEY) === '1') {
+      this.autoMode.set(true);
+      this.applyTheme(this.themeForClock());
+    } else {
+      // Saved theme preference takes priority over the OS-level dark mode setting
+      const saved = localStorage.getItem(this.STORAGE_KEY) as Theme | null;
+      const preferred = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      this.applyTheme(saved && THEMES.includes(saved) ? saved : preferred);
+    }
+    // Re-check every 10 minutes so the theme flips at sunset without a reload
+    setInterval(() => {
+      if (this.autoMode() && this.theme() !== this.themeForClock()) {
+        this.applyTheme(this.themeForClock());
+      }
+    }, 10 * 60 * 1000);
   }
 
   // Cycle light → dark → paper → light — called by the topbar theme button
   toggle() {
     const next = THEMES[(THEMES.indexOf(this.theme()) + 1) % THEMES.length];
-    this.applyTheme(next);
+    this.setTheme(next);
   }
 
-  // Explicitly select a theme — called by the Profile → Appearance theme cards
+  // Explicitly select a theme — called by the Profile → Appearance theme cards.
+  // A manual pick disables auto mode (the user's choice should stick).
   setTheme(t: Theme) {
+    if (this.autoMode()) this.setAuto(false);
     this.applyTheme(t);
+  }
+
+  // Turn day/night auto-switching on or off — called by the Appearance toggle
+  setAuto(on: boolean) {
+    this.autoMode.set(on);
+    localStorage.setItem(this.AUTO_KEY, on ? '1' : '0');
+    if (on) this.applyTheme(this.themeForClock());
+  }
+
+  private themeForClock(): Theme {
+    const h = new Date().getHours();
+    return h >= 6 && h < 19 ? 'light' : 'dark';
   }
 
   // Select a primary color — called by the Profile → Appearance color swatches
