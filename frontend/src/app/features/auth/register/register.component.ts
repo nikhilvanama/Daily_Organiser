@@ -79,6 +79,11 @@ import { ToastService } from '../../../core/services/toast.service';
     [data-theme="dark"] .auth-page::before { background: rgba(9, 9, 11, 0.35); }
     /* Auth card: slightly wider than login to accommodate the two-column row */
     .auth-card { width: 100%; max-width: 440px; padding: 2.5rem; position: relative; z-index: 1; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18); }
+    /* Mobile: card at the top so the artwork's bottom detail stays visible */
+    @media (max-width: 640px) {
+      .auth-page { align-items: flex-start; padding: 2rem 1rem 1rem; }
+      .auth-card { padding: 1.5rem; }
+    }
     /* Centered header with bottom margin */
     .header { text-align: center; margin-bottom: 2rem; }
     /* Logo row */

@@ -89,7 +89,12 @@ import { ToastService } from '../../../core/services/toast.service';
     .auth-page::before { content: ''; position: absolute; inset: 0; background: rgba(255, 255, 255, 0.12); }
     [data-theme="dark"] .auth-page::before { background: rgba(9, 9, 11, 0.35); }
     .auth-card { width: 100%; max-width: 400px; padding: 2.5rem; position: relative; z-index: 1; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18); }
-    @media (max-width: 480px) { .auth-card { padding: 1.5rem; } .auth-page { padding: 1rem; } }
+    /* Mobile: pin the card to the top so the desk illustration at the bottom
+       of the portrait artwork stays fully visible under the form */
+    @media (max-width: 640px) {
+      .auth-page { align-items: flex-start; padding: 2rem 1rem 1rem; }
+      .auth-card { padding: 1.5rem; }
+    }
     /* Centered header with bottom margin for spacing */
     .header { text-align: center; margin-bottom: 2rem; }
     /* Logo row: inline-flex to center the icon + text pair */

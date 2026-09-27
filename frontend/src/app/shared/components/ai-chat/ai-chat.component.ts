@@ -6,10 +6,19 @@ import { TripService } from '../../../features/trips/trip.service';
 import { PLAN_TYPES } from '../../../core/models/task.model';
 import { CreateTripDto } from '../../../core/models/trip.model';
 
+// What "Undo" on a success bubble should do. Journal undo restores the entry
+// exactly as it was before the AI touched it (or removes it if it was new).
+type UndoAction =
+  | { type: 'task'; id: string }
+  | { type: 'trip'; id: string }
+  | { type: 'journal'; date: string; prev: { title: string | null; body: string; mood: string | null } | null };
+
 interface ChatMsg {
   role: 'user' | 'bot';
   text: string;
-  ok?: boolean; // bot messages: true = plan created, false = error
+  ok?: boolean; // bot messages: true = created, false = error
+  undo?: UndoAction;
+  undone?: boolean;
 }
 
 // Floating AI assistant, available on every screen (mounted in the layout).
@@ -51,9 +60,15 @@ interface ChatMsg {
               <button class="ai-example" (click)="useExample('Add a trip to Hyderabad from Oct 2 to Oct 4')">"Add a trip to Hyderabad from Oct 2 to Oct 4"</button>
             </div>
           }
-          @for (m of messages(); track $index) {
+          @for (m of messages(); track $index; let i = $index) {
             <div class="msg" [class.user]="m.role === 'user'" [class.err]="m.role === 'bot' && m.ok === false">
               {{ m.text }}
+              @if (m.undo && !m.undone) {
+                <button class="undo-btn" (click)="undo(i)">↩ Undo</button>
+              }
+              @if (m.undone) {
+                <span class="undone-tag">Removed</span>
+              }
             </div>
           }
           @if (thinking()) {
@@ -62,9 +77,15 @@ interface ChatMsg {
         </div>
 
         <div class="ai-input-row">
-          <input #inp class="ai-input" type="text" placeholder="Type a plan…"
+          <input #inp class="ai-input" type="text" [placeholder]="listening() ? 'Listening…' : 'Type or speak a plan…'"
                  [value]="draft()" (input)="draft.set($any($event.target).value)"
                  (keydown.enter)="send()" [disabled]="thinking()" />
+          @if (voiceSupported) {
+            <button class="ai-mic" [class.listening]="listening()" (click)="toggleVoice()"
+                    [title]="listening() ? 'Stop listening' : 'Speak instead of typing'">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            </button>
+          }
           <button class="ai-send" (click)="send()" [disabled]="thinking() || draft().trim().length < 3" title="Add plan">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           </button>
@@ -148,6 +169,29 @@ interface ChatMsg {
     .ai-send:hover:not(:disabled) { background: var(--accent-hover); }
     .ai-send:disabled { opacity: 0.45; cursor: not-allowed; }
 
+    /* Mic button — pulses red while listening */
+    .ai-mic {
+      width: 38px; border-radius: 10px; border: 1px solid var(--border); cursor: pointer;
+      background: transparent; color: var(--text-secondary);
+      display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+    }
+    .ai-mic:hover { color: var(--text-primary); background: var(--bg-hover); }
+    .ai-mic.listening { background: #ef4444; border-color: #ef4444; color: #fff; animation: mic-pulse 1.2s infinite; }
+    @keyframes mic-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.45); }
+      50% { box-shadow: 0 0 0 7px rgba(239, 68, 68, 0); }
+    }
+
+    /* Undo affordance on success bubbles */
+    .undo-btn {
+      display: block; margin-top: 7px; padding: 3px 10px;
+      font-size: 0.7rem; font-weight: 600; font-family: inherit; cursor: pointer;
+      background: transparent; color: inherit; border: 1px solid currentColor;
+      border-radius: 6px; opacity: 0.75; transition: opacity 0.15s;
+    }
+    .undo-btn:hover { opacity: 1; }
+    .undone-tag { display: block; margin-top: 6px; font-size: 0.68rem; font-weight: 600; opacity: 0.6; }
+
     @media (max-width: 640px) {
       .ai-fab { bottom: 16px; right: 16px; }
       .ai-panel { bottom: 78px; right: 16px; }
@@ -167,6 +211,57 @@ export class AiChatComponent {
   draft = signal('');
   thinking = signal(false);
   messages = signal<ChatMsg[]>([]);
+  listening = signal(false);
+
+  // Web Speech API (built into Chrome/Edge/Android — free, no server involved)
+  private recognition: any = null;
+  readonly voiceSupported = typeof window !== 'undefined'
+    && !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+
+  toggleVoice() {
+    if (this.listening()) { this.recognition?.stop(); return; }
+    const Ctor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!Ctor) return;
+    const rec = new Ctor();
+    this.recognition = rec;
+    rec.lang = 'en-IN';
+    rec.interimResults = true;
+    rec.continuous = false;
+    const base = this.draft() ? this.draft().trim() + ' ' : '';
+    rec.onresult = (ev: any) => {
+      let transcript = '';
+      for (let i = 0; i < ev.results.length; i++) transcript += ev.results[i][0].transcript;
+      this.draft.set(base + transcript);
+    };
+    rec.onend = () => { this.listening.set(false); this.inp?.nativeElement.focus(); };
+    rec.onerror = () => this.listening.set(false);
+    this.listening.set(true);
+    rec.start();
+  }
+
+  // Undo the entity a success bubble created; journal restores the previous state.
+  undo(index: number) {
+    const m = this.messages()[index];
+    const u = m?.undo;
+    if (!u || m.undone) return;
+    const markUndone = () => this.messages.update((list) =>
+      list.map((msg, i) => (i === index ? { ...msg, undone: true } : msg)));
+    const failed = () => this.push({ role: 'bot', text: 'Undo failed — remove it manually.', ok: false });
+
+    if (u.type === 'task') {
+      this.taskService.delete(u.id).subscribe({ next: markUndone, error: failed });
+    } else if (u.type === 'trip') {
+      this.tripService.delete(u.id).subscribe({ next: markUndone, error: failed });
+    } else if (u.prev) {
+      this.journalService.upsert(u.date, {
+        body: u.prev.body,
+        title: u.prev.title ?? undefined,
+        mood: u.prev.mood ?? undefined,
+      }).subscribe({ next: markUndone, error: failed });
+    } else {
+      this.journalService.remove(u.date).subscribe({ next: markUndone, error: failed });
+    }
+  }
 
   toggle() {
     this.open.update((v) => !v);
@@ -208,7 +303,7 @@ export class AiChatComponent {
           t.dueDate ? `📅 ${t.dueDate}${t.startTime ? ' · ' + t.startTime : ''}` : null,
           t.location ? `📍 ${t.location}` : null,
         ].filter(Boolean);
-        this.push({ role: 'bot', text: bits.join('\n'), ok: true });
+        this.push({ role: 'bot', text: bits.join('\n'), ok: true, undo: { type: 'task', id: t.id } });
       },
       error: () => this.saveFailed(),
     });
@@ -227,6 +322,7 @@ export class AiChatComponent {
               mood: existing.mood || draft.mood,
             }
           : { body: draft.body, title: draft.title, mood: draft.mood };
+        const prev = existing ? { title: existing.title, body: existing.body, mood: existing.mood } : null;
         this.journalService.upsert(draft.date, dto).subscribe({
           next: (e) => {
             this.thinking.set(false);
@@ -234,6 +330,7 @@ export class AiChatComponent {
               role: 'bot',
               text: `📓 ${existing ? 'Added to' : 'Saved'} your journal for ${draft.date}${e.title ? ` — "${e.title}"` : ''}\n\n${draft.body}`,
               ok: true,
+              undo: { type: 'journal', date: draft.date, prev },
             });
           },
           error: () => this.saveFailed(),
@@ -252,7 +349,7 @@ export class AiChatComponent {
           t.startDate ? `🗓 ${t.startDate}${t.endDate && t.endDate !== t.startDate ? ' → ' + t.endDate : ''}` : null,
           `📌 ${t.status === 'BUCKET' ? 'Bucket List' : t.status === 'PLANNING' ? 'Planning' : t.status === 'BOOKED' ? 'Booked' : 'Visited'} column`,
         ].filter(Boolean);
-        this.push({ role: 'bot', text: bits.join('\n'), ok: true });
+        this.push({ role: 'bot', text: bits.join('\n'), ok: true, undo: { type: 'trip', id: t.id } });
       },
       error: () => this.saveFailed(),
     });

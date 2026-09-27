@@ -97,7 +97,9 @@ interface CalendarDay {
         }
       </div>
 
-      <!-- 7-column grid: day labels header + 42 day cells (6 weeks to cover any month layout) -->
+      <!-- 7-column grid: day labels header + 42 day cells (6 weeks to cover any month layout).
+           The wrapper scrolls horizontally on mobile so day blocks stay big and readable. -->
+      <div class="cal-scroll">
       <div class="cal-grid card">
         <!-- Day-of-week labels: Sun through Sat -->
         @for (day of dayLabels; track day; let i = $index) {
@@ -163,6 +165,7 @@ interface CalendarDay {
             </div>
           </div>
         }
+      </div>
       </div>
     </div>
 
@@ -496,14 +499,17 @@ interface CalendarDay {
 
     @media (max-width: 768px) {
       .month-title-btn { font-size: 0.9rem; padding: 5px 10px; }
-      .cal-cell { min-height: 70px; padding: 4px; }
-      .cal-date { font-size: 0.7rem; width: 20px; height: 20px; }
-      .cal-label { padding: 6px 2px; font-size: 0.6rem; }
-      .cal-task-chip { font-size: 0.55rem; padding: 1px 3px; }
-      .chip-time { display: none; }
-      .cal-more { font-size: 0.55rem; }
+      .cal-header { flex-wrap: wrap; gap: 0.5rem; }
+      /* Big readable blocks: the grid keeps ~104px-wide cells and scrolls
+         sideways instead of squeezing seven days into a phone screen */
+      .cal-scroll {
+        overflow-x: auto; -webkit-overflow-scrolling: touch;
+        margin: 0 -1rem; padding: 0 1rem 6px; /* bleed to screen edges */
+        scrollbar-width: thin;
+      }
+      .cal-grid { min-width: 730px; }
+      .cal-cell { min-height: 104px; }
       .day-panel { width: 100%; }
-      .cal-cell.today .cal-date { width: 22px; height: 18px; font-size: 0.7rem; border-radius: 6px; }
     }
   `],
 })
