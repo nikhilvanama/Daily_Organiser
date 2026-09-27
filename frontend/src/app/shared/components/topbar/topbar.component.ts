@@ -82,6 +82,11 @@ import { ToastService } from '../../../core/services/toast.service';
       background: var(--bg-primary); border-bottom: 1px solid var(--border);
       box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
+    /* On phones the layout shows its own fixed mobile topbar — hide this one
+       entirely so it doesn't add a second header's worth of empty space. */
+    @media (max-width: 768px) {
+      .topbar { display: none; }
+    }
 
     .breadcrumb { display: flex; align-items: center; gap: 7px; }
     .bc-dim { font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); }

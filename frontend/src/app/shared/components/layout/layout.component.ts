@@ -69,8 +69,8 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
     .sidebar-overlay { display: none; }
 
     @media (max-width: 768px) {
-      /* 52px fixed mobile topbar + 10px breathing room — no dead space below the header */
-      .layout-content { padding: 1rem; padding-top: 62px; }
+      /* 52px fixed mobile topbar + exactly 1rem gap below it */
+      .layout-content { padding: 1rem; padding-top: calc(52px + 1rem); }
 
       .mobile-topbar {
         display: flex; align-items: center; gap: 10px;
