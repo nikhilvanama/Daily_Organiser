@@ -1,8 +1,9 @@
 // Import Injectable for DI registration and signal for reactive theme state
 import { Injectable, signal } from '@angular/core';
 
-// Theme type — the app supports two visual modes toggled via the sidebar button
-export type Theme = 'light' | 'dark';
+// Theme type — light, dark, and "paper" (a warm cream planner-notebook look)
+export type Theme = 'light' | 'dark' | 'paper';
+export const THEMES: Theme[] = ['light', 'dark', 'paper'];
 
 // An accent (primary color) choice. Each palette carries separate shades for the
 // light and dark themes because dark surfaces need a lighter tint for contrast —
@@ -48,12 +49,13 @@ export class ThemeService {
     // Saved theme preference takes priority over the OS-level dark mode setting
     const saved = localStorage.getItem(this.STORAGE_KEY) as Theme | null;
     const preferred = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    this.applyTheme(saved ?? preferred);
+    this.applyTheme(saved && THEMES.includes(saved) ? saved : preferred);
   }
 
-  // Toggle between light and dark themes — called by the sidebar theme button
+  // Cycle light → dark → paper → light — called by the topbar theme button
   toggle() {
-    this.applyTheme(this.theme() === 'light' ? 'dark' : 'light');
+    const next = THEMES[(THEMES.indexOf(this.theme()) + 1) % THEMES.length];
+    this.applyTheme(next);
   }
 
   // Explicitly select a theme — called by the Profile → Appearance theme cards

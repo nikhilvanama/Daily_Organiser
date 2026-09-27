@@ -82,15 +82,24 @@ import { AuthService } from '../../../core/services/auth.service';
     </aside>
   `,
   styles: [`
+    /* Light theme (default): a light sidebar that matches the rest of the page */
     :host { display: flex; height: 100vh; flex-shrink: 0;
-      --sidebar-bg: #111318; --sidebar-border: rgba(255,255,255,0.06); --sidebar-text: #b0b4bc;
-      --sidebar-text-dim: #6b7280; --sidebar-hover: rgba(255,255,255,0.05);
-      --sidebar-active-bg: rgba(16,185,129,0.12); --sidebar-active-text: #34d399;
+      --sidebar-bg: #ffffff; --sidebar-border: #e5e7eb; --sidebar-text: #52525b;
+      --sidebar-text-dim: #a1a1aa; --sidebar-hover: rgba(0,0,0,0.045);
+      --sidebar-text-strong: #111827; --sidebar-logo-text: #111827;
+      --sidebar-hover-border: rgba(0,0,0,0.08);
     }
     :host-context([data-theme="dark"]) {
       --sidebar-bg: #09090b; --sidebar-border: #1a1a1e; --sidebar-text: #a1a1aa;
       --sidebar-text-dim: #52525b; --sidebar-hover: rgba(255,255,255,0.04);
-      --sidebar-active-bg: rgba(52,211,153,0.1); --sidebar-active-text: #6ee7b7;
+      --sidebar-text-strong: #e2e8f0; --sidebar-logo-text: #ffffff;
+      --sidebar-hover-border: rgba(255,255,255,0.08);
+    }
+    :host-context([data-theme="paper"]) {
+      --sidebar-bg: #f7f1e4; --sidebar-border: #e4dac6; --sidebar-text: #71675a;
+      --sidebar-text-dim: #a89c89; --sidebar-hover: rgba(120,90,40,0.06);
+      --sidebar-text-strong: #3b332b; --sidebar-logo-text: #3b332b;
+      --sidebar-hover-border: rgba(120,90,40,0.14);
     }
 
     .sidebar { width: 250px; min-width: 250px; height: 100vh; background: var(--sidebar-bg); display: flex; flex-direction: column; border-right: 1px solid var(--sidebar-border); overflow: hidden; }
@@ -99,7 +108,7 @@ import { AuthService } from '../../../core/services/auth.service';
     .sidebar-header { flex-shrink: 0; height: 64px; display: flex; align-items: center; padding: 0 0.75rem; border-bottom: 1px solid var(--sidebar-border); }
     .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
     .logo-icon { width: 34px; height: 34px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(16,185,129,0.35); flex-shrink: 0; }
-    .logo-text { color: #fff; font-weight: 700; font-size: 0.95rem; letter-spacing: -0.01em; }
+    .logo-text { color: var(--sidebar-logo-text); font-weight: 700; font-size: 0.95rem; letter-spacing: -0.01em; }
 
     /* Scrollable nav */
     .sidebar-nav-area { flex: 1; overflow-y: auto; padding: 0.25rem 0.75rem 1rem; }
@@ -120,13 +129,14 @@ import { AuthService } from '../../../core/services/auth.service';
       text-decoration: none; transition: all 0.15s; cursor: pointer;
     }
     .nav-link svg { flex-shrink: 0; opacity: 0.55; transition: opacity 0.15s; }
-    .nav-link:hover { background: var(--sidebar-hover); color: #e2e8f0; border-left-color: rgba(255,255,255,0.08); }
+    .nav-link:hover { background: var(--sidebar-hover); color: var(--sidebar-text-strong); border-left-color: var(--sidebar-hover-border); }
     .nav-link:hover svg { opacity: 0.9; }
 
+    /* Active link follows the user-chosen accent color (see ThemeService) */
     .nav-link.active {
-      background: rgba(16,185,129,0.1);
-      border-left-color: #10b981;
-      color: #34d399; font-weight: 600;
+      background: var(--accent-subtle);
+      border-left-color: var(--accent);
+      color: var(--accent); font-weight: 600;
     }
     .nav-link.active svg { opacity: 1; }
 

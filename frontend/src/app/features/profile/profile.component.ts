@@ -150,6 +150,13 @@ import { ACCENT_OPTIONS, AccentOption, ThemeService } from '../../core/services/
                   </span>
                   <span class="theme-name">🌙 Dark</span>
                 </button>
+                <button type="button" class="theme-card" [class.selected]="themeService.theme() === 'paper'" (click)="themeService.setTheme('paper')">
+                  <span class="theme-preview prev-paper">
+                    <span class="prev-sidebar"></span>
+                    <span class="prev-body"><span class="prev-line"></span><span class="prev-line short"></span></span>
+                  </span>
+                  <span class="theme-name">📒 Paper</span>
+                </button>
               </div>
             </div>
 
@@ -250,9 +257,11 @@ import { ACCENT_OPTIONS, AccentOption, ThemeService } from '../../core/services/
     .theme-preview { display: flex; width: 100%; height: 56px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
     .prev-light { background: #f8fafc; }
     .prev-dark { background: #09090b; }
+    .prev-paper { background: #faf6ee; }
     .prev-sidebar { width: 26%; height: 100%; }
     .prev-light .prev-sidebar { background: #ffffff; border-right: 1px solid #e2e8f0; }
     .prev-dark .prev-sidebar { background: #18181b; border-right: 1px solid #27272a; }
+    .prev-paper .prev-sidebar { background: #f7f1e4; border-right: 1px solid #e4dac6; }
     .prev-body { flex: 1; display: flex; flex-direction: column; gap: 5px; padding: 9px 8px; }
     .prev-line { height: 6px; border-radius: 3px; background: var(--accent); opacity: 0.9; }
     .prev-line.short { width: 55%; opacity: 0.35; }

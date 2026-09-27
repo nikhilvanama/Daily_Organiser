@@ -83,6 +83,38 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   PAPER THEME — Applied when <html> has data-theme="paper".
+   A warm cream "planner notebook" look: paper-toned surfaces, warm
+   brown-gray text, and soft warm shadows. Matches the app's journal /
+   stationery personality (see the login illustration).
+   ═══════════════════════════════════════════════════════════════════ */
+[data-theme="paper"] {
+  --bg-primary: #faf6ee; /* Warm cream page background */
+  --bg-secondary: #f3ecdf; /* Slightly deeper cream for layout areas */
+  --bg-tertiary: #ece3d1; /* Third-level warm tone */
+  --bg-sidebar: #f7f1e4; /* Sidebar: soft parchment */
+  --bg-card: #fffcf5; /* Cards: bright paper, lifted from the page */
+  --bg-input: #f3ecdf; /* Inputs: match secondary cream */
+  --bg-hover: #efe7d6; /* Hover: warm beige */
+
+  --text-primary: #3b332b; /* Warm near-black (dark coffee) */
+  --text-secondary: #71675a; /* Warm mid gray-brown */
+  --text-muted: #9c9182; /* Warm muted tan */
+  --text-sidebar: #71675a;
+
+  --border: #e4dac6; /* Warm sand borders */
+  --border-light: #efe8d9;
+
+  --weekend-bg: #efe8d8;
+  --weekend-bg-dim: #e9e1cf;
+
+  /* Warm-tinted shadows so elevation feels like paper, not plastic */
+  --shadow-sm: 0 1px 2px rgb(93 64 20 / 0.06);
+  --shadow-md: 0 4px 6px -1px rgb(93 64 20 / 0.09), 0 2px 4px -2px rgb(93 64 20 / 0.06);
+  --shadow-lg: 0 10px 25px -5px rgb(93 64 20 / 0.14);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    RESET & BASE — Global CSS reset and base typography.
    Ensures consistent box-sizing, removes default margins/padding,
    and sets the Inter font stack as the default typeface.
