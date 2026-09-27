@@ -14,6 +14,32 @@ export interface ParsedPlan {
   location?: string;
 }
 
+// A polished journal entry — the frontend passes this to PUT /api/journal/:date.
+export interface ParsedJournal {
+  date: string; // YYYY-MM-DD; mentioned date, else today
+  title?: string;
+  mood?: string; // one of the app's mood emojis
+  body: string;
+}
+
+// A trip draft — the frontend passes this to POST /api/trips.
+export interface ParsedTrip {
+  title: string;
+  destination?: string;
+  startDate?: string;
+  endDate?: string;
+  status?: 'BUCKET' | 'PLANNING' | 'BOOKED' | 'VISITED';
+  notes?: string;
+}
+
+// Discriminated result: what the sentence turned out to be.
+export type QuickAddResult =
+  | { kind: 'plan'; plan: ParsedPlan }
+  | { kind: 'journal'; journal: ParsedJournal }
+  | { kind: 'trip'; trip: ParsedTrip };
+
+const MOODS = ['😊', '😌', '💪', '🎯', '😐', '😔', '😴', '🤔'];
+
 const VALID_TYPES = ['task', 'trip', 'train', 'dinner', 'meeting', 'event', 'reminder', 'outing', 'health', 'celebration'];
 
 // Google retires model names over time (gemini-2.0-flash died with a 404), so we
@@ -29,7 +55,7 @@ const geminiUrl = (model: string) =>
 // The API key lives ONLY in the backend env (GEMINI_API_KEY) — never in Angular.
 @Injectable()
 export class AiService {
-  async quickAdd(text: string): Promise<ParsedPlan> {
+  async quickAdd(text: string): Promise<QuickAddResult> {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       throw new ServiceUnavailableException('AI is not configured — set GEMINI_API_KEY on the server');
@@ -40,22 +66,37 @@ export class AiService {
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const weekday = now.toLocaleDateString('en-US', { weekday: 'long' });
 
-    const prompt = `You convert a short natural-language sentence into a JSON plan object for a personal organizer app used in India.
+    const prompt = `You are the assistant inside a personal organizer app used in India. Convert the user's message into ONE JSON object. Today is ${weekday}, ${today}. Times are local. Resolve every relative date from today ("tomorrow", "next friday", "sept 19" = the most recent/relevant occurrence).
 
-Today is ${weekday}, ${today}. Times the user gives are local.
+First decide "kind":
+- "journal" — the user is describing what they DID or experienced (past tense day recap, feelings), or says journal/diary/"note down my day".
+- "trip" — the user wants to add/plan a trip or vacation to some place ("add a trip to Hyd from oct 2 to oct 4").
+- "plan" — everything else: an upcoming task, meeting, meal, reminder, appointment, outing.
 
-Return ONLY a JSON object with these fields (omit any field you cannot infer — never invent details):
-- "title": string, required. Short and clean, e.g. "Lunch with Ravi" — drop date/time/location words from it.
-- "type": one of ${JSON.stringify(VALID_TYPES)}. Pick the best fit: food/meals="dinner", travel to another city/vacation="trip", bus/train/commute journeys="train", calls/meetings="meeting", movies/malls/hangouts="outing", doctor/medicine/checkups="health", birthdays/weddings/festivals="celebration", conferences/shows="event", things to remember="reminder", anything else="task".
-- "dueDate": "YYYY-MM-DD". Resolve relative dates from today: "tomorrow", "next friday", "on 15th" (next occurrence). Omit if no date mentioned.
-- "endDate": "YYYY-MM-DD", only for multi-day spans ("15th to 18th").
-- "startTime": "HH:mm" 24-hour ("1pm"="13:00", "morning"="09:00", "evening"="18:00", "night"="21:00"). Omit if none.
-- "endTime": "HH:mm", only when a range or duration is given.
-- "location": string, the place name if mentioned.
-- "description": string, any leftover useful detail (who is coming, what to carry). Omit if nothing left.
-- "priority": "LOW" | "MEDIUM" | "HIGH", only if urgency is expressed ("urgent", "important" = HIGH).
+Shape by kind (omit fields you cannot infer — NEVER invent facts):
 
-Sentence: ${JSON.stringify(text.trim())}`;
+kind="plan": {"kind":"plan","plan":{
+  "title": required, short and clean ("Lunch with Ravi") — drop date/time/location words,
+  "type": one of ${JSON.stringify(VALID_TYPES)} (food="dinner", city travel="trip", bus/train="train", calls="meeting", movies/malls="outing", doctor="health", birthdays/weddings/festivals="celebration", conferences="event", remember-to="reminder", else "task"),
+  "dueDate":"YYYY-MM-DD", "endDate": only for multi-day spans,
+  "startTime":"HH:mm" 24h ("1pm"="13:00","morning"="09:00","evening"="18:00","night"="21:00"), "endTime": only if range given,
+  "location": place if mentioned, "description": leftover useful detail,
+  "priority":"LOW"|"MEDIUM"|"HIGH" only if urgency expressed}}
+
+kind="journal": {"kind":"journal","journal":{
+  "date":"YYYY-MM-DD" — the day being described; today if none mentioned,
+  "title": short headline (max 60 chars, e.g. "Exploring Vijayawada"),
+  "mood": ONE emoji from ${JSON.stringify(MOODS)} matching the tone (omit if unclear),
+  "body": REWRITE the user's rough notes into a warm first-person journal entry, 60–140 words. Natural flowing sentences, fix grammar, keep EVERY fact and name they mentioned, add nothing they didn't say.}}
+
+kind="trip": {"kind":"trip","trip":{
+  "title": like "Hyderabad Trip",
+  "destination": the place,
+  "startDate"/"endDate":"YYYY-MM-DD" if dates given,
+  "status": "BOOKED" if tickets/booking mentioned, "VISITED" if the trip is entirely in the past, "PLANNING" if dates are set, "BUCKET" if no dates,
+  "notes": who is going, budget, ideas — leftover detail}}
+
+Message: ${JSON.stringify(text.trim())}`;
 
     const raw = await this.callGemini(apiKey, prompt);
 
@@ -66,7 +107,37 @@ Sentence: ${JSON.stringify(text.trim())}`;
       throw new ServiceUnavailableException('AI returned invalid JSON');
     }
 
-    return this.sanitize(parsed);
+    if (parsed?.kind === 'journal') return { kind: 'journal', journal: this.sanitizeJournal(parsed.journal, today) };
+    if (parsed?.kind === 'trip') return { kind: 'trip', trip: this.sanitizeTrip(parsed.trip) };
+    return { kind: 'plan', plan: this.sanitize(parsed?.plan ?? parsed) };
+  }
+
+  private sanitizeJournal(j: any, today: string): ParsedJournal {
+    if (!j || typeof j.body !== 'string' || !j.body.trim()) {
+      throw new BadRequestException('Could not turn that into a journal entry — add a bit more detail');
+    }
+    const isDate = (v: any) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+    const out: ParsedJournal = {
+      date: isDate(j.date) ? j.date : today,
+      body: j.body.trim().slice(0, 5000),
+    };
+    if (typeof j.title === 'string' && j.title.trim()) out.title = j.title.trim().slice(0, 120);
+    if (typeof j.mood === 'string' && MOODS.includes(j.mood)) out.mood = j.mood;
+    return out;
+  }
+
+  private sanitizeTrip(t: any): ParsedTrip {
+    if (!t || typeof t.title !== 'string' || !t.title.trim()) {
+      throw new BadRequestException('Could not understand the trip — tell me the destination');
+    }
+    const isDate = (v: any) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+    const out: ParsedTrip = { title: t.title.trim().slice(0, 200) };
+    if (typeof t.destination === 'string' && t.destination.trim()) out.destination = t.destination.trim().slice(0, 200);
+    if (isDate(t.startDate)) out.startDate = t.startDate;
+    if (isDate(t.endDate)) out.endDate = t.endDate;
+    if (['BUCKET', 'PLANNING', 'BOOKED', 'VISITED'].includes(t.status)) out.status = t.status;
+    if (typeof t.notes === 'string' && t.notes.trim()) out.notes = t.notes.trim().slice(0, 1000);
+    return out;
   }
 
   // Last model that answered successfully — tried first on the next request.

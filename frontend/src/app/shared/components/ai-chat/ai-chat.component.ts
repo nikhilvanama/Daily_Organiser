@@ -1,7 +1,10 @@
 import { Component, ElementRef, ViewChild, inject, signal } from '@angular/core';
-import { AiService } from '../../../core/services/ai.service';
+import { AiJournalDraft, AiService } from '../../../core/services/ai.service';
 import { TaskService } from '../../../features/tasks/task.service';
+import { JournalService } from '../../../features/journal/journal.service';
+import { TripService } from '../../../features/trips/trip.service';
 import { PLAN_TYPES } from '../../../core/models/task.model';
+import { CreateTripDto } from '../../../core/models/trip.model';
 
 interface ChatMsg {
   role: 'user' | 'bot';
@@ -18,28 +21,34 @@ interface ChatMsg {
   imports: [],
   template: `
     <!-- Floating action button -->
-    <button class="ai-fab" [class.open]="open()" (click)="toggle()" [title]="open() ? 'Close AI assistant' : 'AI quick add'">
+    <button class="ai-fab" [class.open]="open()" (click)="toggle()" [title]="open() ? 'Close AI assistant' : 'AI assistant'">
       @if (open()) {
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       } @else {
-        <span class="fab-spark">✨</span>
+        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round" viewBox="0 0 24 24">
+          <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/>
+          <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>
+        </svg>
       }
     </button>
 
     @if (open()) {
       <div class="ai-panel">
         <div class="ai-head">
-          <span class="ai-title">✨ AI Quick Add</span>
-          <span class="ai-sub">Describe a plan in your own words</span>
+          <span class="ai-title">✨ AI Assistant</span>
+          <span class="ai-sub">Add plans, journal your day, or plan a trip — in your own words</span>
         </div>
 
         <div class="ai-msgs" #msgsEl>
           @if (messages().length === 0) {
             <div class="ai-welcome">
-              <p>Try things like:</p>
+              <p>📋 Add a plan:</p>
               <button class="ai-example" (click)="useExample('Lunch with Ravi tomorrow 1pm at Paradise')">"Lunch with Ravi tomorrow 1pm at Paradise"</button>
               <button class="ai-example" (click)="useExample('Dentist appointment next friday 10am')">"Dentist appointment next friday 10am"</button>
-              <button class="ai-example" (click)="useExample('Movie with friends saturday evening at PVR')">"Movie with friends saturday evening at PVR"</button>
+              <p>📓 Journal your day (I'll polish the writing):</p>
+              <button class="ai-example" (click)="useExample('Explored Vijayawada with friends, ate kachori and saw the ganesh mandapas, felt great')">"Explored Vijayawada with friends, ate kachori…"</button>
+              <p>✈️ Plan a trip:</p>
+              <button class="ai-example" (click)="useExample('Add a trip to Hyderabad from Oct 2 to Oct 4')">"Add a trip to Hyderabad from Oct 2 to Oct 4"</button>
             </div>
           }
           @for (m of messages(); track $index) {
@@ -66,13 +75,21 @@ interface ChatMsg {
   styles: [`
     .ai-fab {
       position: fixed; bottom: 20px; right: 20px; z-index: 940;
-      width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer;
-      background: linear-gradient(135deg, var(--accent), var(--accent-hover)); color: #fff;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 6px 20px var(--accent-glow); transition: transform 0.15s, box-shadow 0.15s;
+      width: 50px; height: 50px; border-radius: 16px; cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      background: linear-gradient(145deg, var(--accent) 0%, var(--accent-hover) 100%);
+      color: #fff; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15), 0 8px 22px var(--accent-glow),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.35);
+      transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s, border-radius 0.18s;
     }
-    .ai-fab:hover { transform: scale(1.07); box-shadow: 0 8px 26px var(--accent-glow); }
-    .fab-spark { font-size: 1.35rem; }
+    .ai-fab:hover {
+      transform: translateY(-2px) scale(1.05); border-radius: 18px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18), 0 12px 30px var(--accent-glow),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+    .ai-fab:active { transform: scale(0.96); }
+    .ai-fab.open { border-radius: 50%; background: var(--bg-card); color: var(--text-secondary); border-color: var(--border); box-shadow: var(--shadow-md); }
 
     .ai-panel {
       position: fixed; bottom: 84px; right: 20px; z-index: 941;
@@ -140,6 +157,8 @@ interface ChatMsg {
 export class AiChatComponent {
   private aiService = inject(AiService);
   private taskService = inject(TaskService);
+  private journalService = inject(JournalService);
+  private tripService = inject(TripService);
 
   @ViewChild('msgsEl') msgsEl?: ElementRef<HTMLDivElement>;
   @ViewChild('inp') inp?: ElementRef<HTMLInputElement>;
@@ -167,29 +186,81 @@ export class AiChatComponent {
     this.thinking.set(true);
 
     this.aiService.quickAdd(text).subscribe({
-      next: (dto) => {
-        this.taskService.create(dto).subscribe({
-          next: (t) => {
-            this.thinking.set(false);
-            const type = PLAN_TYPES.find((p) => p.value === t.type);
-            const bits = [
-              `${type?.icon ?? '✓'} Added: ${t.title}`,
-              t.dueDate ? `📅 ${t.dueDate}${t.startTime ? ' · ' + t.startTime : ''}` : null,
-              t.location ? `📍 ${t.location}` : null,
-            ].filter(Boolean);
-            this.push({ role: 'bot', text: bits.join('\n'), ok: true });
-          },
-          error: () => {
-            this.thinking.set(false);
-            this.push({ role: 'bot', text: 'I understood it, but saving failed — try again.', ok: false });
-          },
-        });
+      next: (result) => {
+        if (result.kind === 'journal') this.saveJournal(result.journal);
+        else if (result.kind === 'trip') this.saveTrip(result.trip);
+        else this.savePlan(result.plan);
       },
       error: (err) => {
         this.thinking.set(false);
         this.push({ role: 'bot', text: err.error?.message ?? 'Sorry, I could not understand that.', ok: false });
       },
     });
+  }
+
+  private savePlan(dto: any) {
+    this.taskService.create(dto).subscribe({
+      next: (t) => {
+        this.thinking.set(false);
+        const type = PLAN_TYPES.find((p) => p.value === t.type);
+        const bits = [
+          `${type?.icon ?? '✓'} Added: ${t.title}`,
+          t.dueDate ? `📅 ${t.dueDate}${t.startTime ? ' · ' + t.startTime : ''}` : null,
+          t.location ? `📍 ${t.location}` : null,
+        ].filter(Boolean);
+        this.push({ role: 'bot', text: bits.join('\n'), ok: true });
+      },
+      error: () => this.saveFailed(),
+    });
+  }
+
+  // If that day already has an entry, append the polished text below it instead
+  // of overwriting — the upsert endpoint replaces the whole entry otherwise.
+  private saveJournal(draft: AiJournalDraft) {
+    this.journalService.loadAll().subscribe({
+      next: () => {
+        const existing = this.journalService.entries$.value.find((e) => e.date === draft.date);
+        const dto = existing
+          ? {
+              body: `${existing.body.trimEnd()}\n\n${draft.body}`,
+              title: existing.title || draft.title,
+              mood: existing.mood || draft.mood,
+            }
+          : { body: draft.body, title: draft.title, mood: draft.mood };
+        this.journalService.upsert(draft.date, dto).subscribe({
+          next: (e) => {
+            this.thinking.set(false);
+            this.push({
+              role: 'bot',
+              text: `📓 ${existing ? 'Added to' : 'Saved'} your journal for ${draft.date}${e.title ? ` — "${e.title}"` : ''}\n\n${draft.body}`,
+              ok: true,
+            });
+          },
+          error: () => this.saveFailed(),
+        });
+      },
+      error: () => this.saveFailed(),
+    });
+  }
+
+  private saveTrip(dto: CreateTripDto) {
+    this.tripService.create(dto).subscribe({
+      next: (t) => {
+        this.thinking.set(false);
+        const bits = [
+          `✈️ Trip added: ${t.title}`,
+          t.startDate ? `🗓 ${t.startDate}${t.endDate && t.endDate !== t.startDate ? ' → ' + t.endDate : ''}` : null,
+          `📌 ${t.status === 'BUCKET' ? 'Bucket List' : t.status === 'PLANNING' ? 'Planning' : t.status === 'BOOKED' ? 'Booked' : 'Visited'} column`,
+        ].filter(Boolean);
+        this.push({ role: 'bot', text: bits.join('\n'), ok: true });
+      },
+      error: () => this.saveFailed(),
+    });
+  }
+
+  private saveFailed() {
+    this.thinking.set(false);
+    this.push({ role: 'bot', text: 'I understood it, but saving failed — try again.', ok: false });
   }
 
   private push(m: ChatMsg) {
