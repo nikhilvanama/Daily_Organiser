@@ -92,7 +92,9 @@ import { ToastService } from '../../../core/services/toast.service';
     /* Mobile: pin the card to the top so the desk illustration at the bottom
        of the portrait artwork stays fully visible under the form */
     @media (max-width: 640px) {
-      .auth-page { align-items: flex-start; padding: 2rem 1rem 1rem; }
+      /* 12vh from the top: comfortably below the notch, still leaves the
+         desk illustration at the bottom fully visible */
+      .auth-page { align-items: flex-start; padding: 12vh 1rem 1rem; }
       .auth-card { padding: 1.5rem; }
     }
     /* Centered header with bottom margin for spacing */

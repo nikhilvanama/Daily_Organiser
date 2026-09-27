@@ -81,7 +81,8 @@ import { ToastService } from '../../../core/services/toast.service';
     .auth-card { width: 100%; max-width: 440px; padding: 2.5rem; position: relative; z-index: 1; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18); }
     /* Mobile: card at the top so the artwork's bottom detail stays visible */
     @media (max-width: 640px) {
-      .auth-page { align-items: flex-start; padding: 2rem 1rem 1rem; }
+      /* Slightly less offset than login — this form is taller */
+      .auth-page { align-items: flex-start; padding: 8vh 1rem 1rem; }
       .auth-card { padding: 1.5rem; }
     }
     /* Centered header with bottom margin */
