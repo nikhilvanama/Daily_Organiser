@@ -112,6 +112,45 @@
   --shadow-sm: 0 1px 2px rgb(93 64 20 / 0.06);
   --shadow-md: 0 4px 6px -1px rgb(93 64 20 / 0.09), 0 2px 4px -2px rgb(93 64 20 / 0.06);
   --shadow-lg: 0 10px 25px -5px rgb(93 64 20 / 0.14);
+
+  /* Slightly softer corners — closer to a notebook page than an app window */
+  --radius: 10px;
+  --radius-sm: 7px;
+}
+
+/* Paper typography: a classic book/planner serif stack (system fonts, no download).
+   Everything inherits from body, so the whole app reads like a printed planner. */
+[data-theme="paper"] body {
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.01em;
+}
+
+/* Faint ruled-notebook lines behind the main content area — the signature paper touch.
+   Very low contrast so it reads as texture, never as noise. */
+[data-theme="paper"] .layout-content {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 31px,
+    rgba(93, 64, 20, 0.05) 31px,
+    rgba(93, 64, 20, 0.05) 32px
+  );
+}
+
+/* Cards sit like sheets on the desk: a hairline warm edge + soft lift */
+[data-theme="paper"] .card {
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* Headings get a touch more weight contrast, like printed section titles */
+[data-theme="paper"] h1, [data-theme="paper"] h2, [data-theme="paper"] h3 {
+  letter-spacing: -0.01em;
+}
+
+/* Form controls don't inherit fonts by default — keep them on the serif stack too */
+[data-theme="paper"] button, [data-theme="paper"] input,
+[data-theme="paper"] textarea, [data-theme="paper"] select {
+  font-family: inherit;
 }
 
 /* ═══════════════════════════════════════════════════════════════════

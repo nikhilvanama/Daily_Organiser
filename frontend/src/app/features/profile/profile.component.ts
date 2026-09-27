@@ -295,9 +295,11 @@ export class ProfileComponent implements OnInit {
 
   accentOptions = ACCENT_OPTIONS;
 
-  // Swatch shows the shade that matches the active theme (dark shades are lighter)
+  // Swatch shows the shade that matches the active theme
+  // (dark shades are lighter; paper shades are warmer and muted)
   swatchColor(a: AccentOption): string {
-    return this.themeService.theme() === 'dark' ? a.dark.accent : a.light.accent;
+    const t = this.themeService.theme();
+    return t === 'dark' ? a.dark.accent : t === 'paper' ? a.paper.accent : a.light.accent;
   }
 
   profile = signal<any>(null);

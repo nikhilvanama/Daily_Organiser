@@ -13,17 +13,20 @@ export interface AccentOption {
   label: string;
   light: { accent: string; hover: string; tint: string };
   dark: { accent: string; hover: string; tint: string };
+  // Paper theme gets its own set: deeper, warmer, slightly muted tones that
+  // sit well on cream instead of the saturated screen colors.
+  paper: { accent: string; hover: string; tint: string };
 }
 
 // The selectable primary colors shown on the Profile → Appearance section.
 // 'emerald' matches the stylesheet defaults and is the fallback.
 export const ACCENT_OPTIONS: AccentOption[] = [
-  { id: 'emerald', label: 'Emerald', light: { accent: '#10b981', hover: '#059669', tint: '#ecfdf5' }, dark: { accent: '#34d399', hover: '#10b981', tint: '#022c22' } },
-  { id: 'blue',    label: 'Blue',    light: { accent: '#3b82f6', hover: '#2563eb', tint: '#eff6ff' }, dark: { accent: '#60a5fa', hover: '#3b82f6', tint: '#172554' } },
-  { id: 'violet',  label: 'Violet',  light: { accent: '#8b5cf6', hover: '#7c3aed', tint: '#f5f3ff' }, dark: { accent: '#a78bfa', hover: '#8b5cf6', tint: '#2e1065' } },
-  { id: 'orange',  label: 'Orange',  light: { accent: '#f97316', hover: '#ea580c', tint: '#fff7ed' }, dark: { accent: '#fb923c', hover: '#f97316', tint: '#431407' } },
-  { id: 'rose',    label: 'Rose',    light: { accent: '#f43f5e', hover: '#e11d48', tint: '#fff1f2' }, dark: { accent: '#fb7185', hover: '#f43f5e', tint: '#4c0519' } },
-  { id: 'cyan',    label: 'Cyan',    light: { accent: '#06b6d4', hover: '#0891b2', tint: '#ecfeff' }, dark: { accent: '#22d3ee', hover: '#06b6d4', tint: '#083344' } },
+  { id: 'emerald', label: 'Emerald', light: { accent: '#10b981', hover: '#059669', tint: '#ecfdf5' }, dark: { accent: '#34d399', hover: '#10b981', tint: '#022c22' }, paper: { accent: '#1a8a60', hover: '#116b49', tint: '#e2f0e7' } },
+  { id: 'blue',    label: 'Blue',    light: { accent: '#3b82f6', hover: '#2563eb', tint: '#eff6ff' }, dark: { accent: '#60a5fa', hover: '#3b82f6', tint: '#172554' }, paper: { accent: '#3a63b8', hover: '#2e4f96', tint: '#e6ebf5' } },
+  { id: 'violet',  label: 'Violet',  light: { accent: '#8b5cf6', hover: '#7c3aed', tint: '#f5f3ff' }, dark: { accent: '#a78bfa', hover: '#8b5cf6', tint: '#2e1065' }, paper: { accent: '#7551c2', hover: '#5f3fa6', tint: '#ede8f6' } },
+  { id: 'orange',  label: 'Orange',  light: { accent: '#f97316', hover: '#ea580c', tint: '#fff7ed' }, dark: { accent: '#fb923c', hover: '#f97316', tint: '#431407' }, paper: { accent: '#c2600e', hover: '#9e4d0a', tint: '#f7ebdc' } },
+  { id: 'rose',    label: 'Rose',    light: { accent: '#f43f5e', hover: '#e11d48', tint: '#fff1f2' }, dark: { accent: '#fb7185', hover: '#f43f5e', tint: '#4c0519' }, paper: { accent: '#c13a52', hover: '#a02940', tint: '#f6e6e8' } },
+  { id: 'cyan',    label: 'Cyan',    light: { accent: '#06b6d4', hover: '#0891b2', tint: '#ecfeff' }, dark: { accent: '#22d3ee', hover: '#06b6d4', tint: '#083344' }, paper: { accent: '#0e7f8c', hover: '#0a6470', tint: '#e2eff1' } },
 ];
 
 // ThemeService manages the dark/light theme AND the accent (primary) color for the app.
@@ -85,7 +88,8 @@ export class ThemeService {
   // every component that uses var(--accent*) without touching styles.css.
   private applyAccentVars() {
     const option = ACCENT_OPTIONS.find((a) => a.id === this.accent()) ?? ACCENT_OPTIONS[0];
-    const shades = this.theme() === 'dark' ? option.dark : option.light;
+    const t = this.theme();
+    const shades = t === 'dark' ? option.dark : t === 'paper' ? option.paper : option.light;
     const rgb = this.hexToRgb(shades.accent);
     const style = document.documentElement.style;
     style.setProperty('--accent', shades.accent);

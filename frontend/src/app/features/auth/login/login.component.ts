@@ -89,7 +89,7 @@ import { ToastService } from '../../../core/services/toast.service';
     /* Green gradient logo icon with shadow for depth */
     .logo-icon {
       width: 40px; height: 40px; border-radius: 12px;
-      background: linear-gradient(135deg, #10b981, #059669);
+      background: linear-gradient(135deg, var(--accent), var(--accent-hover));
       display: flex; align-items: center; justify-content: center;
       box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
     }

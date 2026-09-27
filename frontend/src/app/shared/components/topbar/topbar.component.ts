@@ -121,7 +121,7 @@ import { ToastService } from '../../../core/services/toast.service';
     }
     .tb-profile:hover { background: var(--bg-hover); border-color: var(--border); }
     .tb-avatar {
-      width: 26px; height: 26px; background: linear-gradient(135deg, #10b981, #059669);
+      width: 26px; height: 26px; background: linear-gradient(135deg, var(--accent), var(--accent-hover));
       border-radius: 7px; display: flex; align-items: center; justify-content: center;
       color: white; font-weight: 700; font-size: 0.72rem; flex-shrink: 0;
     }

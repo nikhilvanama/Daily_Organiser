@@ -77,7 +77,7 @@ import { ToastService } from '../../../core/services/toast.service';
     /* Logo row */
     .logo { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; }
     /* Green gradient logo icon with shadow */
-    .logo-icon { width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #10b981, #059669); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
+    .logo-icon { width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, var(--accent), var(--accent-hover)); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px var(--accent-glow); }
     /* App name text */
     .logo-name { font-size: 1.4rem; font-weight: 800; color: var(--text-primary); }
     /* Heading and subtext */

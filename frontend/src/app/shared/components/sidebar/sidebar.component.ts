@@ -107,7 +107,7 @@ import { AuthService } from '../../../core/services/auth.service';
     /* Header — height matches topbar (64px) */
     .sidebar-header { flex-shrink: 0; height: 64px; display: flex; align-items: center; padding: 0 0.75rem; border-bottom: 1px solid var(--sidebar-border); }
     .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
-    .logo-icon { width: 34px; height: 34px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(16,185,129,0.35); flex-shrink: 0; }
+    .logo-icon { width: 34px; height: 34px; background: linear-gradient(135deg, var(--accent), var(--accent-hover)); border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px var(--accent-glow); flex-shrink: 0; }
     .logo-text { color: var(--sidebar-logo-text); font-weight: 700; font-size: 0.95rem; letter-spacing: -0.01em; }
 
     /* Scrollable nav */
