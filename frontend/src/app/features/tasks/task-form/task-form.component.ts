@@ -194,8 +194,8 @@ import { Task, PLAN_TYPES, PlanType } from '../../../core/models/task.model';
         </div>
       }
 
-      <!-- ═══ EVENT fields ═══ -->
-      @if (selectedType === 'event') {
+      <!-- ═══ EVENT / OUTING / HEALTH / CELEBRATION fields (same shape: date, time, venue, priority) ═══ -->
+      @if (selectedType === 'event' || selectedType === 'outing' || selectedType === 'health' || selectedType === 'celebration') {
         <div class="form-row">
           <div class="form-group">
             <label class="label">Date</label>
@@ -208,7 +208,7 @@ import { Task, PLAN_TYPES, PlanType } from '../../../core/models/task.model';
         </div>
         <div class="form-group">
           <label class="label">Venue / Location</label>
-          <input class="input" formControlName="location" placeholder="e.g. HICC, Madhapur..." />
+          <input class="input" formControlName="location" [placeholder]="locationPlaceholder" />
         </div>
         <div class="form-group">
           <label class="label">Priority</label>
@@ -319,8 +319,21 @@ export class TaskFormComponent implements OnInit, OnChanges {
       meeting: 'Meeting title (e.g. Sprint Review)',
       event: 'Event name (e.g. Tech Conference)',
       reminder: 'Remind me to...',
+      outing: 'Outing plan (e.g. Movie with friends, Mall visit)',
+      health: 'Health plan (e.g. Dentist appointment, Full body checkup)',
+      celebration: 'Occasion (e.g. Birthday party, Wedding, Festival)',
     };
     return map[this.selectedType] || "What's the plan?";
+  }
+
+  get locationPlaceholder(): string {
+    const map: Record<string, string> = {
+      event: 'e.g. HICC, Madhapur...',
+      outing: 'e.g. PVR Kukatpally, GVK Mall...',
+      health: 'e.g. Apollo Clinic, KIMS...',
+      celebration: 'e.g. Function hall, Home...',
+    };
+    return map[this.selectedType] || 'Where?';
   }
 
   get descPlaceholder(): string {
@@ -332,6 +345,9 @@ export class TaskFormComponent implements OnInit, OnChanges {
       meeting: 'Agenda, topics to discuss...',
       event: 'Event details, tickets, dress code...',
       reminder: 'Additional notes...',
+      outing: 'Who is coming, tickets, plan...',
+      health: 'Doctor name, symptoms, reports to carry...',
+      celebration: 'Gift ideas, guests, arrangements...',
     };
     return map[this.selectedType] || 'Optional details...';
   }

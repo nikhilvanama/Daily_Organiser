@@ -10,7 +10,7 @@ export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED';
 // PlanType distinguishes different kinds of daily plans — the app is not just a task manager,
 // it also tracks trips, train schedules, dinner reservations, meetings, events, and reminders.
 // Each type gets its own icon and color in the UI (see PLAN_TYPES constant below).
-export type PlanType = 'task' | 'trip' | 'train' | 'dinner' | 'meeting' | 'event' | 'reminder';
+export type PlanType = 'task' | 'trip' | 'train' | 'dinner' | 'meeting' | 'event' | 'reminder' | 'outing' | 'health' | 'celebration';
 
 // Main Task interface — mirrors the Task entity from the NestJS/Prisma backend.
 // This is the core data structure for the "My Plans" and "Today's Schedule" features.
@@ -79,4 +79,7 @@ export const PLAN_TYPES: { value: PlanType; label: string; icon: string; color: 
   { value: 'meeting',  label: 'Meeting',  icon: '👥', color: '#8b5cf6' }, // Purple — meetings/calls
   { value: 'event',    label: 'Event',    icon: '📅', color: '#06b6d4' }, // Cyan — generic events
   { value: 'reminder', label: 'Reminder', icon: '🔔', color: '#eab308' }, // Yellow — reminders/alerts
+  { value: 'outing',   label: 'Outing',   icon: '🎡', color: '#ec4899' }, // Pink — movies, malls, family/friends outings
+  { value: 'health',   label: 'Health',   icon: '🩺', color: '#14b8a6' }, // Teal — doctor visits, checkups, medicines
+  { value: 'celebration', label: 'Celebration', icon: '🎉', color: '#f43f5e' }, // Rose — birthdays, weddings, functions, festivals
 ];
