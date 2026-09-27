@@ -30,6 +30,8 @@ import { CategoriesModule } from './categories/categories.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 // GoogleCalendarModule — OAuth flow + Calendar API sync for pushing tasks to Google Calendar
 import { GoogleCalendarModule } from './google-calendar/google-calendar.module';
+// AiModule — Gemini-backed natural language quick-add
+import { AiModule } from './ai/ai.module';
 // PrismaModule — provides the FirebaseService globally (connects to Firebase Realtime Database)
 import { PrismaModule } from './prisma/prisma.module';
 // JwtAuthGuard — the guard that checks JWT tokens on every request (unless marked @Public())
@@ -56,6 +58,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     CategoriesModule, // /api/categories/* — user categories
     DashboardModule,  // /api/dashboard/* — stats, activity, calendar data
     GoogleCalendarModule, // /api/google/* — Google Calendar OAuth + sync
+    AiModule,         // /api/ai/* — Gemini natural-language quick-add
   ],
   providers: [
     {

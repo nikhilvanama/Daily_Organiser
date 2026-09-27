@@ -122,33 +122,6 @@ import { AnalyticsRange, AnalyticsSummary } from '../../../core/models/analytics
 
         </div>
 
-        <!-- Weekly Review — the selected range grouped into Mon–Sun weeks -->
-        <div class="card weekly-card">
-          <h3>Weekly Review</h3>
-          <p class="section-sub">Each week of the selected range · tasks, routine check-ins, and journal days</p>
-          @if (weeklyReview().length <= 1 && daysInRange() <= 7) {
-            <p class="empty-section">Switch to 30d or 90d to compare several weeks.</p>
-          }
-          <div class="week-rows">
-            @for (w of weeklyReview(); track w.key) {
-              <div class="week-row" [class.current]="w.isCurrent">
-                <div class="week-label-block">
-                  <span class="week-label">{{ w.label }}</span>
-                  @if (w.isCurrent) { <span class="week-now">This week</span> }
-                </div>
-                <div class="week-stats">
-                  <span class="ws tasks-ws">✓ {{ w.tasks }} task{{ w.tasks === 1 ? '' : 's' }}</span>
-                  <span class="ws habits-ws">⏱ {{ w.habits }} check-in{{ w.habits === 1 ? '' : 's' }}</span>
-                  <span class="ws journal-ws">📓 {{ w.journalDays }}/7 journaled</span>
-                </div>
-                <div class="week-bar" title="Activity vs your best week in this range">
-                  <div class="week-fill" [style.width.%]="w.pct"></div>
-                </div>
-              </div>
-            }
-          </div>
-        </div>
-
         <!-- Daily Activity Chart (SVG) -->
         <div class="card chart-card">
           <div class="chart-header">
@@ -185,6 +158,33 @@ import { AnalyticsRange, AnalyticsSummary } from '../../../core/models/analytics
                 @for (d of summary()!.dailyActivity; track d.date) {
                   <span class="date-lbl">{{ shortDay(d.date) }}</span>
                 }
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Weekly Review — the selected range grouped into Mon–Sun weeks -->
+        <div class="card weekly-card">
+          <h3>Weekly Review</h3>
+          <p class="section-sub">Each week of the selected range · tasks, routine check-ins, and journal days</p>
+          @if (weeklyReview().length <= 1 && daysInRange() <= 7) {
+            <p class="empty-section">Switch to 30d or 90d to compare several weeks.</p>
+          }
+          <div class="week-rows">
+            @for (w of weeklyReview(); track w.key) {
+              <div class="week-row" [class.current]="w.isCurrent">
+                <div class="week-label-block">
+                  <span class="week-label">{{ w.label }}</span>
+                  @if (w.isCurrent) { <span class="week-now">This week</span> }
+                </div>
+                <div class="week-stats">
+                  <span class="ws tasks-ws">✓ {{ w.tasks }} task{{ w.tasks === 1 ? '' : 's' }}</span>
+                  <span class="ws habits-ws">⏱ {{ w.habits }} check-in{{ w.habits === 1 ? '' : 's' }}</span>
+                  <span class="ws journal-ws">📓 {{ w.journalDays }}/7 journaled</span>
+                </div>
+                <div class="week-bar" title="Activity vs your best week in this range">
+                  <div class="week-fill" [style.width.%]="w.pct"></div>
+                </div>
               </div>
             }
           </div>

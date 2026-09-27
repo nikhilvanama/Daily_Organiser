@@ -1,5 +1,5 @@
 // Import ApplicationConfig type and zone change detection provider from Angular core
-import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import { ApplicationConfig, provideZoneChangeDetection, isDevMode } from '@angular/core';
 // provideRouter registers the route configuration with the Angular DI system
 import { provideRouter } from '@angular/router';
 // provideHttpClient sets up HttpClient; withInterceptors attaches functional interceptors
@@ -8,6 +8,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { routes } from './app.routes';
 // Import the auth interceptor that attaches JWT tokens and handles 401 refresh logic
 import { authInterceptor } from './core/interceptors/auth.interceptor';
+import { provideServiceWorker } from '@angular/service-worker';
 
 // Application-wide configuration object used by bootstrapApplication() in main.ts.
 // This replaces the traditional AppModule providers array in Angular 19 standalone apps.
@@ -20,6 +21,9 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     // Set up HttpClient globally and wire in the auth interceptor so every outgoing
     // HTTP request automatically includes the Bearer token header
-    provideHttpClient(withInterceptors([authInterceptor])),
+    provideHttpClient(withInterceptors([authInterceptor])), provideServiceWorker('ngsw-worker.js', {
+            enabled: !isDevMode(),
+            registrationStrategy: 'registerWhenStable:30000'
+          }),
   ],
 };
