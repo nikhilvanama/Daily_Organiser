@@ -42,12 +42,12 @@ interface ChatMsg {
         <div class="ai-msgs" #msgsEl>
           @if (messages().length === 0) {
             <div class="ai-welcome">
-              <p>📋 Add a plan:</p>
+              <p>Add a plan:</p>
               <button class="ai-example" (click)="useExample('Lunch with Ravi tomorrow 1pm at Paradise')">"Lunch with Ravi tomorrow 1pm at Paradise"</button>
               <button class="ai-example" (click)="useExample('Dentist appointment next friday 10am')">"Dentist appointment next friday 10am"</button>
-              <p>📓 Journal your day (I'll polish the writing):</p>
-              <button class="ai-example" (click)="useExample('Explored Vijayawada with friends, ate kachori and saw the ganesh mandapas, felt great')">"Explored Vijayawada with friends, ate kachori…"</button>
-              <p>✈️ Plan a trip:</p>
+              <p>Journal your day — I will polish the writing:</p>
+              <button class="ai-example" (click)="useExample('Journal: had a productive day, finished my Angular work, went to the gym in the evening and cooked dinner at home')">"Had a productive day, finished my Angular work, went to the gym…"</button>
+              <p>Plan a trip:</p>
               <button class="ai-example" (click)="useExample('Add a trip to Hyderabad from Oct 2 to Oct 4')">"Add a trip to Hyderabad from Oct 2 to Oct 4"</button>
             </div>
           }

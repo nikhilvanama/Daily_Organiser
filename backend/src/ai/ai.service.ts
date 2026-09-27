@@ -87,7 +87,7 @@ kind="journal": {"kind":"journal","journal":{
   "date":"YYYY-MM-DD" — the day being described; today if none mentioned,
   "title": short headline (max 60 chars, e.g. "Exploring Vijayawada"),
   "mood": ONE emoji from ${JSON.stringify(MOODS)} matching the tone (omit if unclear),
-  "body": REWRITE the user's rough notes into a warm first-person journal entry, 60–140 words. Natural flowing sentences, fix grammar, keep EVERY fact and name they mentioned, add nothing they didn't say.}}
+  "body": REWRITE the user's rough notes into a warm first-person journal entry. KEEP IT COMPACT: 40–80 words, never longer than roughly 1.5x the user's own text. Natural flowing sentences, fix grammar, keep EVERY fact and name they mentioned, add nothing they didn't say, no filler or padding.}}
 
 kind="trip": {"kind":"trip","trip":{
   "title": like "Hyderabad Trip",
@@ -119,7 +119,7 @@ Message: ${JSON.stringify(text.trim())}`;
     const isDate = (v: any) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
     const out: ParsedJournal = {
       date: isDate(j.date) ? j.date : today,
-      body: j.body.trim().slice(0, 5000),
+      body: j.body.trim().slice(0, 1200), // hard cap keeps entries small in Firebase
     };
     if (typeof j.title === 'string' && j.title.trim()) out.title = j.title.trim().slice(0, 120);
     if (typeof j.mood === 'string' && MOODS.includes(j.mood)) out.mood = j.mood;
