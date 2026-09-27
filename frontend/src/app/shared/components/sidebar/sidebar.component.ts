@@ -68,6 +68,12 @@ import { AuthService } from '../../../core/services/auth.service';
             <span>Buy List</span>
           </a>
 
+          <span class="nav-section">Account</span>
+          <a routerLink="/profile" routerLinkActive="active" class="nav-link">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>Profile</span>
+          </a>
+
         </nav>
       </div>
 
@@ -82,8 +88,10 @@ import { AuthService } from '../../../core/services/auth.service';
     </aside>
   `,
   styles: [`
-    /* Light theme (default): a light sidebar that matches the rest of the page */
-    :host { display: flex; height: 100vh; flex-shrink: 0;
+    /* Light theme (default): a light sidebar that matches the rest of the page.
+       100dvh (dynamic viewport) keeps the Sign out button on-screen on mobile,
+       where the browser chrome makes 100vh taller than what's actually visible. */
+    :host { display: flex; height: 100vh; height: 100dvh; flex-shrink: 0;
       --sidebar-bg: #ffffff; --sidebar-border: #e5e7eb; --sidebar-text: #52525b;
       --sidebar-text-dim: #a1a1aa; --sidebar-hover: rgba(0,0,0,0.045);
       --sidebar-text-strong: #111827; --sidebar-logo-text: #111827;
@@ -102,7 +110,7 @@ import { AuthService } from '../../../core/services/auth.service';
       --sidebar-hover-border: rgba(120,90,40,0.14);
     }
 
-    .sidebar { width: 250px; min-width: 250px; height: 100vh; background: var(--sidebar-bg); display: flex; flex-direction: column; border-right: 1px solid var(--sidebar-border); overflow: hidden; }
+    .sidebar { width: 250px; min-width: 250px; height: 100vh; height: 100dvh; background: var(--sidebar-bg); display: flex; flex-direction: column; border-right: 1px solid var(--sidebar-border); overflow: hidden; }
 
     /* Header — height matches topbar (64px) */
     .sidebar-header { flex-shrink: 0; height: 64px; display: flex; align-items: center; padding: 0 0.75rem; border-bottom: 1px solid var(--sidebar-border); }

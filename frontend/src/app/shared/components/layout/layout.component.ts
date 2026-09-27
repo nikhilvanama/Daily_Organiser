@@ -58,8 +58,8 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
     <app-ai-chat />
   `,
   styles: [`
-    :host { display: block; height: 100vh; }
-    .layout { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
+    :host { display: block; height: 100vh; height: 100dvh; }
+    .layout { display: flex; height: 100vh; height: 100dvh; width: 100vw; overflow: hidden; }
     .layout-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg-secondary); min-width: 0; }
     .layout-content { flex: 1; overflow-y: auto; padding: 2rem 2.5rem; }
     .layout-content.board-route { padding-bottom: 0; overflow: hidden; }
