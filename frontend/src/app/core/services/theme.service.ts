@@ -43,8 +43,10 @@ export class ThemeService {
   // Reactive signals — components read these to show the correct active states
   theme = signal<Theme>('light');
   accent = signal<string>('emerald');
-  // Auto mode: light during the day (06:00–18:59), dark at night. Manually
-  // picking a theme switches auto off so the user's explicit choice wins.
+  // Auto mode: light during the day (06:00–18:59), dark at night.
+  // ON BY DEFAULT — so even the login page is dark at night on a fresh device.
+  // Manually picking a theme switches auto off so the explicit choice wins;
+  // the Appearance toggle can turn it back on.
   autoMode = signal<boolean>(false);
 
   constructor() {
@@ -53,8 +55,10 @@ export class ThemeService {
     if (savedAccent && ACCENT_OPTIONS.some((a) => a.id === savedAccent)) {
       this.accent.set(savedAccent);
     }
-    if (localStorage.getItem(this.AUTO_KEY) === '1') {
-      this.autoMode.set(true);
+    // Missing key (fresh device / pre-feature devices) counts as auto ON.
+    const auto = localStorage.getItem(this.AUTO_KEY) !== '0';
+    this.autoMode.set(auto);
+    if (auto) {
       this.applyTheme(this.themeForClock());
     } else {
       // Saved theme preference takes priority over the OS-level dark mode setting
