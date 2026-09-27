@@ -24,6 +24,10 @@
    - [Google Calendar integration (two-way)](#88-google-calendar-integration-two-way)
    - [Trips (Kanban)](#89-trips-kanban)
    - [Buy List (Kanban)](#810-buy-list-kanban)
+   - [Appearance: themes & accent colors](#811-appearance-themes--accent-colors)
+   - [Global search (Ctrl+K)](#812-global-search-ctrlk)
+   - [AI Assistant (Gemini)](#813-ai-assistant-gemini)
+   - [PWA — installable app](#814-pwa--installable-app)
 9. [Recurring patterns you'll see in the code](#9-recurring-patterns-youll-see-in-the-code)
 10. [Adding a new feature module](#10-adding-a-new-feature-module)
 11. [Running the project locally](#11-running-the-project-locally)
@@ -62,19 +66,23 @@ If your needs overlap, this is for you. If you need team collaboration, a differ
 | Module | What it does |
 |--------|------|
 | **Dashboard** | Greeting + today's snapshot: stats, schedule, goal progress, and the Daily Routine widget (progress ring + 30-day consistency heatmap + interactive habit checklist) |
-| **My Plans (Tasks)** | All scheduled items — tasks, trips, journeys, meals, meetings, events, reminders — with type chips, status / priority filters, 15-per-page pagination, and DONE rows auto-sorted to the bottom |
-| **Goals** | Long-term goals → milestones → mini-goals, with auto-calculated progress %, reorderable milestones, resources list, target date |
-| **Daily Routine (Habits)** | Per-weekday recurring habits with time intervals, current streak, 30-day heatmap, date navigation to backfill missed days, optimistic toggle for instant UI |
-| **Journal** | One reflection entry per day, with mood emoji, title, body, streak of consecutive days journaled, and browse-past-entries list |
-| **Projects** (freelance) | Project pipeline (LEAD → QUOTED → IN_PROGRESS → DELIVERED → PAID / LOST / ON_HOLD), per-project payments, deadlines, progress %, portfolio links, outstanding-balance and monthly-income stats |
+| **My Plans (Tasks)** | All scheduled items — tasks, trips, journeys, meals, meetings, events, reminders, outings, health appointments, celebrations — with type chips, status / priority filters, 15-per-page pagination, and DONE rows auto-sorted to the bottom |
+| **Goals** | Long-term goals → milestones → mini-goals, with auto-calculated progress %, drag-and-drop card reordering, optional link per goal (chain icon on the card), reorderable milestones, resources list, target date |
+| **Daily Routine (Habits)** | Per-weekday recurring habits with time intervals, current streak, 30-day heatmap, schedule filter chips (Every day / Weekdays / Weekends / Mon–Sun), date navigation to backfill missed days, optimistic toggle for instant UI |
+| **Journal** | One reflection entry per day, with mood emoji, title, body, streak of consecutive days journaled, calendar date-picker with entry dots, and browse-past-entries list |
+| **Projects** (freelance) | Project pipeline (LEAD → QUOTED → IN_PROGRESS → DELIVERED → PAID / LOST / ON_HOLD), per-project payments, deadlines, progress %, sample links, live search across title/client/type/description, outstanding-balance / monthly-income / total-revenue stats |
 | **Trips** | Kanban board for travel plans (Bucket List → Planning → Booked → Visited). Drag-and-drop between columns. Columns fill viewport height with internal card scrolling. Cards sorted by: Bucket List → A-Z, Planning/Booked → nearest date first, Visited → newest first. Year pill on each dated card. Trips with dates auto-sync to calendar and trigger habit trip-day exclusion. Past BOOKED trips auto-promote to Visited |
 | **Buy List** | Kanban board for things to remember to buy (Want → Considering → Bought → Skipped). Drag-and-drop between columns. Viewport-height columns with internal card scrolling. Auto-stamps "bought on" date when moved to Bought |
 | **Calendar** | Monthly grid showing plans + Google Calendar events (festivals, holidays, restaurant/movie bookings) plotted by date; weekends/birthdays/holidays/leaves/✈trip overlays. Custom month-picker dropdown (click the month title) lets you jump to any month/year without stepping through one at a time |
 | **Categories** | User-defined color-coded labels for grouping tasks |
 | **Google Calendar sync** | Two-way: pushes app plans to your primary Google calendar, AND pulls events from all your subscribed calendars (holidays, birthdays, third-party bookings) into the app's calendar view |
-| **Profile** | Edit display name, email, password, employment + office hours, weekend days, date of birth |
-| **Dark / Light theme** | Auto-detect system preference, manual toggle, persisted to localStorage |
-| **Auth** | Email/password register + login, JWT access + refresh token rotation, auto-redirect on expired session |
+| **Profile** | Edit display name, email, password, employment + office hours, weekend days, date of birth, plus the Appearance section (theme + primary color) |
+| **Themes & Appearance** | Three themes — Light, Dark, and Paper (warm cream planner look with serif type and ruled-line texture) — six selectable primary colors with per-theme shades, auto day/night switching (on by default), all persisted per device |
+| **Global search** | Ctrl+K (or the topbar magnifier) opens an overlay that searches plans, goals, trips, buy-list items, projects, and journal entries at once, grouped by module |
+| **AI Assistant** | Floating Gemini-powered chat on every screen: natural-language quick-add for plans, polished journal entries from rough notes, and trip creation — with voice input (Web Speech API) and one-tap Undo |
+| **Analytics** | KPI cards, daily activity chart, Weekly Review (Mon–Sun breakdown of tasks / check-ins / journal days with trend bars), routine-by-weekday and activity-mix charts |
+| **PWA** | Installable on mobile (Add to Home screen): app icon, full-screen standalone mode, service-worker caching of the app shell for instant loads |
+| **Auth** | Email/password register + login, JWT access + refresh token rotation, auto-redirect on expired session, illustrated backgrounds (separate light/dark and desktop/mobile artwork) |
 
 ### How it's organized
 
@@ -749,7 +757,7 @@ The guard checks for this decorator and skips the JWT check.
 
 ### 8.1 My Plans (Tasks)
 
-A "plan" is the generic term — it can be a task, trip, train trip, dinner reservation, meeting, event, or reminder. They all share one schema with a `type` field.
+A "plan" is the generic term — it can be a task, trip, train trip, dinner reservation, meeting, event, reminder, outing, health appointment, or celebration. They all share one schema with a `type` field. The full type list with icons and colors lives in the `PLAN_TYPES` constant (`core/models/task.model.ts`); the backend stores `type` as a free string, so adding a new type is a frontend-only change — chips, list, dashboard, and calendar all pick it up from the constant. The Outing (🎡 pink), Health (🩺 teal), and Celebration (🎉 rose) types share the event-style form fields (date, time, venue, priority) with their own placeholders.
 
 **Backend** ([backend/src/tasks/](backend/src/tasks/)):
 - `TasksService.findAll(userId, filters)` — fetches tasks from Firebase, filters by userId, optionally by status/priority/type
@@ -789,6 +797,8 @@ This is a "flat" relational model on top of Firebase — milestones reference th
 - `GoalDetailComponent` — accordion of milestones, each with mini-goal checkboxes
 - Reorderable milestones via PATCH `/:goalId/milestones/reorder`
 - Resources field on each goal (free-text array)
+
+**Card reordering & links**: goal cards are drag-and-droppable on the list page (native HTML5, same pattern as the kanbans). Dropping a card onto another slots it into that position; the new sequence is written via `PATCH /goals/reorder`, which rewrites an `order` field on every goal (optimistic UI with rollback on failure). Each goal also has an optional `link` URL — shown as a chain icon in the card header that opens in a new tab without triggering the drag or the detail navigation.
 
 ### 8.3 Daily Routine (Habits)
 
@@ -856,6 +866,10 @@ The Daily Routine page has a date selector (← / → arrows) that lets you navi
 
 The service flips local state synchronously before the HTTP call returns (see step 3 in the data flow walkthrough). Streak math is exact for "today" toggles (+1 or -1). For past-date toggles the streak isn't touched until the server responds (could ripple in non-obvious ways).
 
+#### Schedule filter chips
+
+The "All habits · 30-day history" section has filter chips: **All / Every day / Weekdays / Weekends** plus one chip per day (**Mon–Sun**). The named filters match exact schedule patterns; a day chip shows *any* habit whose schedule includes that day (so "Mon" surfaces Every-day habits, Weekday habits, and custom Monday habits together). Purely client-side filtering over the loaded list.
+
 ### 8.4 Calendar
 
 A monthly grid view. The dashboard service has `/api/dashboard/calendar?year=2026&month=5` which returns every plan with a `dueDate` overlapping that month.
@@ -908,6 +922,8 @@ Day-end reflections. One entry per user per date, stored at `journal/<uuid>` in 
 **Frontend** ([features/journal/journal-page/journal-page.component.ts](frontend/src/app/features/journal/journal-page/journal-page.component.ts)):
 - A `selectedDate` signal, defaulting to today's local date
 - Date navigation arrows (← / →) to walk back up to a year of past entries
+- A **calendar date-picker popup** (same design as Daily Routine's) with accent-colored dots on days that already have entries
+- Deep-link support: `/journal?date=YYYY-MM-DD` opens that day directly (used by the global search and the AI assistant)
 - The form auto-fills from the cached `entries$` BehaviorSubject when `selectedDate` changes
 - Mood emoji chips (8 options), title, body textarea
 - Live word count, "✓ Saved" pill that fades after 2.5s
@@ -950,11 +966,13 @@ projectPayments/<id> {
 
 **Frontend** has three views:
 
-1. **List page** (`/projects`) — stats summary (total, in-progress, outstanding balance, this-month income, pending quotes), status filter chips, project rows with status pill / deadline / amounts / progress bar. Active work auto-sorted to the top.
+1. **List page** (`/projects`) — stats summary (total, in-progress, outstanding balance, this-month income, **total revenue** = every payment ever received), status filter chips, a **live search box** at the right end of the chip row (matches title, client name, description, and project type; combines with the active status chip), and project rows with status pill / deadline / amounts / progress bar. Active work auto-sorted to the top.
 
-2. **Detail page** (`/projects/:id`) — header with title + status + overdue flag, a quick-controls card for status dropdown + progress slider, a 2-column layout below: left has description + portfolio links + dates, right has the payments section with an inline "+ Record payment" form and a list of past payments.
+2. **Detail page** (`/projects/:id`) — header with title + status + overdue flag, a quick-controls card for status dropdown + progress slider, a 2-column layout below: left has description + sample links + dates, right has the payments section with an inline "+ Record payment" form and a list of past payments.
 
-3. **Form** (modal) — title + client info + description + status + quoted amount + currency + dates + progress + portfolio links array.
+3. **Form** (modal) — title + client info + description + status + quoted amount + currency + dates + progress + sample links array. (The old "Portfolio settings" section was removed along with the portfolio module.)
+
+**Bug history: the blank detail page** — newly created projects rendered a half-empty detail page. Firebase drops empty arrays on write, so a project saved with no links came back without the `portfolioLinks` field; the template crashed on `.length` mid-render. Fixed the same way as the trips module: the service backfills the array to `[]` on every read.
 
 **Currency**: defaults to INR but each project can override. Money is formatted with `en-IN` grouping (e.g. ₹1,25,000).
 
@@ -1153,6 +1171,40 @@ buyItems/<id> {
 - Moving an item to **Bought** auto-stamps `boughtAt = today` if the client didn't specify one. Moving away from Bought clears `boughtAt` + `boughtPrice` (so they don't linger as stale data).
 - Cards show estimated price for unbought items, actual paid price for bought items, an urgency pill (color-coded HIGH/MEDIUM/LOW) for active items, and a 🔗 quick-link if a product URL is set.
 - Sort order: WANT → CONSIDERING → BOUGHT → SKIPPED; within each, HIGH urgency first, then newest.
+
+### 8.11 Appearance: themes & accent colors
+
+The app has **three themes** and **six primary colors**, both selectable in Profile → Appearance and managed by `ThemeService` (`core/services/theme.service.ts`):
+
+- **Light** and **Dark** — the classic pair, driven by CSS custom properties swapped on the `data-theme` attribute of `<html>` (see `styles.css`).
+- **Paper** — a warm cream "planner notebook" theme: parchment sidebar, paper-toned cards, warm brown text, warm-tinted shadows, a system-serif type stack (Iowan Old Style / Palatino / Georgia), and a faint ruled-line texture behind the content area.
+
+**Accent colors**: Emerald (default), Blue, Violet, Orange, Rose, Cyan. Each has *three* shade sets — light, dark (lighter tints for contrast on dark surfaces), and paper (deeper, warmer, muted tones that sit well on cream). The service writes `--accent`, `--accent-hover`, `--accent-light`, `--accent-subtle`, and `--accent-glow` as inline custom properties on `<html>`, which override the stylesheet defaults — so every `var(--accent*)` consumer (buttons, links, active nav, progress bars, logos, the AI FAB) retints instantly. The sidebar logo, topbar avatar, and auth-page logos all use accent gradients rather than hardcoded colors.
+
+**Auto day/night** (on by default): light 6am–7pm, dark after, re-checked every 10 minutes — including on the login page before sign-in. Manually picking any theme disables auto so the explicit choice sticks; the Appearance toggle re-enables it. All choices persist in `localStorage` per device.
+
+The topbar button cycles Light → Dark → Paper; its icon hints at the *next* theme (moon / notebook / sun).
+
+### 8.12 Global search (Ctrl+K)
+
+`GlobalSearchComponent` (`shared/components/global-search/`) is an overlay mounted in the layout, opened by **Ctrl+K / Cmd+K** anywhere or the topbar magnifier. On open it refreshes every module's cached `BehaviorSubject` (tasks, goals, trips, buy list, projects, journal), then filters all of them client-side as you type (minimum 2 characters), showing up to 5 hits per module grouped with icons. Enter opens the first match; Esc or the backdrop closes. Hits navigate by slug (`/tasks/:slug`, `/goals/:slug`, `/projects/:slug`), to the board for trips/buy-list, and to `/journal?date=` for journal entries. A tiny `GlobalSearchService` (an `isOpen` signal) lets the topbar button and the keyboard shortcut share state.
+
+### 8.13 AI Assistant (Gemini)
+
+The floating ✨ button (bottom-right, every screen) opens a chat panel that turns natural language into app data. Architecture:
+
+- **Backend** (`backend/src/ai/`): `POST /api/ai/quick-add` sends the sentence to the **Gemini API** in JSON-output mode with today's date for context. The key lives only in the server env (`GEMINI_API_KEY` — free at aistudio.google.com); without it the endpoint answers 503 cleanly. Because Google retires model names, the service walks a **fallback chain** (`gemini-flash-latest` → `gemini-3.8-flash` → `gemini-3.1-flash-lite` → `gemini-3-flash-preview`), skipping models that answer 404 (retired) or 503/429 (busy) and remembering the one that worked.
+- **Intent classification** — one prompt decides the `kind` and returns a discriminated JSON object:
+  - **plan** — "lunch with Ravi tomorrow 1pm at Paradise" → title, type (from `PLAN_TYPES`), resolved date/time, location, priority. Created through the normal task flow, so calendar + Google sync behave as usual.
+  - **journal** — a rough day recap gets rewritten into a polished first-person entry (40–80 words, never ~1.5× longer than the input, keeps every fact, invents nothing) with a headline and a mood emoji. Saves to the mentioned date, else today; if that day already has an entry the new text is **appended**, never overwritten. A 1,200-char server-side cap keeps entries small.
+  - **trip** — "add a trip to Hyderabad from Oct 2 to Oct 4" → a kanban card with resolved dates and a smart column (booked → Booked, dated → Planning, past → Visited, no dates → Bucket).
+- Every AI-returned field is **whitelisted and validated server-side** before it can reach a create endpoint.
+- **Voice input**: a mic button uses the browser's built-in Web Speech API (`en-IN`, free, no server) — live transcript into the input, red pulse while listening, hidden on unsupported browsers.
+- **Undo**: every success bubble has an ↩ Undo button. Plans and trips are deleted; journal undo restores the entry *exactly* as it was before the AI wrote to it (or removes it if it was new).
+
+### 8.14 PWA — installable app
+
+`@angular/pwa` support: a **manifest** (name, emerald theme color, home-screen icons rendered from the app's favicon) plus the Angular **service worker** (`ngsw-config.json`) that prefetches the app shell and lazily caches assets. **API responses are deliberately not cached** — data always comes live, so nothing goes stale. The worker only registers in production builds (`registerWhenStable`), so localhost dev is unaffected. Install on Android via Chrome → ⋮ → "Add to Home screen / Install app" (iOS: Safari → Share → Add to Home Screen); updates arrive automatically on the next open after each deploy.
 
 ---
 
@@ -1388,6 +1440,8 @@ Done. Roughly mirror the structure of `habits/` or `goals/` and you'll be consis
    JWT_SECRET="any-random-32-char-string"
    JWT_REFRESH_SECRET="a-different-random-32-char-string"
    FIREBASE_DATABASE_URL="https://YOUR-PROJECT-default-rtdb.firebaseio.com"
+   # Optional — enables the AI Assistant (free key from https://aistudio.google.com)
+   GEMINI_API_KEY="your-gemini-key"
    ```
 4. `npm run start:dev` — starts the backend with hot reload on `http://localhost:3000/api`
 
