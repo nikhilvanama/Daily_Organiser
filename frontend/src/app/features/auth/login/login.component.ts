@@ -70,16 +70,24 @@ import { ToastService } from '../../../core/services/toast.service';
     </div>
   `,
   styles: [`
-    /* Full-viewport centered layout with the illustrated background (public/login-bg.png) */
+    /* Full-viewport centered layout with the illustrated background.
+       Four artworks: light/dark x desktop/mobile — cover-fit so nothing tiles or overlaps. */
     .auth-page {
       min-height: 100vh; display: flex; align-items: center; justify-content: center;
       background: url('/login-bg.png') center / cover no-repeat, var(--bg-secondary);
       padding: 2rem; position: relative;
     }
-    /* Veil over the image: keeps the card readable; much darker in dark theme
-       because the illustration itself is light pastel. */
+    [data-theme="dark"] .auth-page {
+      background: url('/login-darkbg.png') center / cover no-repeat, var(--bg-secondary);
+    }
+    @media (max-width: 640px) {
+      .auth-page { background: url('/login-mobile-bg.png') center / cover no-repeat, var(--bg-secondary); }
+      [data-theme="dark"] .auth-page { background: url('/login-mobile-darkbg.png') center / cover no-repeat, var(--bg-secondary); }
+    }
+    /* Light veil for card contrast only — both artworks already match their theme,
+       so the veil stays subtle and never buries the illustration. */
     .auth-page::before { content: ''; position: absolute; inset: 0; background: rgba(255, 255, 255, 0.12); }
-    [data-theme="dark"] .auth-page::before { background: rgba(9, 9, 11, 0.72); }
+    [data-theme="dark"] .auth-page::before { background: rgba(9, 9, 11, 0.35); }
     .auth-card { width: 100%; max-width: 400px; padding: 2.5rem; position: relative; z-index: 1; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18); }
     @media (max-width: 480px) { .auth-card { padding: 1.5rem; } .auth-page { padding: 1rem; } }
     /* Centered header with bottom margin for spacing */
