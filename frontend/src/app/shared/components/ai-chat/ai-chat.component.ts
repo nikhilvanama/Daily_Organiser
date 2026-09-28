@@ -330,19 +330,38 @@ export class AiChatComponent {
     this.thinking.set(true);
 
     this.aiService.quickAdd(text, mode).subscribe({
-      next: (result) => {
-        if (result.kind === 'journal' && result.journal) this.saveJournal(result.journal);
-        else if (result.kind === 'trip' && result.trip) this.saveTrip(result.trip);
-        else if (result.kind === 'buy' && result.buy) this.saveBuy(result.buy);
-        // Fallback to the whole object: an older backend build returns a flat
-        // plan without the `kind` wrapper — never call create(undefined).
-        else this.savePlan((result as any).plan ?? result);
-      },
+      next: (result) => this.handleResult(result),
       error: (err) => {
-        this.thinking.set(false);
-        this.push({ role: 'bot', text: err.error?.message ?? 'Sorry, I could not understand that.', ok: false });
+        // Older backend builds reject the unknown `mode` property (400) —
+        // retry once without it and let the AI classify on its own.
+        const detail = err?.error?.message;
+        const msg = Array.isArray(detail) ? detail.join(' ') : (detail ?? '');
+        if (mode && msg.includes('mode')) {
+          this.aiService.quickAdd(text).subscribe({
+            next: (result) => this.handleResult(result),
+            error: (e2) => this.parseFailed(e2),
+          });
+          return;
+        }
+        this.parseFailed(err);
       },
     });
+  }
+
+  private handleResult(result: any) {
+    if (result?.kind === 'journal' && result.journal) this.saveJournal(result.journal);
+    else if (result?.kind === 'trip' && result.trip) this.saveTrip(result.trip);
+    else if (result?.kind === 'buy' && result.buy) this.saveBuy(result.buy);
+    // Fallback to the whole object: an older backend build returns a flat
+    // plan without the `kind` wrapper — never call create(undefined).
+    else this.savePlan(result?.plan ?? result);
+  }
+
+  private parseFailed(err: any) {
+    this.thinking.set(false);
+    const detail = err?.error?.message;
+    const text = Array.isArray(detail) ? detail.join(', ') : detail;
+    this.push({ role: 'bot', text: text ?? 'Sorry, I could not understand that.', ok: false });
   }
 
   private savePlan(dto: any) {

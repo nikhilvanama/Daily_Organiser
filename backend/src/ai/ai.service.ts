@@ -80,46 +80,55 @@ export class AiService {
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const weekday = now.toLocaleDateString('en-US', { weekday: 'long' });
 
-    const prompt = `You are the assistant inside a personal organizer app used in India. Convert the user's message into ONE JSON object. Today is ${weekday}, ${today}. Times are local. Resolve every relative date from today ("tomorrow", "next friday", "sept 19" = the most recent/relevant occurrence).
-
-${mode
-  ? `The user explicitly selected kind="${mode}" — output that kind, do not reclassify.`
-  : `First decide "kind":
-- "journal" — the user is describing what they DID or experienced (past tense day recap, feelings), or says journal/diary/"note down my day".
-- "trip" — the user wants to add/plan a trip or vacation to some place ("add a trip to Hyd from oct 2 to oct 4").
-- "buy" — the user wants to remember to BUY/purchase a thing ("add running shoes to my buy list", "need a new phone under 20k").
-- "plan" — everything else: an upcoming task, meeting, meal, reminder, appointment, outing.`}
-
-Shape by kind (omit fields you cannot infer — NEVER invent facts):
-
-kind="plan": {"kind":"plan","plan":{
-  "title": required, short and clean ("Lunch with Ravi") — drop date/time/location words,
+    // One shape block per kind. When the user forces a mode with a /command,
+    // the prompt contains ONLY that shape — otherwise a strongly past-tense
+    // "/plan travelled by bus..." tempts the model into the journal shape and
+    // the sanitizer then finds no plan.title.
+    const SHAPES: Record<QuickAddMode, string> = {
+      plan: `kind="plan": {"kind":"plan","plan":{
+  "title": required, short and clean ("Lunch with Ravi") — drop date/time/location words. Past-tense activities still get a title ("Bus from Mangalagiri to Vijayawada"),
   "type": one of ${JSON.stringify(VALID_TYPES)} (food="dinner", city travel="trip", bus/train="train", calls="meeting", movies/malls="outing", doctor="health", birthdays/weddings/festivals="celebration", conferences="event", remember-to="reminder", else "task"),
   "dueDate":"YYYY-MM-DD", "endDate": only for multi-day spans,
   "startTime":"HH:mm" 24h ("1pm"="13:00","morning"="09:00","evening"="18:00","night"="21:00"), "endTime": only if range given,
   "location": place if mentioned, "description": leftover useful detail,
-  "priority":"LOW"|"MEDIUM"|"HIGH" only if urgency expressed}}
-
-kind="journal": {"kind":"journal","journal":{
+  "priority":"LOW"|"MEDIUM"|"HIGH" only if urgency expressed}}`,
+      journal: `kind="journal": {"kind":"journal","journal":{
   "date":"YYYY-MM-DD" — the day being described; today if none mentioned,
   "title": short headline (max 60 chars, e.g. "Exploring Vijayawada"),
   "mood": ONE emoji from ${JSON.stringify(MOODS)} matching the tone (omit if unclear),
-  "body": REWRITE the user's rough notes into a warm first-person journal entry. KEEP IT COMPACT: 40–80 words, never longer than roughly 1.5x the user's own text. Natural flowing sentences, fix grammar, keep EVERY fact and name they mentioned, add nothing they didn't say, no filler or padding.}}
-
-kind="trip": {"kind":"trip","trip":{
+  "body": REWRITE the user's rough notes into a warm first-person journal entry. KEEP IT COMPACT: 40–80 words, never longer than roughly 1.5x the user's own text. Natural flowing sentences, fix grammar, keep EVERY fact and name they mentioned, add nothing they didn't say, no filler or padding.}}`,
+      trip: `kind="trip": {"kind":"trip","trip":{
   "title": like "Hyderabad Trip",
   "destination": the place,
   "startDate"/"endDate":"YYYY-MM-DD" if dates given,
   "status": "BOOKED" if tickets/booking mentioned, "VISITED" if the trip is entirely in the past, "PLANNING" if dates are set, "BUCKET" if no dates,
-  "notes": who is going, budget, ideas — leftover detail}}
-
-kind="buy": {"kind":"buy","buy":{
+  "notes": who is going, budget, ideas — leftover detail}}`,
+      buy: `kind="buy": {"kind":"buy","buy":{
   "name": the thing to buy, short ("Running shoes"),
   "category": one word if obvious (Electronics, Clothing, Fitness, Home, Books...),
   "urgency": "HIGH" if urgent/needed soon, "LOW" if someday/nice-to-have, else omit,
   "estimatedPrice": number only, no currency symbol ("under 3000" = 3000, "20k" = 20000),
   "store": shop/site name if mentioned (Amazon, Decathlon...),
-  "notes": size, color, model, why — leftover detail}}
+  "notes": size, color, model, why — leftover detail}}`,
+    };
+
+    const intro = mode
+      ? `The user explicitly chose kind="${mode}". Output EXACTLY the shape below — no other kind, even if the message reads like something else.`
+      : `First decide "kind":
+- "journal" — the user is describing what they DID or experienced (past tense day recap, feelings), or says journal/diary/"note down my day".
+- "trip" — the user wants to add/plan a trip or vacation to some place ("add a trip to Hyd from oct 2 to oct 4").
+- "buy" — the user wants to remember to BUY/purchase a thing ("add running shoes to my buy list", "need a new phone under 20k").
+- "plan" — everything else: an upcoming task, meeting, meal, reminder, appointment, outing.`;
+
+    const shapes = mode ? SHAPES[mode] : Object.values(SHAPES).join('\n\n');
+
+    const prompt = `You are the assistant inside a personal organizer app used in India. Convert the user's message into ONE JSON object. Today is ${weekday}, ${today}. Times are local. Resolve every relative date from today ("tomorrow", "next friday", "sept 19" = the most recent/relevant occurrence).
+
+${intro}
+
+Shape (omit fields you cannot infer — NEVER invent facts):
+
+${shapes}
 
 Message: ${JSON.stringify(text.trim())}`;
 
