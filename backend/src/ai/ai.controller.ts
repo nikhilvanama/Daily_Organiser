@@ -1,12 +1,17 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { IsString, MaxLength, MinLength } from 'class-validator';
-import { AiService } from './ai.service';
+import { IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { AiService, QuickAddMode } from './ai.service';
 
 class QuickAddDto {
   @IsString()
   @MinLength(3)
   @MaxLength(300)
   text: string;
+
+  // Set when the user typed a /command — forces the target instead of guessing
+  @IsOptional()
+  @IsIn(['plan', 'journal', 'trip', 'buy'])
+  mode?: QuickAddMode;
 }
 
 // Protected by the global JwtAuthGuard like every other controller —
@@ -19,6 +24,6 @@ export class AiController {
   // The frontend then creates the task through the normal POST /api/tasks flow.
   @Post('quick-add')
   quickAdd(@Body() dto: QuickAddDto) {
-    return this.ai.quickAdd(dto.text);
+    return this.ai.quickAdd(dto.text, dto.mode);
   }
 }

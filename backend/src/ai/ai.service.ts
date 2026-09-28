@@ -32,11 +32,25 @@ export interface ParsedTrip {
   notes?: string;
 }
 
+// A wishlist item draft — the frontend passes this to POST /api/buy-list.
+export interface ParsedBuy {
+  name: string;
+  category?: string;
+  urgency?: 'LOW' | 'MEDIUM' | 'HIGH';
+  estimatedPrice?: number;
+  store?: string;
+  notes?: string;
+}
+
 // Discriminated result: what the sentence turned out to be.
 export type QuickAddResult =
   | { kind: 'plan'; plan: ParsedPlan }
   | { kind: 'journal'; journal: ParsedJournal }
-  | { kind: 'trip'; trip: ParsedTrip };
+  | { kind: 'trip'; trip: ParsedTrip }
+  | { kind: 'buy'; buy: ParsedBuy };
+
+// The user can force a kind with a chat command (/plan, /journal, /trip, /buy).
+export type QuickAddMode = 'plan' | 'journal' | 'trip' | 'buy';
 
 const MOODS = ['😊', '😌', '💪', '🎯', '😐', '😔', '😴', '🤔'];
 
@@ -55,7 +69,7 @@ const geminiUrl = (model: string) =>
 // The API key lives ONLY in the backend env (GEMINI_API_KEY) — never in Angular.
 @Injectable()
 export class AiService {
-  async quickAdd(text: string): Promise<QuickAddResult> {
+  async quickAdd(text: string, mode?: QuickAddMode): Promise<QuickAddResult> {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       throw new ServiceUnavailableException('AI is not configured — set GEMINI_API_KEY on the server');
@@ -68,10 +82,13 @@ export class AiService {
 
     const prompt = `You are the assistant inside a personal organizer app used in India. Convert the user's message into ONE JSON object. Today is ${weekday}, ${today}. Times are local. Resolve every relative date from today ("tomorrow", "next friday", "sept 19" = the most recent/relevant occurrence).
 
-First decide "kind":
+${mode
+  ? `The user explicitly selected kind="${mode}" — output that kind, do not reclassify.`
+  : `First decide "kind":
 - "journal" — the user is describing what they DID or experienced (past tense day recap, feelings), or says journal/diary/"note down my day".
 - "trip" — the user wants to add/plan a trip or vacation to some place ("add a trip to Hyd from oct 2 to oct 4").
-- "plan" — everything else: an upcoming task, meeting, meal, reminder, appointment, outing.
+- "buy" — the user wants to remember to BUY/purchase a thing ("add running shoes to my buy list", "need a new phone under 20k").
+- "plan" — everything else: an upcoming task, meeting, meal, reminder, appointment, outing.`}
 
 Shape by kind (omit fields you cannot infer — NEVER invent facts):
 
@@ -96,6 +113,14 @@ kind="trip": {"kind":"trip","trip":{
   "status": "BOOKED" if tickets/booking mentioned, "VISITED" if the trip is entirely in the past, "PLANNING" if dates are set, "BUCKET" if no dates,
   "notes": who is going, budget, ideas — leftover detail}}
 
+kind="buy": {"kind":"buy","buy":{
+  "name": the thing to buy, short ("Running shoes"),
+  "category": one word if obvious (Electronics, Clothing, Fitness, Home, Books...),
+  "urgency": "HIGH" if urgent/needed soon, "LOW" if someday/nice-to-have, else omit,
+  "estimatedPrice": number only, no currency symbol ("under 3000" = 3000, "20k" = 20000),
+  "store": shop/site name if mentioned (Amazon, Decathlon...),
+  "notes": size, color, model, why — leftover detail}}
+
 Message: ${JSON.stringify(text.trim())}`;
 
     const raw = await this.callGemini(apiKey, prompt);
@@ -107,9 +132,25 @@ Message: ${JSON.stringify(text.trim())}`;
       throw new ServiceUnavailableException('AI returned invalid JSON');
     }
 
-    if (parsed?.kind === 'journal') return { kind: 'journal', journal: this.sanitizeJournal(parsed.journal, today) };
-    if (parsed?.kind === 'trip') return { kind: 'trip', trip: this.sanitizeTrip(parsed.trip) };
+    // A forced mode wins even if the model mislabeled the kind field.
+    const kind = mode ?? parsed?.kind;
+    if (kind === 'journal') return { kind: 'journal', journal: this.sanitizeJournal(parsed.journal ?? parsed, today) };
+    if (kind === 'trip') return { kind: 'trip', trip: this.sanitizeTrip(parsed.trip ?? parsed) };
+    if (kind === 'buy') return { kind: 'buy', buy: this.sanitizeBuy(parsed.buy ?? parsed) };
     return { kind: 'plan', plan: this.sanitize(parsed?.plan ?? parsed) };
+  }
+
+  private sanitizeBuy(b: any): ParsedBuy {
+    if (!b || typeof b.name !== 'string' || !b.name.trim()) {
+      throw new BadRequestException('Could not understand the item — tell me what to buy');
+    }
+    const out: ParsedBuy = { name: b.name.trim().slice(0, 160) };
+    if (typeof b.category === 'string' && b.category.trim()) out.category = b.category.trim().slice(0, 60);
+    if (['LOW', 'MEDIUM', 'HIGH'].includes(b.urgency)) out.urgency = b.urgency;
+    if (typeof b.estimatedPrice === 'number' && b.estimatedPrice >= 0) out.estimatedPrice = b.estimatedPrice;
+    if (typeof b.store === 'string' && b.store.trim()) out.store = b.store.trim().slice(0, 120);
+    if (typeof b.notes === 'string' && b.notes.trim()) out.notes = b.notes.trim().slice(0, 1000);
+    return out;
   }
 
   private sanitizeJournal(j: any, today: string): ParsedJournal {

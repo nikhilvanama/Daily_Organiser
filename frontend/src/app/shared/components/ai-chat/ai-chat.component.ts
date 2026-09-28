@@ -1,17 +1,30 @@
 import { Component, ElementRef, ViewChild, inject, signal } from '@angular/core';
-import { AiJournalDraft, AiService } from '../../../core/services/ai.service';
+import { AiJournalDraft, AiMode, AiService } from '../../../core/services/ai.service';
 import { TaskService } from '../../../features/tasks/task.service';
 import { JournalService } from '../../../features/journal/journal.service';
 import { TripService } from '../../../features/trips/trip.service';
+import { BuyListService } from '../../../features/buy-list/buy-list.service';
 import { PLAN_TYPES } from '../../../core/models/task.model';
 import { CreateTripDto } from '../../../core/models/trip.model';
+import { CreateBuyItemDto } from '../../../core/models/buy-item.model';
 
 // What "Undo" on a success bubble should do. Journal undo restores the entry
 // exactly as it was before the AI touched it (or removes it if it was new).
 type UndoAction =
   | { type: 'task'; id: string }
   | { type: 'trip'; id: string }
+  | { type: 'buy'; id: string }
   | { type: 'journal'; date: string; prev: { title: string | null; body: string; mood: string | null } | null };
+
+// /commands the user can type to force where the message goes.
+const COMMANDS: { cmd: string; mode: AiMode }[] = [
+  { cmd: '/plan', mode: 'plan' },
+  { cmd: '/task', mode: 'plan' },
+  { cmd: '/journal', mode: 'journal' },
+  { cmd: '/trip', mode: 'trip' },
+  { cmd: '/buy', mode: 'buy' },
+  { cmd: '/wish', mode: 'buy' },
+];
 
 interface ChatMsg {
   role: 'user' | 'bot';
@@ -55,9 +68,12 @@ interface ChatMsg {
               <button class="ai-example" (click)="useExample('Lunch with Ravi tomorrow 1pm at Paradise')">"Lunch with Ravi tomorrow 1pm at Paradise"</button>
               <button class="ai-example" (click)="useExample('Dentist appointment next friday 10am')">"Dentist appointment next friday 10am"</button>
               <p>Journal your day — I will polish the writing:</p>
-              <button class="ai-example" (click)="useExample('Journal: had a productive day, finished my Angular work, went to the gym in the evening and cooked dinner at home')">"Had a productive day, finished my Angular work, went to the gym…"</button>
+              <button class="ai-example" (click)="useExample('/journal had a productive day, finished my Angular work, went to the gym in the evening and cooked dinner at home')">"/journal had a productive day, finished my Angular work…"</button>
               <p>Plan a trip:</p>
-              <button class="ai-example" (click)="useExample('Add a trip to Hyderabad from Oct 2 to Oct 4')">"Add a trip to Hyderabad from Oct 2 to Oct 4"</button>
+              <button class="ai-example" (click)="useExample('/trip Hyderabad from Oct 2 to Oct 4')">"/trip Hyderabad from Oct 2 to Oct 4"</button>
+              <p>Add to your buy list:</p>
+              <button class="ai-example" (click)="useExample('/buy running shoes under 3000 from Decathlon')">"/buy running shoes under 3000 from Decathlon"</button>
+              <p class="ai-cmd-hint">Tip: start with <b>/plan</b>, <b>/journal</b>, <b>/trip</b>, or <b>/buy</b> to tell me exactly where it goes — otherwise I'll guess.</p>
             </div>
           }
           @for (m of messages(); track $index; let i = $index) {
@@ -135,6 +151,8 @@ interface ChatMsg {
       background: transparent; color: var(--text-secondary); transition: all 0.15s;
     }
     .ai-example:hover { border-color: var(--accent); color: var(--accent); }
+    .ai-cmd-hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 8px !important; line-height: 1.5; }
+    .ai-cmd-hint b { color: var(--accent); font-weight: 600; }
 
     .msg {
       max-width: 85%; padding: 8px 12px; border-radius: 12px;
@@ -214,6 +232,7 @@ export class AiChatComponent {
   private taskService = inject(TaskService);
   private journalService = inject(JournalService);
   private tripService = inject(TripService);
+  private buyService = inject(BuyListService);
 
   @ViewChild('msgsEl') msgsEl?: ElementRef<HTMLDivElement>;
   @ViewChild('inp') inp?: ElementRef<HTMLInputElement>;
@@ -263,6 +282,8 @@ export class AiChatComponent {
       this.taskService.delete(u.id).subscribe({ next: markUndone, error: failed });
     } else if (u.type === 'trip') {
       this.tripService.delete(u.id).subscribe({ next: markUndone, error: failed });
+    } else if (u.type === 'buy') {
+      this.buyService.delete(u.id).subscribe({ next: markUndone, error: failed });
     } else if (u.prev) {
       this.journalService.upsert(u.date, {
         body: u.prev.body,
@@ -285,16 +306,34 @@ export class AiChatComponent {
   }
 
   send() {
-    const text = this.draft().trim();
-    if (text.length < 3 || this.thinking()) return;
+    const raw = this.draft().trim();
+    if (raw.length < 3 || this.thinking()) return;
+
+    // A leading /command forces the target; strip it before sending.
+    let text = raw;
+    let mode: AiMode | undefined;
+    const lower = raw.toLowerCase();
+    for (const c of COMMANDS) {
+      if (lower === c.cmd || lower.startsWith(c.cmd + ' ')) {
+        mode = c.mode;
+        text = raw.slice(c.cmd.length).trim();
+        break;
+      }
+    }
+    if (mode && text.length < 3) {
+      this.push({ role: 'bot', text: `Add some detail after the command — e.g. "${raw.split(' ')[0]} running shoes under 3000"`, ok: false });
+      return;
+    }
+
     this.draft.set('');
-    this.push({ role: 'user', text });
+    this.push({ role: 'user', text: raw });
     this.thinking.set(true);
 
-    this.aiService.quickAdd(text).subscribe({
+    this.aiService.quickAdd(text, mode).subscribe({
       next: (result) => {
         if (result.kind === 'journal' && result.journal) this.saveJournal(result.journal);
         else if (result.kind === 'trip' && result.trip) this.saveTrip(result.trip);
+        else if (result.kind === 'buy' && result.buy) this.saveBuy(result.buy);
         // Fallback to the whole object: an older backend build returns a flat
         // plan without the `kind` wrapper — never call create(undefined).
         else this.savePlan((result as any).plan ?? result);
@@ -363,6 +402,22 @@ export class AiChatComponent {
           `📌 ${t.status === 'BUCKET' ? 'Bucket List' : t.status === 'PLANNING' ? 'Planning' : t.status === 'BOOKED' ? 'Booked' : 'Visited'} column`,
         ].filter(Boolean);
         this.push({ role: 'bot', text: bits.join('\n'), ok: true, undo: { type: 'trip', id: t.id } });
+      },
+      error: (e) => this.saveFailed(e),
+    });
+  }
+
+  private saveBuy(dto: CreateBuyItemDto) {
+    this.buyService.create(dto).subscribe({
+      next: (item) => {
+        this.thinking.set(false);
+        const bits = [
+          `🛒 Added to Buy List: ${item.name}`,
+          item.estimatedPrice ? `💰 ~₹${item.estimatedPrice.toLocaleString('en-IN')}` : null,
+          item.store ? `🏬 ${item.store}` : null,
+          item.urgency ? `⚡ ${item.urgency} priority` : null,
+        ].filter(Boolean);
+        this.push({ role: 'bot', text: bits.join('\n'), ok: true, undo: { type: 'buy', id: item.id } });
       },
       error: (e) => this.saveFailed(e),
     });
