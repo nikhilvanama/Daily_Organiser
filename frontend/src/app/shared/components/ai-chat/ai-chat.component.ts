@@ -194,8 +194,19 @@ interface ChatMsg {
 
     @media (max-width: 640px) {
       .ai-fab { bottom: 16px; right: 16px; }
-      .ai-panel { bottom: 78px; right: 16px; }
+      /* Full-width bottom sheet, like messaging apps */
+      .ai-panel {
+        left: 0; right: 0; bottom: 0; width: 100%;
+        height: min(78dvh, 560px);
+        border-radius: 20px 20px 0 0; border-left: none; border-right: none; border-bottom: none;
+        animation: ai-sheet 0.22s ease;
+      }
+      .ai-input-row { padding: 12px 14px calc(12px + env(safe-area-inset-bottom)); }
+      .ai-input { font-size: 16px; padding: 10px 14px; } /* 16px stops mobile zoom-on-focus */
+      .ai-mic, .ai-send { width: 44px; }
+      .msg { font-size: 0.92rem; }
     }
+    @keyframes ai-sheet { from { transform: translateY(30px); opacity: 0.6; } to { transform: none; opacity: 1; } }
   `],
 })
 export class AiChatComponent {
@@ -282,9 +293,11 @@ export class AiChatComponent {
 
     this.aiService.quickAdd(text).subscribe({
       next: (result) => {
-        if (result.kind === 'journal') this.saveJournal(result.journal);
-        else if (result.kind === 'trip') this.saveTrip(result.trip);
-        else this.savePlan(result.plan);
+        if (result.kind === 'journal' && result.journal) this.saveJournal(result.journal);
+        else if (result.kind === 'trip' && result.trip) this.saveTrip(result.trip);
+        // Fallback to the whole object: an older backend build returns a flat
+        // plan without the `kind` wrapper — never call create(undefined).
+        else this.savePlan((result as any).plan ?? result);
       },
       error: (err) => {
         this.thinking.set(false);
@@ -305,7 +318,7 @@ export class AiChatComponent {
         ].filter(Boolean);
         this.push({ role: 'bot', text: bits.join('\n'), ok: true, undo: { type: 'task', id: t.id } });
       },
-      error: () => this.saveFailed(),
+      error: (e) => this.saveFailed(e),
     });
   }
 
@@ -333,10 +346,10 @@ export class AiChatComponent {
               undo: { type: 'journal', date: draft.date, prev },
             });
           },
-          error: () => this.saveFailed(),
+          error: (e) => this.saveFailed(e),
         });
       },
-      error: () => this.saveFailed(),
+      error: (e) => this.saveFailed(e),
     });
   }
 
@@ -351,13 +364,17 @@ export class AiChatComponent {
         ].filter(Boolean);
         this.push({ role: 'bot', text: bits.join('\n'), ok: true, undo: { type: 'trip', id: t.id } });
       },
-      error: () => this.saveFailed(),
+      error: (e) => this.saveFailed(e),
     });
   }
 
-  private saveFailed() {
+  // Show the server's actual message when it has one — "saving failed" alone
+  // made version/validation problems impossible to diagnose from the UI.
+  private saveFailed(err?: any) {
     this.thinking.set(false);
-    this.push({ role: 'bot', text: 'I understood it, but saving failed — try again.', ok: false });
+    const detail = err?.error?.message;
+    const text = Array.isArray(detail) ? detail.join(', ') : detail;
+    this.push({ role: 'bot', text: `I understood it, but saving failed${text ? ` — ${text}` : ' — try again.'}`, ok: false });
   }
 
   private push(m: ChatMsg) {

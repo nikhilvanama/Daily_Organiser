@@ -173,6 +173,12 @@ html, body {
   line-height: 1.5; /* Comfortable line height for readability */
 }
 
+/* Mobile: larger base type — everything sized in rem scales up with it,
+   and inputs land at ~16px which also stops mobile browsers zooming on focus */
+@media (max-width: 768px) {
+  html, body { font-size: 15.5px; }
+}
+
 /* Reset anchor styles: inherit color from parent, no default underline */
 a { color: inherit; text-decoration: none; }
 /* Images: responsive by default, block display removes bottom spacing */
