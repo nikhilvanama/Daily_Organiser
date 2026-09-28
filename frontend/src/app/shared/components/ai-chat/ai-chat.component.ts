@@ -1,5 +1,5 @@
 import { Component, ElementRef, ViewChild, inject, signal } from '@angular/core';
-import { AiJournalDraft, AiMode, AiService } from '../../../core/services/ai.service';
+import { AiJournalDraft, AiMode, AiService, AiTripMove } from '../../../core/services/ai.service';
 import { TaskService } from '../../../features/tasks/task.service';
 import { JournalService } from '../../../features/journal/journal.service';
 import { TripService } from '../../../features/trips/trip.service';
@@ -14,7 +14,12 @@ type UndoAction =
   | { type: 'task'; id: string }
   | { type: 'trip'; id: string }
   | { type: 'buy'; id: string }
+  | { type: 'trip_status'; id: string; prevStatus: string }
   | { type: 'journal'; date: string; prev: { title: string | null; body: string; mood: string | null } | null };
+
+const TRIP_COLUMN_LABELS: Record<string, string> = {
+  BUCKET: 'Bucket List', PLANNING: 'Planning', BOOKED: 'Booked', VISITED: 'Visited',
+};
 
 // /commands the user can type to force where the message goes.
 const COMMANDS: { cmd: string; mode: AiMode }[] = [
@@ -284,6 +289,8 @@ export class AiChatComponent {
       this.tripService.delete(u.id).subscribe({ next: markUndone, error: failed });
     } else if (u.type === 'buy') {
       this.buyService.delete(u.id).subscribe({ next: markUndone, error: failed });
+    } else if (u.type === 'trip_status') {
+      this.tripService.update(u.id, { status: u.prevStatus as any }).subscribe({ next: markUndone, error: failed });
     } else if (u.prev) {
       this.journalService.upsert(u.date, {
         body: u.prev.body,
@@ -349,7 +356,8 @@ export class AiChatComponent {
   }
 
   private handleResult(result: any) {
-    if (result?.kind === 'journal' && result.journal) this.saveJournal(result.journal);
+    if (result?.kind === 'trip_move' && result.tripMove) this.moveTrip(result.tripMove);
+    else if (result?.kind === 'journal' && result.journal) this.saveJournal(result.journal);
     else if (result?.kind === 'trip' && result.trip) this.saveTrip(result.trip);
     else if (result?.kind === 'buy' && result.buy) this.saveBuy(result.buy);
     // Fallback to the whole object: an older backend build returns a flat
@@ -421,6 +429,44 @@ export class AiChatComponent {
           `📌 ${t.status === 'BUCKET' ? 'Bucket List' : t.status === 'PLANNING' ? 'Planning' : t.status === 'BOOKED' ? 'Booked' : 'Visited'} column`,
         ].filter(Boolean);
         this.push({ role: 'bot', text: bits.join('\n'), ok: true, undo: { type: 'trip', id: t.id } });
+      },
+      error: (e) => this.saveFailed(e),
+    });
+  }
+
+  // Find the trip the user meant (case-insensitive contains, either direction)
+  // and PATCH its status — never create a duplicate for a "move" request.
+  private moveTrip(move: AiTripMove) {
+    this.tripService.loadAll().subscribe({
+      next: () => {
+        const wanted = move.title.toLowerCase();
+        const trips = this.tripService.trips$.value;
+        const trip =
+          trips.find((t) => t.title.toLowerCase() === wanted) ??
+          trips.find((t) => t.title.toLowerCase().includes(wanted) || wanted.includes(t.title.toLowerCase()));
+        if (!trip) {
+          this.thinking.set(false);
+          this.push({ role: 'bot', text: `I couldn't find a trip called "${move.title}" on your board.`, ok: false });
+          return;
+        }
+        if (trip.status === move.status) {
+          this.thinking.set(false);
+          this.push({ role: 'bot', text: `"${trip.title}" is already in the ${TRIP_COLUMN_LABELS[move.status]} column.`, ok: true });
+          return;
+        }
+        const prevStatus = trip.status;
+        this.tripService.update(trip.id, { status: move.status }).subscribe({
+          next: (updated) => {
+            this.thinking.set(false);
+            this.push({
+              role: 'bot',
+              text: `✈️ Moved "${updated.title}": ${TRIP_COLUMN_LABELS[prevStatus]} → ${TRIP_COLUMN_LABELS[move.status]}`,
+              ok: true,
+              undo: { type: 'trip_status', id: trip.id, prevStatus },
+            });
+          },
+          error: (e) => this.saveFailed(e),
+        });
       },
       error: (e) => this.saveFailed(e),
     });

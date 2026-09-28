@@ -42,11 +42,19 @@ export interface ParsedBuy {
   notes?: string;
 }
 
+// Moving an EXISTING trip to another kanban column ("move X to booked").
+// The frontend matches `title` against the user's trips and PATCHes the status.
+export interface ParsedTripMove {
+  title: string;
+  status: 'BUCKET' | 'PLANNING' | 'BOOKED' | 'VISITED';
+}
+
 // Discriminated result: what the sentence turned out to be.
 export type QuickAddResult =
   | { kind: 'plan'; plan: ParsedPlan }
   | { kind: 'journal'; journal: ParsedJournal }
   | { kind: 'trip'; trip: ParsedTrip }
+  | { kind: 'trip_move'; tripMove: ParsedTripMove }
   | { kind: 'buy'; buy: ParsedBuy };
 
 // The user can force a kind with a chat command (/plan, /journal, /trip, /buy).
@@ -84,7 +92,8 @@ export class AiService {
     // the prompt contains ONLY that shape — otherwise a strongly past-tense
     // "/plan travelled by bus..." tempts the model into the journal shape and
     // the sanitizer then finds no plan.title.
-    const SHAPES: Record<QuickAddMode, string> = {
+    // Keyed by kind; trip_move is auto-detected only (no /command forces it).
+    const SHAPES: Record<string, string> = {
       plan: `kind="plan": {"kind":"plan","plan":{
   "title": required, short and clean ("Lunch with Ravi") — drop date/time/location words. Past-tense activities still get a title ("Bus from Mangalagiri to Vijayawada"),
   "type": one of ${JSON.stringify(VALID_TYPES)} (food="dinner", city travel="trip", bus/train="train", calls="meeting", movies/malls="outing", doctor="health", birthdays/weddings/festivals="celebration", conferences="event", remember-to="reminder", else "task"),
@@ -97,6 +106,9 @@ export class AiService {
   "title": short headline (max 60 chars, e.g. "Exploring Vijayawada"),
   "mood": ONE emoji from ${JSON.stringify(MOODS)} matching the tone (omit if unclear),
   "body": REWRITE the user's rough notes into a warm first-person journal entry. KEEP IT COMPACT: 40–80 words, never longer than roughly 1.5x the user's own text. Natural flowing sentences, fix grammar, keep EVERY fact and name they mentioned, add nothing they didn't say, no filler or padding.}}`,
+      trip_move: `kind="trip_move": {"kind":"trip_move","tripMove":{
+  "title": the trip's name exactly as the user referred to it ("tirumala trip" -> "Tirumala"),
+  "status": target column — "BUCKET" (bucket list/someday), "PLANNING", "BOOKED", or "VISITED" (done/completed)}}`,
       trip: `kind="trip": {"kind":"trip","trip":{
   "title": like "Hyderabad Trip",
   "destination": the place,
@@ -116,7 +128,8 @@ export class AiService {
       ? `The user explicitly chose kind="${mode}". Output EXACTLY the shape below — no other kind, even if the message reads like something else.`
       : `First decide "kind":
 - "journal" — the user is describing what they DID or experienced (past tense day recap, feelings), or says journal/diary/"note down my day".
-- "trip" — the user wants to add/plan a trip or vacation to some place ("add a trip to Hyd from oct 2 to oct 4").
+- "trip" — the user wants to ADD/plan a NEW trip or vacation to some place ("add a trip to Hyd from oct 2 to oct 4").
+- "trip_move" — the user wants to MOVE or change an EXISTING trip's column/status ("move the tirumala trip to booked", "mark goa trip as visited"). Do NOT create a trip for these.
 - "buy" — the user wants to remember to BUY/purchase a thing ("add running shoes to my buy list", "need a new phone under 20k").
 - "plan" — everything else: an upcoming task, meeting, meal, reminder, appointment, outing.`;
 
@@ -141,12 +154,22 @@ Message: ${JSON.stringify(text.trim())}`;
       throw new ServiceUnavailableException('AI returned invalid JSON');
     }
 
-    // A forced mode wins even if the model mislabeled the kind field.
-    const kind = mode ?? parsed?.kind;
+    // A forced mode wins even if the model mislabeled the kind field —
+    // except a detected trip_move, which even /trip should not turn into a create.
+    const kind = parsed?.kind === 'trip_move' ? 'trip_move' : (mode ?? parsed?.kind);
+    if (kind === 'trip_move') return { kind: 'trip_move', tripMove: this.sanitizeTripMove(parsed.tripMove ?? parsed) };
     if (kind === 'journal') return { kind: 'journal', journal: this.sanitizeJournal(parsed.journal ?? parsed, today) };
     if (kind === 'trip') return { kind: 'trip', trip: this.sanitizeTrip(parsed.trip ?? parsed) };
     if (kind === 'buy') return { kind: 'buy', buy: this.sanitizeBuy(parsed.buy ?? parsed) };
     return { kind: 'plan', plan: this.sanitize(parsed?.plan ?? parsed) };
+  }
+
+  private sanitizeTripMove(t: any): ParsedTripMove {
+    const STATUSES = ['BUCKET', 'PLANNING', 'BOOKED', 'VISITED'];
+    if (!t || typeof t.title !== 'string' || !t.title.trim() || !STATUSES.includes(t.status)) {
+      throw new BadRequestException('Tell me which trip and which column — e.g. "move the Goa trip to booked"');
+    }
+    return { title: t.title.trim().slice(0, 200), status: t.status };
   }
 
   private sanitizeBuy(b: any): ParsedBuy {

@@ -15,10 +15,17 @@ export interface AiJournalDraft {
 
 // Discriminated result from the backend: the AI decides whether the sentence
 // was a plan, a journal recap, or a trip request.
+// Move an existing trip to another kanban column
+export interface AiTripMove {
+  title: string;
+  status: 'BUCKET' | 'PLANNING' | 'BOOKED' | 'VISITED';
+}
+
 export type AiQuickAddResult =
   | { kind: 'plan'; plan: CreateTaskDto }
   | { kind: 'journal'; journal: AiJournalDraft }
   | { kind: 'trip'; trip: CreateTripDto }
+  | { kind: 'trip_move'; tripMove: AiTripMove }
   | { kind: 'buy'; buy: CreateBuyItemDto };
 
 // Forced target when the user types a /command before the message
