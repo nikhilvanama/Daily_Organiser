@@ -1,5 +1,5 @@
 // Import Angular core utilities: Component, inject for DI, OnInit lifecycle, signal for reactive state, computed for derived state
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, ViewChild, inject, OnInit, signal, computed } from '@angular/core';
 // HttpClient for fetching calendar tasks directly from the dashboard endpoint
 import { HttpClient } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
@@ -99,7 +99,7 @@ interface CalendarDay {
 
       <!-- 7-column grid: day labels header + 42 day cells (6 weeks to cover any month layout).
            The wrapper scrolls horizontally on mobile so day blocks stay big and readable. -->
-      <div class="cal-scroll">
+      <div class="cal-scroll" #calScroll>
       <div class="cal-grid card">
         <!-- Day-of-week labels: Sun through Sat -->
         @for (day of dayLabels; track day; let i = $index) {
@@ -513,7 +513,7 @@ interface CalendarDay {
     }
   `],
 })
-export class CalendarComponent implements OnInit {
+export class CalendarComponent implements OnInit, AfterViewInit {
   private http = inject(HttpClient);
   gcalService = inject(GoogleCalendarService);
 
@@ -611,6 +611,20 @@ export class CalendarComponent implements OnInit {
   });
 
   // On init, fetch tasks for the initially displayed month
+  @ViewChild('calScroll') calScroll?: ElementRef<HTMLDivElement>;
+
+  ngAfterViewInit() {
+    // Mobile: the grid scrolls horizontally — start with today's weekday column
+    // centered instead of always opening on Sunday.
+    setTimeout(() => {
+      const el = this.calScroll?.nativeElement;
+      if (!el || el.scrollWidth <= el.clientWidth + 2) return;
+      const colW = el.scrollWidth / 7;
+      const idx = new Date().getDay(); // 0=Sun..6=Sat, matches column order
+      el.scrollLeft = Math.max(0, colW * idx - (el.clientWidth - colW) / 2);
+    }, 0);
+  }
+
   ngOnInit() {
     this.loadTasks();
     this.initDayOffs();

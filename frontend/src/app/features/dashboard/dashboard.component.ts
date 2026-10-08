@@ -277,6 +277,8 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
     .quick-stats { display: flex; gap: 1rem; flex-wrap: wrap; }
     @media (max-width: 768px) {
       .quick-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+      /* An odd last card spans the full row instead of leaving a hole */
+      .qs-item:last-child:nth-child(odd) { grid-column: 1 / -1; }
       .qs-num { font-size: 1.25rem; }
       .today-header { flex-direction: column; gap: 12px; }
       .today-header h1 { font-size: 1.2rem; }

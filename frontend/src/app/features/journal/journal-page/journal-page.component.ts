@@ -259,7 +259,9 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
 
     @media (max-width: 640px) {
       .entry-header { flex-direction: column; align-items: stretch; gap: 0.75rem; }
-      .entry-nav { justify-content: space-between; }
+      /* Keep the picker + arrows as one tight group — space-between scattered
+         them across the full row and looked broken */
+      .entry-nav { justify-content: flex-start; }
       .past-row { flex-wrap: wrap; }
     }
   `],

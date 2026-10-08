@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, inject, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, ViewChild, inject, signal } from '@angular/core';
 import { AiJournalDraft, AiMode, AiService, AiTripMove } from '../../../core/services/ai.service';
 import { TaskService } from '../../../features/tasks/task.service';
 import { JournalService } from '../../../features/journal/journal.service';
@@ -60,6 +60,7 @@ interface ChatMsg {
     </button>
 
     @if (open()) {
+      <div class="ai-backdrop" (click)="open.set(false)"></div>
       <div class="ai-panel">
         <div class="ai-head">
           <span class="ai-title">✨ AI Assistant</span>
@@ -132,6 +133,12 @@ interface ChatMsg {
     }
     .ai-fab:active { transform: scale(0.96); }
     .ai-fab.open { border-radius: 50%; background: var(--bg-card); color: var(--text-secondary); border-color: var(--border); box-shadow: var(--shadow-md); }
+
+    /* Backdrop: invisible on desktop (click-away close), dim on mobile like a real sheet */
+    .ai-backdrop { position: fixed; inset: 0; z-index: 940; background: transparent; }
+    @media (max-width: 640px) {
+      .ai-backdrop { background: rgba(0, 0, 0, 0.4); }
+    }
 
     .ai-panel {
       position: fixed; bottom: 84px; right: 20px; z-index: 941;
@@ -305,6 +312,11 @@ export class AiChatComponent {
   toggle() {
     this.open.update((v) => !v);
     if (this.open()) setTimeout(() => this.inp?.nativeElement.focus(), 0);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape() {
+    if (this.open()) this.open.set(false);
   }
 
   useExample(text: string) {
