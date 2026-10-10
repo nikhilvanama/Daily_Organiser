@@ -8,6 +8,7 @@ import { environment } from '../../../environments/environment';
 import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ACCENT_OPTIONS, AccentOption, ThemeService } from '../../core/services/theme.service';
+import { SIDEBAR_MODULES, SidebarPrefsService } from '../../core/services/sidebar-prefs.service';
 
 @Component({
   selector: 'app-profile',
@@ -187,6 +188,28 @@ import { ACCENT_OPTIONS, AccentOption, ThemeService } from '../../core/services/
             </div>
           </div>
 
+          <!-- Sidebar Modules Card — choose which modules appear in the sidebar -->
+          <div class="card section">
+            <h3 class="section-title">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+              Sidebar Modules
+            </h3>
+            <p class="module-hint">Switch off the modules you don't use — their links disappear from the sidebar. Dashboard and Profile always stay. Applies instantly, saved on this device.</p>
+            <div class="module-grid">
+              @for (m of sidebarModules; track m.id) {
+                <label class="toggle-row module-row">
+                  <span class="module-label">
+                    {{ m.label }}
+                    <small class="module-section">{{ m.section }}</small>
+                  </span>
+                  <input type="checkbox" class="toggle"
+                         [checked]="sidebarPrefs.visible(m.id)"
+                         (change)="sidebarPrefs.toggle(m.id)" />
+                </label>
+              }
+            </div>
+          </div>
+
           <!-- Save Button -->
           <div class="save-row">
             <button type="submit" class="btn-primary save-btn" [disabled]="saving">
@@ -285,6 +308,14 @@ import { ACCENT_OPTIONS, AccentOption, ThemeService } from '../../core/services/
     .accent-swatch.selected { box-shadow: 0 0 0 3px var(--bg-card), 0 0 0 5px var(--accent); }
     .appearance-hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 8px; }
 
+    /* Sidebar modules */
+    .module-hint { font-size: 0.78rem; color: var(--text-muted); margin: -0.25rem 0 0.25rem; line-height: 1.5; }
+    .module-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem 1.5rem; }
+    .module-row { padding: 6px 0; }
+    .module-label { display: flex; flex-direction: column; gap: 1px; }
+    .module-section { font-size: 0.66rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    @media (max-width: 640px) { .module-grid { grid-template-columns: 1fr; } }
+
     .loading { text-align: center; padding: 3rem; color: var(--text-muted); }
 
     @media (max-width: 768px) {
@@ -300,8 +331,10 @@ export class ProfileComponent implements OnInit {
   private auth = inject(AuthService);
   private sanitizer = inject(DomSanitizer);
   themeService = inject(ThemeService);
+  sidebarPrefs = inject(SidebarPrefsService);
 
   accentOptions = ACCENT_OPTIONS;
+  sidebarModules = SIDEBAR_MODULES;
 
   // Swatch shows the shade that matches the active theme
   // (dark shades are lighter; paper shades are warmer and muted)

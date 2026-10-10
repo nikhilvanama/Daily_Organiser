@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { SidebarPrefsService } from '../../../core/services/sidebar-prefs.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -27,46 +28,68 @@ import { AuthService } from '../../../core/services/auth.service';
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
             <span>Dashboard</span>
           </a>
-          <a routerLink="/tasks" routerLinkActive="active" class="nav-link">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            <span>My Plans</span>
-          </a>
-          <a routerLink="/calendar" routerLinkActive="active" class="nav-link">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
-            <span>Calendar</span>
-          </a>
-          <a routerLink="/analytics" routerLinkActive="active" class="nav-link">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            <span>Analytics</span>
-          </a>
+          @if (prefs.visible('tasks')) {
+            <a routerLink="/tasks" routerLinkActive="active" class="nav-link">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span>My Plans</span>
+            </a>
+          }
+          @if (prefs.visible('calendar')) {
+            <a routerLink="/calendar" routerLinkActive="active" class="nav-link">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+              <span>Calendar</span>
+            </a>
+          }
+          @if (prefs.visible('analytics')) {
+            <a routerLink="/analytics" routerLinkActive="active" class="nav-link">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              <span>Analytics</span>
+            </a>
+          }
 
-          <span class="nav-section">Trackers</span>
-          <a routerLink="/goals" routerLinkActive="active" class="nav-link">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-            <span>Goals</span>
-          </a>
-          <a routerLink="/habits" routerLinkActive="active" class="nav-link">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <span>Daily Routine</span>
-          </a>
-          <a routerLink="/journal" routerLinkActive="active" class="nav-link">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
-            <span>Journal</span>
-          </a>
-          <a routerLink="/projects" routerLinkActive="active" class="nav-link">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20 7h-3V5a2 2 0 00-2-2H9a2 2 0 00-2 2v2H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><line x1="12" y1="11" x2="12" y2="15"/></svg>
-            <span>Projects</span>
-          </a>
+          @if (prefs.sectionVisible('Trackers')) {
+            <span class="nav-section">Trackers</span>
+          }
+          @if (prefs.visible('goals')) {
+            <a routerLink="/goals" routerLinkActive="active" class="nav-link">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+              <span>Goals</span>
+            </a>
+          }
+          @if (prefs.visible('habits')) {
+            <a routerLink="/habits" routerLinkActive="active" class="nav-link">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span>Daily Routine</span>
+            </a>
+          }
+          @if (prefs.visible('journal')) {
+            <a routerLink="/journal" routerLinkActive="active" class="nav-link">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+              <span>Journal</span>
+            </a>
+          }
+          @if (prefs.visible('projects')) {
+            <a routerLink="/projects" routerLinkActive="active" class="nav-link">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20 7h-3V5a2 2 0 00-2-2H9a2 2 0 00-2 2v2H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><line x1="12" y1="11" x2="12" y2="15"/></svg>
+              <span>Projects</span>
+            </a>
+          }
 
-          <span class="nav-section">Wishlists</span>
-          <a routerLink="/trips" routerLinkActive="active" class="nav-link">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
-            <span>Trips</span>
-          </a>
-          <a routerLink="/buy-list" routerLinkActive="active" class="nav-link">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 002 1.6h9.7a2 2 0 002-1.6L23 6H6"/></svg>
-            <span>Buy List</span>
-          </a>
+          @if (prefs.sectionVisible('Wishlists')) {
+            <span class="nav-section">Wishlists</span>
+          }
+          @if (prefs.visible('trips')) {
+            <a routerLink="/trips" routerLinkActive="active" class="nav-link">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
+              <span>Trips</span>
+            </a>
+          }
+          @if (prefs.visible('buy-list')) {
+            <a routerLink="/buy-list" routerLinkActive="active" class="nav-link">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 002 1.6h9.7a2 2 0 002-1.6L23 6H6"/></svg>
+              <span>Buy List</span>
+            </a>
+          }
 
           <span class="nav-section">Account</span>
           <a routerLink="/profile" routerLinkActive="active" class="nav-link">
@@ -163,4 +186,5 @@ import { AuthService } from '../../../core/services/auth.service';
 })
 export class SidebarComponent {
   auth = inject(AuthService);
+  prefs = inject(SidebarPrefsService);
 }
