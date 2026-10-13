@@ -93,8 +93,13 @@ export class PushService {
       notification: {
         title: n.title,
         body: n.body,
-        icon: 'icons/icon-192x192.png',
-        badge: 'icons/icon-72x72.png',
+        // Absolute paths — relative ones fail to resolve in some Android
+        // service-worker contexts and the notification shows without a logo.
+        icon: '/icons/icon-192x192.png',
+        // Badge = Android's small status-bar silhouette; needs a monochrome
+        // white-on-transparent glyph, not the full-color app icon.
+        badge: '/icons/badge-96x96.png',
+        vibrate: [100, 50, 100],
         data: { onActionClick: { default: { operation: 'openWindow', url: n.url } } },
       },
     });
