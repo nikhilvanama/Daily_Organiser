@@ -5,6 +5,7 @@ import { Subscription } from 'rxjs';
 import { JournalService } from '../journal.service';
 import { JournalEntry, MOOD_CHOICES } from '../../../core/models/journal.model';
 import { ToastService } from '../../../core/services/toast.service';
+import { AiService } from '../../../core/services/ai.service';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
@@ -112,6 +113,10 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
           </div>
 
           <div class="entry-actions">
+            <button type="button" class="btn-ghost ai-draft-btn" (click)="draftWithAi()" [disabled]="drafting()"
+                    title="The AI writes a draft from this day's tasks (or checked habits) — you review and save">
+              {{ drafting() ? '✨ Writing…' : '✨ Draft from my day' }}
+            </button>
             @if (existingEntry()) {
               <button type="button" class="btn-ghost danger" (click)="askDelete()">Delete</button>
             }
@@ -233,7 +238,8 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
     .word-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--text-muted); padding: 0 2px; }
     .saved-pill { color: var(--accent); font-weight: 600; }
 
-    .entry-actions { display: flex; gap: 10px; justify-content: flex-end; padding-top: 0.5rem; }
+    .entry-actions { display: flex; gap: 10px; justify-content: flex-end; padding-top: 0.5rem; flex-wrap: wrap; }
+    .ai-draft-btn { margin-right: auto; color: var(--accent); }
     .btn-ghost.danger { color: #ef4444; }
     .btn-ghost.danger:hover { background: rgba(239, 68, 68, 0.1); }
 
@@ -340,6 +346,31 @@ export class JournalPageComponent implements OnInit, OnDestroy {
   });
 
   private route = inject(ActivatedRoute);
+  private aiService = inject(AiService);
+
+  // The journal agent: Gemini drafts an entry from the selected day's tasks
+  // (or checked habits). The draft only fills the form — saving is the user's call.
+  drafting = signal(false);
+
+  draftWithAi() {
+    if (this.drafting()) return;
+    this.drafting.set(true);
+    this.aiService.journalDraft(this.selectedDate()).subscribe({
+      next: (d) => {
+        this.drafting.set(false);
+        this.form.patchValue({
+          title: d.title ?? this.form.value.title ?? '',
+          body: d.body,
+          mood: d.mood ?? this.form.value.mood ?? null,
+        });
+        this.toast.info(`Drafted from your ${d.source === 'tasks' ? "day's plans" : 'daily routine'} — review and save`);
+      },
+      error: (err) => {
+        this.drafting.set(false);
+        this.toast.error(err.error?.message ?? 'Could not draft the entry');
+      },
+    });
+  }
 
   ngOnInit() {
     // Deep link support: /journal?date=YYYY-MM-DD opens that day's entry

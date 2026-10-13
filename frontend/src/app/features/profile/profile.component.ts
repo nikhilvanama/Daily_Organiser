@@ -9,6 +9,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ACCENT_OPTIONS, AccentOption, ThemeService } from '../../core/services/theme.service';
 import { SIDEBAR_MODULES, SidebarPrefsService } from '../../core/services/sidebar-prefs.service';
+import { PushNotifyService } from '../../core/services/push-notify.service';
 
 @Component({
   selector: 'app-profile',
@@ -210,6 +211,26 @@ import { SIDEBAR_MODULES, SidebarPrefsService } from '../../core/services/sideba
             </div>
           </div>
 
+          <!-- Notifications Card — push reminders -->
+          <div class="card section">
+            <h3 class="section-title">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+              Notifications
+            </h3>
+            @if (pushService.supported) {
+              <label class="toggle-row">
+                <span>Daily reminders — morning routine check (8:00) and an 11 pm nudge if today's journal is still empty</span>
+                <input type="checkbox" class="toggle" [checked]="pushService.enabled()"
+                       [disabled]="pushService.busy()" (change)="togglePush($any($event.target).checked)" />
+              </label>
+              @if (pushService.enabled()) {
+                <button type="button" class="btn-ghost sm push-test" (click)="testPush()">Send a test notification</button>
+              }
+            } @else {
+              <p class="push-hint">Push reminders work in the deployed app (and the installed mobile app) — the service worker doesn't run on the local dev server.</p>
+            }
+          </div>
+
           <!-- Save Button -->
           <div class="save-row">
             <button type="submit" class="btn-primary save-btn" [disabled]="saving">
@@ -307,6 +328,8 @@ import { SIDEBAR_MODULES, SidebarPrefsService } from '../../core/services/sideba
     .accent-swatch:hover { transform: scale(1.12); }
     .accent-swatch.selected { box-shadow: 0 0 0 3px var(--bg-card), 0 0 0 5px var(--accent); }
     .appearance-hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 8px; }
+    .push-hint { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; margin: 0; }
+    .push-test { align-self: flex-start; font-size: 0.8rem; padding: 6px 12px; }
 
     /* Sidebar modules */
     .module-hint { font-size: 0.78rem; color: var(--text-muted); margin: -0.25rem 0 0.25rem; line-height: 1.5; }
@@ -332,6 +355,28 @@ export class ProfileComponent implements OnInit {
   private sanitizer = inject(DomSanitizer);
   themeService = inject(ThemeService);
   sidebarPrefs = inject(SidebarPrefsService);
+  pushService = inject(PushNotifyService);
+
+  async togglePush(on: boolean) {
+    try {
+      if (on) {
+        await this.pushService.enable();
+        this.toast.success('Reminders on — morning routine + 11 pm journal');
+      } else {
+        await this.pushService.disable();
+        this.toast.info('Reminders off');
+      }
+    } catch {
+      this.toast.error('Could not enable — allow notifications for this site and try again');
+    }
+  }
+
+  testPush() {
+    this.pushService.test().subscribe({
+      next: (r) => this.toast.success(r.sent ? 'Test sent — check your notifications' : 'No subscription found on the server'),
+      error: () => this.toast.error('Test failed'),
+    });
+  }
 
   accentOptions = ACCENT_OPTIONS;
   sidebarModules = SIDEBAR_MODULES;

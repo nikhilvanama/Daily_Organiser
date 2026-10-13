@@ -1,5 +1,6 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AiService, QuickAddMode } from './ai.service';
 
 class QuickAddDto {
@@ -25,5 +26,13 @@ export class AiController {
   @Post('quick-add')
   quickAdd(@Body() dto: QuickAddDto) {
     return this.ai.quickAdd(dto.text, dto.mode);
+  }
+
+  // POST /api/ai/journal-draft — the journal agent: drafts an entry from the
+  // day's tasks (or checked habits when the day had no tasks). Returns a draft
+  // for the user to review; nothing is saved server-side.
+  @Post('journal-draft')
+  journalDraft(@CurrentUser('id') userId: string, @Body() body: { date?: string }) {
+    return this.ai.journalDraft(userId, body?.date ?? '');
   }
 }

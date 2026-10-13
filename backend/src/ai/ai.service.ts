@@ -1,4 +1,5 @@
 import { Injectable, ServiceUnavailableException, BadRequestException } from '@nestjs/common';
+import { FirebaseService } from '../prisma/firebase.service';
 
 // The fields the AI is allowed to fill on a plan. Mirrors CreateTaskDto on the
 // tasks module — the frontend passes this straight to POST /api/tasks.
@@ -77,6 +78,58 @@ const geminiUrl = (model: string) =>
 // The API key lives ONLY in the backend env (GEMINI_API_KEY) — never in Angular.
 @Injectable()
 export class AiService {
+  constructor(private firebase: FirebaseService) {}
+
+  // The journal agent: drafts today's (or any day's) entry from what the user
+  // actually did — their tasks on that date, or, when the day had no tasks,
+  // the habits they checked off. Returns a DRAFT; the user reviews and saves.
+  async journalDraft(userId: string, date: string): Promise<ParsedJournal & { source: 'tasks' | 'habits' }> {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new ServiceUnavailableException('AI is not configured — set GEMINI_API_KEY on the server');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new BadRequestException('Bad date');
+
+    // 1) The day's tasks
+    const tasks = (await this.firebase.getList<any>('tasks'))
+      .filter((t) => t.userId === userId && t.dueDate === date)
+      .map((t) => ({
+        title: t.title,
+        type: t.type,
+        done: t.status === 'DONE',
+        time: t.startTime ?? undefined,
+        location: t.location ?? undefined,
+      }));
+
+    // 2) Fallback: habits checked that day
+    let checkedHabits: string[] = [];
+    if (tasks.length === 0) {
+      const [habits, checkins] = await Promise.all([
+        this.firebase.getList<any>('habits'),
+        this.firebase.getList<any>('habitCheckins'),
+      ]);
+      const checkedIds = new Set(checkins.filter((c) => c.userId === userId && c.date === date).map((c) => c.habitId));
+      checkedHabits = habits.filter((h) => h.userId === userId && checkedIds.has(h.id)).map((h) => h.title);
+      if (checkedHabits.length === 0) {
+        throw new BadRequestException('Nothing recorded that day — no tasks and no checked habits to write from');
+      }
+    }
+
+    const weekday = new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' });
+    const prompt = `You write a short personal journal entry for the user's day, based ONLY on the facts below — add nothing, invent nothing, no motivational filler.
+
+The day: ${weekday}, ${date}.
+${tasks.length
+  ? `What was on their plate (done=true means completed):\n${JSON.stringify(tasks)}`
+  : `They had no tasks that day, but completed these daily habits:\n${JSON.stringify(checkedHabits)}`}
+
+Return ONLY: {"title": short headline (max 60 chars), "mood": ONE emoji from ${JSON.stringify(MOODS)} fitting the day, "body": a warm first-person entry, 40–80 words, natural flowing sentences. Mention the real activities; if some tasks were not completed, acknowledge it honestly without being negative.}`;
+
+    const raw = await this.callGemini(apiKey, prompt);
+    let parsed: any;
+    try { parsed = JSON.parse(raw); } catch { throw new ServiceUnavailableException('AI returned invalid JSON'); }
+    const draft = this.sanitizeJournal({ ...parsed, date }, date);
+    return { ...draft, source: tasks.length ? 'tasks' : 'habits' };
+  }
+
   async quickAdd(text: string, mode?: QuickAddMode): Promise<QuickAddResult> {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {

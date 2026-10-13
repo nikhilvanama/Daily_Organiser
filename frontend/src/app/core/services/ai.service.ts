@@ -41,4 +41,11 @@ export class AiService {
   quickAdd(text: string, mode?: AiMode) {
     return this.http.post<AiQuickAddResult>(`${this.base}/quick-add`, mode ? { text, mode } : { text });
   }
+
+  // Journal agent: drafts an entry from the day's tasks (or checked habits
+  // when the day had no tasks). Returns a draft — nothing is saved until
+  // the user hits Save on the journal form.
+  journalDraft(date: string) {
+    return this.http.post<AiJournalDraft & { source: 'tasks' | 'habits' }>(`${this.base}/journal-draft`, { date });
+  }
 }
