@@ -11,18 +11,23 @@ A personal productivity app for managing plans, goals, daily habits, and a calen
 | Feature | What it does |
 |---------|------|
 | **Dashboard** | Today's snapshot: stats, schedule, goal progress, Daily Routine widget (ring + heatmap + interactive checklist) |
-| **My Plans** | All tasks/trips/meetings/events/reminders with filters, pagination (15/page), status changes, edit/delete |
-| **Goals** | Goals with milestones, mini-goals, progress %, resources, target dates |
-| **Daily Routine (Habits)** | Per-weekday habit tracker with streaks, 30-day heatmap, backfill past dates, time intervals |
-| **Journal** | One reflection entry per day with mood emoji, streak of consecutive days journaled, past-entries browser |
-| **Projects (freelance)** | Project pipeline (LEAD → QUOTED → IN_PROGRESS → DELIVERED → PAID/LOST/ON_HOLD) with per-project payments, outstanding balance, deadlines, progress, portfolio links |
-| **Trips** | Kanban board (Bucket List → Planning → Booked → Visited) with drag-and-drop. Planning/Booked/Visited trips with dates auto-sync to the calendar AND trigger the habit trip-day exclusion. Past trips auto-move to Visited |
+| **My Plans** | All plans — tasks, trips, journeys, meals, meetings, events, reminders, outings, health appointments, celebrations — with filters, pagination (15/page), status changes, edit/delete |
+| **Goals** | Goals with milestones, mini-goals, progress %, drag-and-drop card reordering, per-goal link, resources, target dates |
+| **Daily Routine (Habits)** | Per-weekday habit tracker with streaks, 30-day heatmap, schedule filter chips, backfill past dates, time intervals |
+| **Journal** | One reflection entry per day with mood emoji, journaling streak, calendar date-picker with entry dots, past-entries browser |
+| **Projects (freelance)** | Project pipeline (LEAD → QUOTED → IN_PROGRESS → DELIVERED → PAID/LOST/ON_HOLD) with per-project payments, outstanding balance / monthly income / total revenue stats, live search, deadlines, progress, sample links |
+| **Trips** | Kanban board (Bucket List → Planning → Booked → Visited) with drag-and-drop and per-lane sorting. Trips with dates auto-sync to the calendar AND trigger the habit trip-day exclusion. Past trips auto-move to Visited |
 | **Buy List** | Kanban board (Want → Considering → Bought → Skipped) with drag-and-drop. Tracks urgency, estimated vs actual price, store, product link |
-| **Calendar** | Monthly grid showing plans + Google Calendar events (festivals, holidays, bookings) plotted by date; office-hours / weekends / birthdays / leaves / ✈ trip overlays |
+| **Calendar** | Monthly grid showing plans + Google Calendar events plotted by date; office-hours / weekends / birthdays / leaves / ✈ trip overlays; month-picker dropdown; horizontally scrolling big-block layout on mobile that opens centered on today |
+| **Analytics** | KPI cards, daily activity chart, Weekly Review (Mon–Sun breakdown with trend bars), routine-by-weekday and activity-mix charts |
+| **AI Assistant** | Floating Gemini-powered chat on every screen: natural-language quick-add for plans, polished journal entries from rough notes, trip creation and moves, Buy List items — slash commands (/plan /journal /trip /buy), voice input, one-tap Undo |
+| **Global search** | Ctrl+K overlay searching plans, goals, trips, buy-list items, projects, and journal entries at once |
+| **Themes & Appearance** | Light, Dark, and Paper (warm serif planner look); six primary colors with per-theme shades; auto day/night switching on by default |
+| **Sidebar modules** | Choose which modules appear in the sidebar nav (per device, from Profile) |
+| **PWA** | Installable on mobile with app icon and service-worker cached shell |
 | **Categories** | User-defined color-coded labels shared by tasks |
 | **Google Calendar sync** | Two-way: push app plans to Google AND pull events from your subscribed Google calendars (holidays, birthdays, third-party bookings) for read-only display |
-| **Dark / Light mode** | Auto-detect system preference, manual toggle, persisted |
-| **Auth** | Email/password register & login, JWT access tokens + refresh-token rotation, auto-redirect on expired session |
+| **Auth** | Email/password register & login, JWT access tokens + refresh-token rotation, auto-redirect on expired session, illustrated light/dark backgrounds |
 
 ---
 
@@ -56,6 +61,8 @@ FIREBASE_DATABASE_URL="https://YOUR-PROJECT-default-rtdb.firebaseio.com"
 GOOGLE_CLIENT_ID="..."
 GOOGLE_CLIENT_SECRET="..."
 GOOGLE_REDIRECT_URI="http://localhost:3000/api/google/callback"
+# Optional for the AI Assistant (free key from https://aistudio.google.com):
+GEMINI_API_KEY="..."
 ```
 
 ### 3. Install + run
@@ -88,6 +95,7 @@ All routes are prefixed with `/api` and require a valid JWT in the `Authorizatio
 | Tasks | `GET/POST /tasks`, `GET/PATCH/DELETE /tasks/:id`, `GET /tasks/today`, `GET /tasks/upcoming`, `POST /tasks/:id/timer/start`, `POST /tasks/:id/timer/stop` |
 | Goals | `GET/POST /goals`, `GET/PATCH/DELETE /goals/:id`, milestone & mini-goal sub-routes |
 | Habits | `GET/POST /habits`, `PATCH/DELETE /habits/:id`, `POST /habits/:id/checkin[?today=…]`, `POST /habits/:id/checkin/:date[?today=…]` |
+| AI | `POST /ai/quick-add` — natural language (+ optional forced mode) → plan / journal / trip / trip-move / buy-item draft via Gemini |
 | Journal | `GET /journal`, `GET /journal/:date`, `PUT /journal/:date`, `DELETE /journal/:date` |
 | Projects | `GET/POST /projects`, `GET/PATCH/DELETE /projects/:id`, `POST /projects/:id/payments`, `DELETE /projects/:projectId/payments/:paymentId` |
 | Trips | `GET/POST /trips`, `GET/PATCH/DELETE /trips/:id` |

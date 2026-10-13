@@ -28,6 +28,7 @@
    - [Global search (Ctrl+K)](#812-global-search-ctrlk)
    - [AI Assistant (Gemini)](#813-ai-assistant-gemini)
    - [PWA — installable app](#814-pwa--installable-app)
+   - [Sidebar modules](#815-sidebar-modules)
 9. [Recurring patterns you'll see in the code](#9-recurring-patterns-youll-see-in-the-code)
 10. [Adding a new feature module](#10-adding-a-new-feature-module)
 11. [Running the project locally](#11-running-the-project-locally)
@@ -76,10 +77,10 @@ If your needs overlap, this is for you. If you need team collaboration, a differ
 | **Calendar** | Monthly grid showing plans + Google Calendar events (festivals, holidays, restaurant/movie bookings) plotted by date; weekends/birthdays/holidays/leaves/✈trip overlays. Custom month-picker dropdown (click the month title) lets you jump to any month/year without stepping through one at a time |
 | **Categories** | User-defined color-coded labels for grouping tasks |
 | **Google Calendar sync** | Two-way: pushes app plans to your primary Google calendar, AND pulls events from all your subscribed calendars (holidays, birthdays, third-party bookings) into the app's calendar view |
-| **Profile** | Edit display name, email, password, employment + office hours, weekend days, date of birth, plus the Appearance section (theme + primary color) |
+| **Profile** | Edit display name, email, password, employment + office hours, weekend days, date of birth, plus the Appearance section (theme + primary color) and Sidebar Modules (choose which modules appear in the nav) |
 | **Themes & Appearance** | Three themes — Light, Dark, and Paper (warm cream planner look with serif type and ruled-line texture) — six selectable primary colors with per-theme shades, auto day/night switching (on by default), all persisted per device |
 | **Global search** | Ctrl+K (or the topbar magnifier) opens an overlay that searches plans, goals, trips, buy-list items, projects, and journal entries at once, grouped by module |
-| **AI Assistant** | Floating Gemini-powered chat on every screen: natural-language quick-add for plans, polished journal entries from rough notes, and trip creation — with voice input (Web Speech API) and one-tap Undo |
+| **AI Assistant** | Floating Gemini-powered chat on every screen: natural-language quick-add for plans, polished journal entries from rough notes, trip creation, trip *moves* ("move X to booked"), and Buy List items — with slash commands (/plan /journal /trip /buy) to force the target, voice input (Web Speech API), and one-tap Undo |
 | **Analytics** | KPI cards, daily activity chart, Weekly Review (Mon–Sun breakdown of tasks / check-ins / journal days with trend bars), routine-by-weekday and activity-mix charts |
 | **PWA** | Installable on mobile (Add to Home screen): app icon, full-screen standalone mode, service-worker caching of the app shell for instant loads |
 | **Auth** | Email/password register + login, JWT access + refresh token rotation, auto-redirect on expired session, illustrated backgrounds (separate light/dark and desktop/mobile artwork) |
@@ -882,6 +883,10 @@ The frontend's `CalendarComponent` renders a 6×7 grid (Sun-Sat columns). Each d
 
 Holiday and leave toggles are stored locally per date.
 
+#### Mobile layout
+
+On phones the month grid keeps full-size day blocks (~104px) and **scrolls horizontally** edge-to-edge instead of squeezing seven columns into a phone width — and on load it **auto-centers on today's weekday column** rather than opening at Sunday. The day-detail panel opens full-width.
+
 #### Month picker
 
 The month/year title in the calendar header is a clickable button. Clicking it opens a **month-picker dropdown** with:
@@ -1198,13 +1203,26 @@ The floating ✨ button (bottom-right, every screen) opens a chat panel that tur
   - **plan** — "lunch with Ravi tomorrow 1pm at Paradise" → title, type (from `PLAN_TYPES`), resolved date/time, location, priority. Created through the normal task flow, so calendar + Google sync behave as usual.
   - **journal** — a rough day recap gets rewritten into a polished first-person entry (40–80 words, never ~1.5× longer than the input, keeps every fact, invents nothing) with a headline and a mood emoji. Saves to the mentioned date, else today; if that day already has an entry the new text is **appended**, never overwritten. A 1,200-char server-side cap keeps entries small.
   - **trip** — "add a trip to Hyderabad from Oct 2 to Oct 4" → a kanban card with resolved dates and a smart column (booked → Booked, dated → Planning, past → Visited, no dates → Bucket).
+  - **trip_move** — "move the tirumala trip to booked" / "mark goa as visited" is detected as a *move*, never a create: the chat fuzzy-matches the title against existing trips and PATCHes the status, replying "Moved: Planning → Booked" with an undo that restores the previous column. A detected move wins even under a forced `/trip` command, so duplicates can't happen.
+  - **buy** — "need running shoes under 3000 from Decathlon" → a Buy List card with name, category guess, urgency, estimated price (understands "under 3000" and "20k"), and store.
+- **Slash commands** — starting a message with `/plan` (or `/task`), `/journal`, `/trip`, or `/buy` (or `/wish`) forces the target instead of letting the model guess. The forced mode travels to the backend, where the prompt then contains **only that kind's output shape** ("output exactly this, even if the message reads like something else") — without this, a past-tense "/plan travelled by bus…" tempted the model into the journal shape and the sanitizer rejected it.
 - Every AI-returned field is **whitelisted and validated server-side** before it can reach a create endpoint.
 - **Voice input**: a mic button uses the browser's built-in Web Speech API (`en-IN`, free, no server) — live transcript into the input, red pulse while listening, hidden on unsupported browsers.
-- **Undo**: every success bubble has an ↩ Undo button. Plans and trips are deleted; journal undo restores the entry *exactly* as it was before the AI wrote to it (or removes it if it was new).
+- **Undo**: every success bubble has an ↩ Undo button. Plans, trips, and buy items are deleted; a trip *move* restores the previous column; journal undo restores the entry *exactly* as it was before the AI wrote to it (or removes it if it was new).
+- **Mobile**: the panel becomes a full-width bottom sheet (dim backdrop, safe-area padding, 16px input to prevent zoom-on-focus); on desktop an invisible backdrop gives click-away close, and Escape closes it everywhere.
 
 ### 8.14 PWA — installable app
 
-`@angular/pwa` support: a **manifest** (name, emerald theme color, home-screen icons rendered from the app's favicon) plus the Angular **service worker** (`ngsw-config.json`) that prefetches the app shell and lazily caches assets. **API responses are deliberately not cached** — data always comes live, so nothing goes stale. The worker only registers in production builds (`registerWhenStable`), so localhost dev is unaffected. Install on Android via Chrome → ⋮ → "Add to Home screen / Install app" (iOS: Safari → Share → Add to Home Screen); updates arrive automatically on the next open after each deploy.
+`@angular/pwa` support: a **manifest** (name, emerald theme color, home-screen icons rendered from the app's favicon with a maskable-safe design — full-bleed gradient, glyph centered in the 80% safe zone so Android's circular mask doesn't crop it) plus the Angular **service worker** (`ngsw-config.json`) that prefetches the app shell and lazily caches assets. **API responses are deliberately not cached** — data always comes live, so nothing goes stale. The worker only registers in production builds (`registerWhenStable`), so localhost dev is unaffected. Install on Android via Chrome → ⋮ → "Add to Home screen / Install app" (iOS: Safari → Share → Add to Home Screen); updates arrive automatically on the next open after each deploy.
+
+### 8.15 Sidebar modules
+
+Profile → **Sidebar Modules** lets the user choose which modules appear in the sidebar nav. `SidebarPrefsService` (`core/services/sidebar-prefs.service.ts`) keeps a signal-backed set of hidden module ids in `localStorage` (`tf_hidden_modules`) — same per-device pattern as the theme settings.
+
+- Toggleable: My Plans, Calendar, Analytics, Goals, Daily Routine, Journal, Projects, Trips, Buy List.
+- **Dashboard and Profile are deliberately not toggleable** — Dashboard is the app's home and Profile holds the toggles, so hiding either would lock the user out.
+- The sidebar hides switched-off links instantly, and a section header ("Trackers", "Wishlists") disappears when all of its links are off.
+- Hiding is **nav-only**: the route stays reachable by URL, global search, and the AI assistant.
 
 ---
 
