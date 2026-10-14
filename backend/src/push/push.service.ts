@@ -13,9 +13,14 @@ type PushSub = {
 };
 
 // Reminder times in IST (the user's timezone) — minutes since midnight.
-const ROUTINE_TIME = 8 * 60;        // 08:00 — "check your daily routine"
-const JOURNAL_TIME = 23 * 60;       // 23:00 — "write your journal" (only if missing)
-const WINDOW_MIN = 10;              // fire window: scheduler tick may not land exactly on the minute
+// Each reminder has a CATCH-UP span, not a narrow window: on free hosting the
+// server may be asleep at the exact minute and only wake when someone opens
+// the app — the reminder then goes out late rather than never. The per-day
+// send log still guarantees at most one send.
+const ROUTINE_TIME = 8 * 60;          // 08:00 — "check your daily routine"
+const ROUTINE_CUTOFF = 12 * 60;       // ...caught up until noon (after that it's stale)
+const JOURNAL_TIME = 23 * 60;         // 23:00 — "write your journal" (only if missing)
+const JOURNAL_CUTOFF = 24 * 60;       // ...until midnight
 
 // PushService — Web Push reminders. Subscriptions live in Firebase so they
 // survive restarts; a per-user per-day log prevents duplicate sends. The
@@ -31,8 +36,11 @@ export class PushService {
     this.enabled = !!(pub && priv);
     if (this.enabled) {
       webpush.setVapidDetails(process.env.VAPID_SUBJECT ?? 'mailto:admin@example.com', pub!, priv!);
-      // Tick every minute; the window check makes missed ticks harmless.
+      // Tick every minute, plus once shortly after boot — so when a request
+      // wakes a sleeping server during a catch-up span, pending reminders go
+      // out within seconds instead of waiting for the next interval.
       setInterval(() => this.tick().catch((e) => this.log.error(e?.message ?? e)), 60 * 1000);
+      setTimeout(() => this.tick().catch((e) => this.log.error(e?.message ?? e)), 10 * 1000);
       this.log.log('Web Push enabled — reminder scheduler running (IST)');
     } else {
       this.log.warn('VAPID keys missing — push reminders disabled');
@@ -128,14 +136,10 @@ export class PushService {
     return { date, minutes: ist.getUTCHours() * 60 + ist.getUTCMinutes() };
   }
 
-  private inWindow(minutes: number, target: number): boolean {
-    return minutes >= target && minutes < target + WINDOW_MIN;
-  }
-
   private async tick() {
     const { date, minutes } = this.istNow();
-    const wantRoutine = this.inWindow(minutes, ROUTINE_TIME);
-    const wantJournal = this.inWindow(minutes, JOURNAL_TIME);
+    const wantRoutine = minutes >= ROUTINE_TIME && minutes < ROUTINE_CUTOFF;
+    const wantJournal = minutes >= JOURNAL_TIME && minutes < JOURNAL_CUTOFF;
     if (!wantRoutine && !wantJournal) return;
 
     const subs = await this.firebase.getList<PushSub>('pushSubs');
