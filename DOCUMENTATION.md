@@ -29,6 +29,7 @@
    - [AI Assistant (Gemini)](#813-ai-assistant-gemini)
    - [PWA — installable app](#814-pwa--installable-app)
    - [Sidebar modules](#815-sidebar-modules)
+   - [Push notification reminders](#816-push-notification-reminders)
 9. [Recurring patterns you'll see in the code](#9-recurring-patterns-youll-see-in-the-code)
 10. [Adding a new feature module](#10-adding-a-new-feature-module)
 11. [Running the project locally](#11-running-the-project-locally)
@@ -70,14 +71,15 @@ If your needs overlap, this is for you. If you need team collaboration, a differ
 | **My Plans (Tasks)** | All scheduled items — tasks, trips, journeys, meals, meetings, events, reminders, outings, health appointments, celebrations — with type chips, status / priority filters, 15-per-page pagination, and DONE rows auto-sorted to the bottom |
 | **Goals** | Long-term goals → milestones → mini-goals, with auto-calculated progress %, drag-and-drop card reordering, optional link per goal (chain icon on the card), reorderable milestones, resources list, target date |
 | **Daily Routine (Habits)** | Per-weekday recurring habits with time intervals, current streak, 30-day heatmap, schedule filter chips (Every day / Weekdays / Weekends / Mon–Sun), date navigation to backfill missed days, optimistic toggle for instant UI |
-| **Journal** | One reflection entry per day, with mood emoji, title, body, streak of consecutive days journaled, calendar date-picker with entry dots, and browse-past-entries list |
+| **Journal** | One reflection entry per day, with mood emoji, title, body, streak of consecutive days journaled, calendar date-picker with entry dots, browse-past-entries list, and a "✨ Draft from my day" button where the AI writes the entry from that day's tasks (or checked habits) for review |
 | **Projects** (freelance) | Project pipeline (LEAD → QUOTED → IN_PROGRESS → DELIVERED → PAID / LOST / ON_HOLD), per-project payments, deadlines, progress %, sample links, live search across title/client/type/description, outstanding-balance / monthly-income / total-revenue stats |
 | **Trips** | Kanban board for travel plans (Bucket List → Planning → Booked → Visited). Drag-and-drop between columns. Columns fill viewport height with internal card scrolling. Cards sorted by: Bucket List → A-Z, Planning/Booked → nearest date first, Visited → newest first. Year pill on each dated card. Trips with dates auto-sync to calendar and trigger habit trip-day exclusion. Past BOOKED trips auto-promote to Visited |
 | **Buy List** | Kanban board for things to remember to buy (Want → Considering → Bought → Skipped). Drag-and-drop between columns. Viewport-height columns with internal card scrolling. Auto-stamps "bought on" date when moved to Bought |
 | **Calendar** | Monthly grid showing plans + Google Calendar events (festivals, holidays, restaurant/movie bookings) plotted by date; weekends/birthdays/holidays/leaves/✈trip overlays. Custom month-picker dropdown (click the month title) lets you jump to any month/year without stepping through one at a time |
 | **Categories** | User-defined color-coded labels for grouping tasks |
 | **Google Calendar sync** | Two-way: pushes app plans to your primary Google calendar, AND pulls events from all your subscribed calendars (holidays, birthdays, third-party bookings) into the app's calendar view |
-| **Profile** | Edit display name, email, password, employment + office hours, weekend days, date of birth, plus the Appearance section (theme + primary color) and Sidebar Modules (choose which modules appear in the nav) |
+| **Profile** | Edit display name, email, password, employment + office hours, weekend days, date of birth, plus the Appearance section (theme + primary color), Sidebar Modules (choose which modules appear in the nav), and Notifications (push reminder toggle + test) |
+| **Push reminders** | Web Push notifications: an 8:00 AM nudge to check the daily routine and an 11:00 PM journal reminder sent only if that day's entry is missing — with catch-up delivery when the server was asleep at the exact minute |
 | **Themes & Appearance** | Three themes — Light, Dark, and Paper (warm cream planner look with serif type and ruled-line texture) — six selectable primary colors with per-theme shades, auto day/night switching (on by default), all persisted per device |
 | **Global search** | Ctrl+K (or the topbar magnifier) opens an overlay that searches plans, goals, trips, buy-list items, projects, and journal entries at once, grouped by module |
 | **AI Assistant** | Floating Gemini-powered chat on every screen: natural-language quick-add for plans, polished journal entries from rough notes, trip creation, trip *moves* ("move X to booked"), and Buy List items — with slash commands (/plan /journal /trip /buy) to force the target, voice input (Web Speech API), and one-tap Undo |
@@ -929,6 +931,7 @@ Day-end reflections. One entry per user per date, stored at `journal/<uuid>` in 
 - Date navigation arrows (← / →) to walk back up to a year of past entries
 - A **calendar date-picker popup** (same design as Daily Routine's) with accent-colored dots on days that already have entries
 - Deep-link support: `/journal?date=YYYY-MM-DD` opens that day directly (used by the global search and the AI assistant)
+- **"✨ Draft from my day"** — the journal agent (see [8.13](#813-ai-assistant-gemini)) fills title, mood, and body from the selected day's real data; the user reviews and saves
 - The form auto-fills from the cached `entries$` BehaviorSubject when `selectedDate` changes
 - Mood emoji chips (8 options), title, body textarea
 - Live word count, "✓ Saved" pill that fades after 2.5s
@@ -1210,6 +1213,7 @@ The floating ✨ button (bottom-right, every screen) opens a chat panel that tur
 - **Voice input**: a mic button uses the browser's built-in Web Speech API (`en-IN`, free, no server) — live transcript into the input, red pulse while listening, hidden on unsupported browsers.
 - **Undo**: every success bubble has an ↩ Undo button. Plans, trips, and buy items are deleted; a trip *move* restores the previous column; journal undo restores the entry *exactly* as it was before the AI wrote to it (or removes it if it was new).
 - **Mobile**: the panel becomes a full-width bottom sheet (dim backdrop, safe-area padding, 16px input to prevent zoom-on-focus); on desktop an invisible backdrop gives click-away close, and Escape closes it everywhere.
+- **The journal agent** (`POST /api/ai/journal-draft`): drafts a day's entry from what the user *actually did* — that date's tasks (titles, types, done state, times, locations), falling back to the habits checked that day when there were no tasks, with a clear error when neither exists. The prompt forbids invention and asks for honest acknowledgment of unfinished items. The draft only fills the journal form; nothing saves until the user saves.
 
 ### 8.14 PWA — installable app
 
@@ -1223,6 +1227,21 @@ Profile → **Sidebar Modules** lets the user choose which modules appear in the
 - **Dashboard and Profile are deliberately not toggleable** — Dashboard is the app's home and Profile holds the toggles, so hiding either would lock the user out.
 - The sidebar hides switched-off links instantly, and a section header ("Trackers", "Wishlists") disappears when all of its links are off.
 - Hiding is **nav-only**: the route stays reachable by URL, global search, and the AI assistant.
+
+### 8.16 Push notification reminders
+
+Real Web Push (`backend/src/push/`, `web-push` + VAPID keys) — two daily reminders, both in IST regardless of the server's timezone:
+
+- **08:00** — "check off your habits" → tapping opens `/habits`
+- **23:00** — "today's page is still empty" → opens `/journal`, and it is **only sent if that day's journal entry is missing** (checked server-side)
+
+**How it works**:
+- Browser subscriptions are stored per user in Firebase (`pushSubs/*`); dead endpoints (404/410 from the push service) are cleaned up automatically.
+- A scheduler ticks every minute. Each reminder has a **catch-up span** (routine 08:00–12:00, journal 23:00–24:00) instead of an exact-minute window: on free hosting the server may be asleep at the target minute, and the span means the reminder goes out late rather than never. A per-user per-day send log (`pushLog/*`) guarantees at most one delivery. The scheduler also ticks 10 seconds after boot, so the very request that *wakes* a sleeping server triggers pending reminders.
+- Payloads use the Angular service worker's native notification format with click-through URLs, an absolute-path app icon, and a dedicated monochrome badge glyph (Android renders the status-bar icon as a silhouette, so a full-color icon would show as a blob).
+- **Keep-alive**: `GET /api/push/health` is a public endpoint meant for an uptime pinger (e.g. UptimeRobot every 5 minutes) so free-tier Render never sleeps through the reminder times.
+- **Frontend**: Profile → Notifications has the enable toggle (`SwPush` subscription flow) and a test button. The service worker only runs in production builds, so the card explains that on `ng serve` instead of showing a dead toggle.
+- **Env**: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (generate with `npx web-push generate-vapid-keys`); without them the module logs a warning and push endpoints answer 503.
 
 ---
 
@@ -1460,6 +1479,10 @@ Done. Roughly mirror the structure of `habits/` or `goals/` and you'll be consis
    FIREBASE_DATABASE_URL="https://YOUR-PROJECT-default-rtdb.firebaseio.com"
    # Optional — enables the AI Assistant (free key from https://aistudio.google.com)
    GEMINI_API_KEY="your-gemini-key"
+   # Optional — enables push reminders (generate with: npx web-push generate-vapid-keys)
+   VAPID_PUBLIC_KEY="..."
+   VAPID_PRIVATE_KEY="..."
+   VAPID_SUBJECT="mailto:you@example.com"
    ```
 4. `npm run start:dev` — starts the backend with hot reload on `http://localhost:3000/api`
 

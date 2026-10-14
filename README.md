@@ -20,7 +20,8 @@ A personal productivity app for managing plans, goals, daily habits, and a calen
 | **Buy List** | Kanban board (Want → Considering → Bought → Skipped) with drag-and-drop. Tracks urgency, estimated vs actual price, store, product link |
 | **Calendar** | Monthly grid showing plans + Google Calendar events plotted by date; office-hours / weekends / birthdays / leaves / ✈ trip overlays; month-picker dropdown; horizontally scrolling big-block layout on mobile that opens centered on today |
 | **Analytics** | KPI cards, daily activity chart, Weekly Review (Mon–Sun breakdown with trend bars), routine-by-weekday and activity-mix charts |
-| **AI Assistant** | Floating Gemini-powered chat on every screen: natural-language quick-add for plans, polished journal entries from rough notes, trip creation and moves, Buy List items — slash commands (/plan /journal /trip /buy), voice input, one-tap Undo |
+| **AI Assistant** | Floating Gemini-powered chat on every screen: natural-language quick-add for plans, polished journal entries from rough notes, trip creation and moves, Buy List items — slash commands (/plan /journal /trip /buy), voice input, one-tap Undo. Plus a journal agent that drafts the day's entry from your actual tasks or checked habits |
+| **Push reminders** | Web Push: 8 AM daily-routine nudge + 11 PM journal reminder (only if the day's entry is missing), IST-scheduled with catch-up delivery; enable from Profile → Notifications |
 | **Global search** | Ctrl+K overlay searching plans, goals, trips, buy-list items, projects, and journal entries at once |
 | **Themes & Appearance** | Light, Dark, and Paper (warm serif planner look); six primary colors with per-theme shades; auto day/night switching on by default |
 | **Sidebar modules** | Choose which modules appear in the sidebar nav (per device, from Profile) |
@@ -63,6 +64,10 @@ GOOGLE_CLIENT_SECRET="..."
 GOOGLE_REDIRECT_URI="http://localhost:3000/api/google/callback"
 # Optional for the AI Assistant (free key from https://aistudio.google.com):
 GEMINI_API_KEY="..."
+# Optional for push reminders (generate with: npx web-push generate-vapid-keys):
+VAPID_PUBLIC_KEY="..."
+VAPID_PRIVATE_KEY="..."
+VAPID_SUBJECT="mailto:you@example.com"
 ```
 
 ### 3. Install + run
@@ -95,7 +100,8 @@ All routes are prefixed with `/api` and require a valid JWT in the `Authorizatio
 | Tasks | `GET/POST /tasks`, `GET/PATCH/DELETE /tasks/:id`, `GET /tasks/today`, `GET /tasks/upcoming`, `POST /tasks/:id/timer/start`, `POST /tasks/:id/timer/stop` |
 | Goals | `GET/POST /goals`, `GET/PATCH/DELETE /goals/:id`, milestone & mini-goal sub-routes |
 | Habits | `GET/POST /habits`, `PATCH/DELETE /habits/:id`, `POST /habits/:id/checkin[?today=…]`, `POST /habits/:id/checkin/:date[?today=…]` |
-| AI | `POST /ai/quick-add` — natural language (+ optional forced mode) → plan / journal / trip / trip-move / buy-item draft via Gemini |
+| AI | `POST /ai/quick-add` — natural language (+ optional forced mode) → plan / journal / trip / trip-move / buy-item draft via Gemini; `POST /ai/journal-draft` — drafts a day's journal entry from its tasks or checked habits |
+| Push | `GET /push/public-key`, `POST /push/subscribe`, `POST /push/unsubscribe`, `POST /push/test`, `GET /push/health` (public keep-alive target) |
 | Journal | `GET /journal`, `GET /journal/:date`, `PUT /journal/:date`, `DELETE /journal/:date` |
 | Projects | `GET/POST /projects`, `GET/PATCH/DELETE /projects/:id`, `POST /projects/:id/payments`, `DELETE /projects/:projectId/payments/:paymentId` |
 | Trips | `GET/POST /trips`, `GET/PATCH/DELETE /trips/:id` |
