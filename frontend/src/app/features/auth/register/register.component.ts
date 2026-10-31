@@ -75,6 +75,10 @@ import { ToastService } from '../../../core/services/toast.service';
       .auth-page { background: url('/login-mobile-bg.png') center / cover no-repeat, var(--bg-secondary); }
       [data-theme="dark"] .auth-page { background: url('/login-mobile-darkbg.png') center / cover no-repeat, var(--bg-secondary); }
     }
+    /* Desktop: card on the left, artwork detail stays visible on the right */
+    @media (min-width: 641px) {
+      .auth-page { justify-content: flex-start; padding-left: clamp(3rem, 11vw, 10rem); }
+    }
     .auth-page::before { content: ''; position: absolute; inset: 0; background: rgba(255, 255, 255, 0.12); }
     [data-theme="dark"] .auth-page::before { background: rgba(9, 9, 11, 0.35); }
     /* Auth card: slightly wider than login to accommodate the two-column row */
