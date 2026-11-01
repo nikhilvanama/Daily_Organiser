@@ -77,7 +77,7 @@ import { ToastService } from '../../../core/services/toast.service';
     }
     /* Desktop: card on the left, artwork detail stays visible on the right */
     @media (min-width: 641px) {
-      .auth-page { justify-content: flex-start; padding-left: calc(clamp(3rem, 11vw, 10rem) + 200px); }
+      .auth-page { justify-content: flex-start; padding-left: calc(clamp(3rem, 11vw, 10rem) + 100px); }
     }
     .auth-page::before { content: ''; position: absolute; inset: 0; background: rgba(255, 255, 255, 0.12); }
     [data-theme="dark"] .auth-page::before { background: rgba(9, 9, 11, 0.35); }
