@@ -90,6 +90,7 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
               <span class="stat-label">Active Plans</span>
             </div>
             <svg class="spark" viewBox="0 0 120 36" preserveAspectRatio="none">
+              <path class="spark-glow" [attr.d]="sparkPlans()" fill="none" stroke="#10b981" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
               <path [attr.d]="sparkPlans()" fill="none" stroke="#10b981" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </a>
@@ -107,6 +108,7 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
               <span class="stat-label">Done Today</span>
             </div>
             <svg class="spark" viewBox="0 0 120 36" preserveAspectRatio="none">
+              <path class="spark-glow" [attr.d]="sparkDone()" fill="none" stroke="#8b5cf6" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
               <path [attr.d]="sparkDone()" fill="none" stroke="#8b5cf6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </a>
@@ -124,6 +126,7 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
               <span class="stat-label">Goals</span>
             </div>
             <svg class="spark" viewBox="0 0 120 36" preserveAspectRatio="none">
+              <path class="spark-glow" [attr.d]="sparkGoals()" fill="none" stroke="#3b82f6" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
               <path [attr.d]="sparkGoals()" fill="none" stroke="#3b82f6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </a>
@@ -181,30 +184,46 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
                 </div>
               </div>
 
-              <!-- Sunrise illustration + encouragement -->
+              <!-- Sunrise illustration + encouragement (floats on the card, no box) -->
               <div class="cheer">
-                <svg class="cheer-art" viewBox="0 0 260 120" fill="none">
+                <svg class="cheer-art" viewBox="0 0 300 126" fill="none">
                   <defs>
-                    <radialGradient id="sunCore" cx=".5" cy=".42" r=".6">
-                      <stop offset="0%" stop-color="#fde68a"/><stop offset="55%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#f97316"/>
+                    <radialGradient id="sunCore" cx=".5" cy=".4" r=".65">
+                      <stop offset="0%" stop-color="#fef3c7"/><stop offset="45%" stop-color="#fcd34d"/><stop offset="100%" stop-color="#f59e0b"/>
                     </radialGradient>
                     <radialGradient id="sunHalo" cx=".5" cy=".5" r=".5">
-                      <stop offset="0%" stop-color="#fbbf24" stop-opacity=".5"/><stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/>
+                      <stop offset="0%" stop-color="#fbbf24" stop-opacity=".55"/><stop offset="60%" stop-color="#fbbf24" stop-opacity=".18"/><stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/>
                     </radialGradient>
-                    <linearGradient id="hillBack" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#34d399"/><stop offset="100%" stop-color="#059669"/></linearGradient>
-                    <linearGradient id="hillFront" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#047857"/></linearGradient>
+                    <linearGradient id="hillBack" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2dd48f"/><stop offset="100%" stop-color="#0b5c3e"/></linearGradient>
+                    <linearGradient id="hillFront" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#16b47d"/><stop offset="100%" stop-color="#07432e"/></linearGradient>
                   </defs>
-                  <circle cx="130" cy="58" r="48" fill="url(#sunHalo)"/>
-                  <circle cx="130" cy="58" r="25" fill="url(#sunCore)"/>
-                  <circle cx="130" cy="58" r="31" stroke="#fbbf24" stroke-opacity=".4" stroke-width="2"/>
-                  <!-- back hill -->
-                  <path d="M0 120 C 44 84, 92 82, 132 98 C 172 80, 216 84, 260 100 L260 120 Z" fill="url(#hillBack)" opacity=".8"/>
-                  <!-- front hill -->
-                  <path d="M0 120 C 60 98, 140 102, 260 110 L260 120 Z" fill="url(#hillFront)"/>
-                  <!-- pine trees -->
-                  <g fill="#047857">
-                    <path d="M56 92 l8-14 8 14 z M58 84 l6-11 6 11 z"/><rect x="62.6" y="92" width="2.8" height="7" rx="1.2"/>
-                    <path d="M196 88 l8-14 8 14 z M198 80 l6-11 6 11 z"/><rect x="202.6" y="88" width="2.8" height="7" rx="1.2"/>
+                  <!-- glow behind everything -->
+                  <ellipse cx="150" cy="70" rx="104" ry="58" fill="url(#sunHalo)"/>
+                  <!-- sun, partially hidden by the mound drawn after it -->
+                  <circle cx="150" cy="64" r="28" fill="url(#sunCore)"/>
+                  <circle cx="150" cy="64" r="36" stroke="#fbbf24" stroke-opacity=".3" stroke-width="1.8"/>
+                  <!-- side slopes -->
+                  <path d="M0 126 C 36 102, 74 96, 108 104 L112 126 Z" fill="url(#hillBack)" opacity=".85"/>
+                  <path d="M300 126 C 266 100, 228 95, 192 104 L188 126 Z" fill="url(#hillBack)" opacity=".85"/>
+                  <!-- central mound rising in front of the sun -->
+                  <path d="M44 126 C 82 88, 120 74, 150 74 C 180 74, 218 88, 256 126 Z" fill="url(#hillFront)"/>
+                  <!-- subtle mound highlight -->
+                  <path d="M92 112 C 116 90, 136 82, 150 82" stroke="#6ee7b7" stroke-opacity=".4" stroke-width="2" stroke-linecap="round"/>
+                  <!-- left trees: round tree + pine -->
+                  <g>
+                    <rect x="66.6" y="88" width="2.8" height="10" rx="1.2" fill="#064e36"/>
+                    <circle cx="68" cy="82" r="8" fill="#0e8a5f"/><circle cx="63" cy="86" r="5.4" fill="#0b7a53"/><circle cx="73" cy="86.5" r="5" fill="#0b7a53"/>
+                    <path d="M94 88 l7.5-14 7.5 14 z M96 80 l5.5-10.5 5.5 10.5 z" fill="#0a6b49"/><rect x="100" y="88" width="2.8" height="8" rx="1.2" fill="#064e36"/>
+                  </g>
+                  <!-- right trees: pine + round tree -->
+                  <g>
+                    <path d="M196 86 l8-15 8 15 z M198 78 l6-11.5 6 11.5 z" fill="#0a6b49"/><rect x="202.6" y="86" width="2.8" height="9" rx="1.2" fill="#064e36"/>
+                    <rect x="228.6" y="90" width="2.6" height="9" rx="1.1" fill="#064e36"/>
+                    <circle cx="230" cy="84.5" r="7" fill="#0e8a5f"/><circle cx="225.5" cy="88" r="4.6" fill="#0b7a53"/><circle cx="234.5" cy="88.2" r="4.4" fill="#0b7a53"/>
+                  </g>
+                  <!-- tiny sparkles in the sky -->
+                  <g fill="#fcd34d">
+                    <circle cx="96" cy="38" r="1.6" opacity=".7"/><circle cx="208" cy="30" r="1.3" opacity=".6"/><circle cx="236" cy="52" r="1.5" opacity=".5"/><circle cx="64" cy="56" r="1.2" opacity=".5"/>
                   </g>
                 </svg>
                 <strong>{{ cheerTitle() }}</strong>
@@ -223,7 +242,35 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
                         <svg width="12" height="12" fill="none" stroke="#fff" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                       }
                     </span>
-                    <span class="chk-ico" [style.background]="h.color + '22'">{{ h.icon }}</span>
+                    <!-- Custom duotone glyph picked from the habit's name, on a solid color tile -->
+                    <span class="chk-ico" [style.background]="h.color || 'var(--accent)'">
+                      @switch (habitGlyph(h)) {
+                        @case ('sun') {
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4.2" fill="rgba(255,255,255,.35)"/><path d="M12 3.2v2.2M12 18.6v2.2M3.2 12h2.2M18.6 12h2.2M5.8 5.8l1.6 1.6M16.6 16.6l1.6 1.6M18.2 5.8l-1.6 1.6M7.4 16.6l-1.6 1.6"/></svg>
+                        }
+                        @case ('bed') {
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 18.5V8"/><path d="M3.5 13.2h13.4a3.6 3.6 0 0 1 3.6 3.6v1.7"/><circle cx="7.2" cy="10.6" r="1.8" fill="#fff" stroke="none"/><path d="M3.5 16.4h17"/></svg>
+                        }
+                        @case ('run') {
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="14.6" cy="4.6" r="2" fill="#fff" stroke="none"/><path d="M12.4 8.4 8.8 10.6l1.4 3.2L6.6 19.4"/><path d="M12.4 8.4l3 1.5 3.1.4"/><path d="M12.4 8.4l-.9 4.8 3.6 2.5 1 4.3"/></svg>
+                        }
+                        @case ('book') {
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.4C10.8 5.3 9.2 4.7 7.2 4.7c-1 0-2 .2-2.8.5v13c.8-.3 1.8-.5 2.8-.5 2 0 3.6.6 4.8 1.7 1.2-1.1 2.8-1.7 4.8-1.7 1 0 2 .2 2.8.5v-13c-.8-.3-1.8-.5-2.8-.5-2 0-3.6.6-4.8 1.7z" fill="rgba(255,255,255,.22)"/><path d="M12 6.4v13"/></svg>
+                        }
+                        @case ('pencil') {
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m5 19 .9-3.7L16.4 4.8a2 2 0 0 1 2.8 2.8L8.7 18.1z" fill="rgba(255,255,255,.22)"/><path d="m14.8 6.4 2.8 2.8"/></svg>
+                        }
+                        @case ('laptop') {
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5.2" width="14" height="9.6" rx="1.7" fill="rgba(255,255,255,.22)"/><path d="M4.2 15 3 18.6h18L19.8 15"/></svg>
+                        }
+                        @case ('meal') {
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5h15a7.5 7 0 0 1-15 0z" fill="rgba(255,255,255,.22)"/><path d="M12 9.2c0-1.5 1.4-1.8 1.4-3.2M8.6 9.2c0-1.2 1-1.5 1-2.6"/></svg>
+                        }
+                        @default {
+                          <svg width="15" height="15" viewBox="0 0 24 24"><path d="M12 4l1.9 5.6L19.4 12l-5.5 2.4L12 20l-1.9-5.6L4.6 12l5.5-2.4z" fill="#fff" opacity=".95"/></svg>
+                        }
+                      }
+                    </span>
                     <span class="chk-title">{{ h.title }}</span>
                     @if (habitTimeLabel(h)) { <span class="chk-time">{{ habitTimeLabel(h) }}</span> }
                     <span class="chk-streak">🔥 {{ h.streak }}</span>
@@ -386,8 +433,16 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
     /* ── Layout ─────────────────────────────────────────── */
     .dash { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 1.1rem; align-items: start; position: relative; }
     .dash-main { display: flex; flex-direction: column; gap: 1.1rem; min-width: 0; position: relative; z-index: 1; }
-    .dash-side { display: flex; flex-direction: column; gap: 1.1rem; position: sticky; top: 0; z-index: 1; }
-    @media (max-width: 1150px) { .dash { grid-template-columns: 1fr; } .dash-side { position: static; } }
+    /* Right rail stays pinned while the main column scrolls; capped to the
+       viewport with hidden overflow so it never travels with the page */
+    .dash-side {
+      display: flex; flex-direction: column; gap: .9rem; z-index: 1;
+      position: sticky; top: 0; align-self: start;
+      max-height: calc(100dvh - 64px - 2.5rem); overflow-y: auto;
+      scrollbar-width: none;
+    }
+    .dash-side::-webkit-scrollbar { display: none; }
+    @media (max-width: 1150px) { .dash { grid-template-columns: 1fr; } .dash-side { position: static; max-height: none; overflow: visible; } }
 
     /* Aurora curves behind the header */
     .aurora {
@@ -401,9 +456,12 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
       box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.5);
       padding: 1.1rem 1.25rem;
     }
+    /* Dark cards: glossy navy-blue border + faint indigo sheen from the top,
+       like the reference — not plain white hairlines */
     [data-theme="dark"] .card {
-      border-color: rgba(255, 255, 255, 0.07);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 14px 34px -18px rgba(0, 0, 0, 0.85);
+      border-color: rgba(100, 112, 190, 0.30);
+      background: linear-gradient(180deg, rgba(100, 112, 190, 0.10), rgba(100, 112, 190, 0.02) 46%), var(--bg-card);
+      box-shadow: inset 0 1px 0 rgba(150, 165, 255, 0.16), 0 14px 34px -18px rgba(0, 0, 0, 0.85);
     }
     .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .9rem; }
     .card-head.slim { margin-bottom: .6rem; }
@@ -435,6 +493,11 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
       background: radial-gradient(240px 90px at 15% 0%, var(--hue-soft), transparent 70%);
     }
     .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--hue-border); }
+    [data-theme="dark"] .stat-card {
+      border-color: rgba(100, 112, 190, 0.30);
+      background: linear-gradient(180deg, rgba(100, 112, 190, 0.10), rgba(100, 112, 190, 0.02) 52%), var(--bg-card);
+      box-shadow: inset 0 1px 0 rgba(150, 165, 255, 0.14), 0 12px 30px -18px rgba(0, 0, 0, 0.8);
+    }
     .hue-green  { --hue-soft: rgba(16,185,129,.12);  --hue-border: rgba(16,185,129,.45);  --hue-g1: #34d399; --hue-g2: #059669; --hue-sh: rgba(16,185,129,.5); }
     .hue-violet { --hue-soft: rgba(139,92,246,.12);  --hue-border: rgba(139,92,246,.45);  --hue-g1: #a78bfa; --hue-g2: #7c3aed; --hue-sh: rgba(139,92,246,.5); }
     .hue-blue   { --hue-soft: rgba(59,130,246,.12);  --hue-border: rgba(59,130,246,.45);  --hue-g1: #60a5fa; --hue-g2: #2563eb; --hue-sh: rgba(59,130,246,.5); }
@@ -447,7 +510,10 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
     .stat-body { display: flex; flex-direction: column; min-width: 0; }
     .stat-num { font-size: 1.7rem; font-weight: 800; color: var(--text-primary); line-height: 1.1; letter-spacing: -0.02em; }
     .stat-label { font-size: .78rem; color: var(--text-muted); font-weight: 600; }
-    .spark { margin-left: auto; width: 92px; height: 36px; flex-shrink: 0; filter: drop-shadow(0 3px 5px var(--hue-sh)); }
+    /* Sparkline: crisp line over a blurred copy of itself = soft glow that
+       follows the curve, plus a colored drop shadow below */
+    .spark { margin-left: auto; width: 92px; height: 36px; flex-shrink: 0; overflow: visible; filter: drop-shadow(0 5px 8px var(--hue-sh)); }
+    .spark-glow { opacity: .35; filter: blur(4px); }
 
     /* ── Routine card ───────────────────────────────────── */
     .routine-top {
@@ -473,34 +539,40 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
     .rs-row strong { display: block; font-size: 1.05rem; font-weight: 800; color: var(--text-primary); line-height: 1.1; }
     .rs-row span { font-size: .74rem; color: var(--text-muted); font-weight: 600; }
 
+    /* The illustration floats directly on the card (no boxed sub-panel),
+       separated from the stats by a quiet vertical divider */
     .cheer {
       display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
-      padding: .7rem 1rem .9rem; border-radius: 16px; min-height: 140px; overflow: hidden;
-      background: linear-gradient(180deg, var(--accent-subtle), transparent 130%);
-      border: 1px solid var(--accent-glow);
+      padding: 0 .6rem 0 1.6rem; min-height: 150px;
+      border-left: 1px solid var(--border);
     }
-    [data-theme="dark"] .cheer {
-      background: radial-gradient(130% 110% at 50% -15%, rgba(16,185,129,.22), rgba(16,185,129,.05) 65%, transparent);
-    }
-    .cheer-art { width: min(240px, 100%); height: auto; margin-bottom: .1rem; }
+    [data-theme="dark"] .cheer { border-left-color: rgba(100, 112, 190, 0.22); }
+    @media (max-width: 860px) { .cheer { border-left: none; padding-left: .6rem; } }
+    .cheer-art { width: min(280px, 100%); height: auto; margin-bottom: .15rem; }
     .cheer strong { font-size: 1.08rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.01em; }
     .cheer span { font-size: .8rem; color: var(--text-secondary); }
 
-    .checklist-title { font-size: .95rem; font-weight: 700; color: var(--text-primary); margin: 0 0 .6rem; }
-    .checklist { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 1.4rem; }
+    .checklist-title { font-size: .95rem; font-weight: 700; color: var(--text-primary); margin: 0 0 .7rem; }
+    .checklist { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
     @media (max-width: 860px) { .checklist { grid-template-columns: 1fr; } }
+    /* Each row is its own rounded pill, like the reference checklist */
     .chk-row {
-      display: flex; align-items: center; gap: 10px; padding: 8px 8px; width: 100%;
-      background: transparent; border: none; border-radius: 10px; cursor: pointer;
-      font-family: inherit; text-align: left; transition: background .12s; min-width: 0;
+      display: flex; align-items: center; gap: 10px; padding: 8px 12px; width: 100%;
+      background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px;
+      cursor: pointer; font-family: inherit; text-align: left; transition: background .12s, border-color .12s; min-width: 0;
     }
-    .chk-row:hover { background: var(--bg-hover); }
+    [data-theme="dark"] .chk-row { background: rgba(100, 112, 190, 0.07); border-color: rgba(100, 112, 190, 0.20); }
+    .chk-row:hover { background: var(--bg-hover); border-color: var(--hue-border, var(--border)); }
+    [data-theme="dark"] .chk-row:hover { background: rgba(100, 112, 190, 0.13); }
     .chk-box {
       width: 21px; height: 21px; border-radius: 7px; border: 2px solid var(--border);
       display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .15s;
     }
     .chk-box.on { background: linear-gradient(140deg, var(--accent), var(--accent-hover)); border-color: transparent; }
-    .chk-ico { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: .9rem; flex-shrink: 0; }
+    .chk-ico {
+      width: 29px; height: 29px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 3px 8px rgba(0,0,0,.22);
+    }
     .chk-title { font-size: .88rem; font-weight: 600; color: var(--text-primary); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .chk-row.done .chk-title { text-decoration: line-through; color: var(--text-muted); font-weight: 500; }
     .chk-time { font-size: .7rem; color: var(--text-muted); font-variant-numeric: tabular-nums; flex-shrink: 0; }
@@ -524,8 +596,8 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
     .sched-loc { font-size: .72rem; color: var(--text-muted); margin-left: auto; flex-shrink: 0; }
 
     /* ── Mini calendar ──────────────────────────────────── */
-    .mini-cal { padding: 1rem 1.1rem; }
-    .mc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .7rem; }
+    .mini-cal { padding: .9rem 1rem; flex-shrink: 0; }
+    .mc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .6rem; }
     .mc-head strong { font-size: .95rem; font-weight: 700; color: var(--text-primary); }
     .mc-nav { display: flex; gap: 4px; }
     .mc-nav button {
@@ -537,7 +609,7 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
     .mc-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px 2px; }
     .mc-dow { text-align: center; font-size: .6rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .02em; padding: 3px 0 7px; }
     .mc-cell {
-      height: 31px; border: none; background: transparent; border-radius: 9px;
+      height: 28px; border: none; background: transparent; border-radius: 9px;
       font-size: .76rem; font-weight: 600; color: var(--text-primary); cursor: pointer; font-family: inherit;
       display: flex; align-items: center; justify-content: center; transition: background .12s;
     }
@@ -784,8 +856,22 @@ export class DashboardComponent implements OnInit {
   goCalendar() { this.router.navigate(['/calendar']); }
 
   habitTimeLabel(h: Habit): string {
-    if (h.startTime && h.endTime) return `${h.startTime} - ${h.endTime}`;
+    if (h.startTime && h.endTime) return `${h.startTime} – ${h.endTime}`;
     return h.startTime ?? h.endTime ?? '';
+  }
+
+  // Pick a custom checklist glyph from the habit's name (order matters:
+  // "Study / Work" should read as a book, not a laptop).
+  habitGlyph(h: Habit): string {
+    const t = (h.title ?? '').toLowerCase();
+    if (/wake|morning|sunrise|rise/.test(t)) return 'sun';
+    if (/sleep|nap|bed|night/.test(t)) return 'bed';
+    if (/walk|run|jog|gym|exercise|excercise|workout|yoga|sport|cycle|swim/.test(t)) return 'run';
+    if (/study|read|revis|learn|course|class/.test(t)) return 'book';
+    if (/doodl|draw|sketch|design|note|journal|write|plan/.test(t)) return 'pencil';
+    if (/office|work|freelance|code|project|job|meeting/.test(t)) return 'laptop';
+    if (/eat|meal|breakfast|lunch|dinner|food|cook|water|drink/.test(t)) return 'meal';
+    return 'spark';
   }
 
   showAddPlan = false;

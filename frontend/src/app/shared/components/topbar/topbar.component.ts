@@ -79,8 +79,10 @@ import { ToastService } from '../../../core/services/toast.service';
     .topbar {
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 1.5rem; height: 64px; min-height: 64px; flex-shrink: 0;
-      background: var(--bg-primary); border-bottom: 1px solid var(--border);
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      /* No bar: the header blends into the page so the dashboard aurora
+         flows behind it, matching the reference's seamless top area */
+      background: transparent; border-bottom: none; box-shadow: none;
+      position: relative; z-index: 2;
     }
     /* On phones the layout shows its own fixed mobile topbar — hide this one
        entirely so it doesn't add a second header's worth of empty space. */

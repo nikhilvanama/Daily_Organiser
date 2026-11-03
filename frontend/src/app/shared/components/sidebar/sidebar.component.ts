@@ -133,7 +133,7 @@ import { SidebarPrefsService } from '../../../core/services/sidebar-prefs.servic
       --sidebar-hover-border: rgba(120,90,40,0.14);
     }
 
-    .sidebar { width: 182px; min-width: 182px; height: 100vh; height: 100dvh; background: var(--sidebar-bg); display: flex; flex-direction: column; border-right: 1px solid var(--sidebar-border); overflow: hidden; }
+    .sidebar { width: 212px; min-width: 212px; height: 100vh; height: 100dvh; background: var(--sidebar-bg); display: flex; flex-direction: column; border-right: 1px solid var(--sidebar-border); overflow: hidden; }
 
     /* Header — height matches topbar (64px) */
     .sidebar-header { flex-shrink: 0; height: 64px; display: flex; align-items: center; padding: 0 0.75rem; border-bottom: 1px solid var(--sidebar-border); }
