@@ -135,8 +135,8 @@ import { SidebarPrefsService } from '../../../core/services/sidebar-prefs.servic
 
     .sidebar { width: 212px; min-width: 212px; height: 100vh; height: 100dvh; background: var(--sidebar-bg); display: flex; flex-direction: column; border-right: 1px solid var(--sidebar-border); overflow: hidden; }
 
-    /* Header — height matches topbar (64px) */
-    .sidebar-header { flex-shrink: 0; height: 52px; display: flex; align-items: center; padding: 0 0.75rem; border-bottom: 1px solid var(--sidebar-border); }
+    /* Header — height matches topbar (44px) */
+    .sidebar-header { flex-shrink: 0; height: 44px; display: flex; align-items: center; padding: 0 0.75rem; border-bottom: 1px solid var(--sidebar-border); }
     .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
     .logo-icon { width: 30px; height: 30px; background: linear-gradient(135deg, var(--accent), var(--accent-hover)); border-radius: 9px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px var(--accent-glow); flex-shrink: 0; }
     .logo-text { color: var(--sidebar-logo-text); font-weight: 700; font-size: 0.82rem; letter-spacing: -0.01em; white-space: nowrap; }

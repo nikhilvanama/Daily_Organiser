@@ -73,7 +73,7 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
     :host { display: block; height: 100vh; height: 100dvh; }
     .layout { display: flex; height: 100vh; height: 100dvh; width: 100vw; overflow: hidden; }
     .layout-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg-secondary); min-width: 0; }
-    .layout-content { flex: 1; overflow-y: auto; padding: 2rem 2.5rem; }
+    .layout-content { flex: 1; overflow-y: auto; padding: 1rem 1.5rem 2rem; }
     .layout-content.board-route { padding-bottom: 0; overflow: hidden; }
 
     .sidebar-wrap { flex-shrink: 0; }

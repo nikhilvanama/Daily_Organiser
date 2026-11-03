@@ -438,8 +438,7 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
   `,
   styles: [`
     /* ── Layout ─────────────────────────────────────────── */
-    /* Pulled up a little so the greeting sits closer to the header */
-    .dash { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 1.1rem; align-items: start; position: relative; margin-top: -0.9rem; }
+    .dash { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 1.1rem; align-items: start; position: relative; }
     .dash-main { display: flex; flex-direction: column; gap: 1.1rem; min-width: 0; position: relative; z-index: 1; }
     /* Right rail stays pinned while the main column scrolls. It shows in
        full by default; only on short viewports does it cap to the screen
@@ -449,7 +448,7 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
       position: sticky; top: 0; align-self: start;
     }
     @media (max-height: 849px) {
-      .dash-side { max-height: calc(100dvh - 52px - 3rem); overflow-y: auto; scrollbar-width: none; }
+      .dash-side { max-height: calc(100dvh - 44px - 3rem); overflow-y: auto; scrollbar-width: none; }
       .dash-side::-webkit-scrollbar { display: none; }
     }
     @media (max-width: 1150px) { .dash { grid-template-columns: 1fr; } .dash-side { position: static; max-height: none; overflow: visible; } }
@@ -457,7 +456,7 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
     /* Aurora curves pinned to the top of the viewport, behind the
        transparent header bar (topbar has z-index 2, cards z-index 1) */
     .aurora {
-      position: fixed; top: 0; right: 0; width: min(72vw, 1150px); height: 220px;
+      position: fixed; top: 0; right: 0; width: min(84vw, 1340px); height: 220px;
       pointer-events: none; z-index: 0; opacity: .35;
     }
     [data-theme="dark"] .aurora { opacity: .85; }
