@@ -295,8 +295,10 @@ import { AnalyticsRange, AnalyticsSummary } from '../../../core/models/analytics
     .range-pill { background: transparent; border: none; padding: 5px 14px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.15s; font-family: inherit; letter-spacing: 0.02em; }
     .range-pill:hover { color: var(--text-primary); }
     .range-pill.active { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    /* Header is short here — shrink the decorative art so it fits */
+    /* Header is short here — shrink the decorative art so it fits.
+       Hidden on phones: the header is full of range controls. */
     app-page-art { height: 70px; top: 62%; right: 220px; }
+    @media (max-width: 768px) { app-page-art { display: none; } }
 
     .loading-state { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 5rem; color: var(--text-muted); font-size: 0.9rem; }
     .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }

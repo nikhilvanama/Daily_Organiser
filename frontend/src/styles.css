@@ -448,9 +448,11 @@ textarea.input { resize: vertical; min-height: 80px; }
   /* Form rows stack vertically on mobile */
   .form-row { grid-template-columns: 1fr; }
 
-  /* Page headers stack vertically */
+  /* Page headers stack vertically; the title block wraps before the
+     decorative figure floating on the right */
   .page-header { flex-direction: column; gap: 10px; }
   .page-header h2 { font-size: 1.25rem; }
+  .page-header > div:first-of-type { max-width: 56%; }
 
   /* Reduce page padding */
   .page { gap: 1rem; }

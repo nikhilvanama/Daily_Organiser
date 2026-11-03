@@ -213,6 +213,11 @@ import { Component, Input } from '@angular/core';
     }
     :host svg { height: 100%; width: auto; }
     @media (max-width: 1100px) { :host { display: none; } }
+    /* Phones: the header stacks vertically, leaving the right side of the
+       module name free — show a compact figure there */
+    @media (max-width: 768px) {
+      :host { display: block; right: 0; top: -4px; transform: none; height: 76px; }
+    }
   `],
 })
 export class PageArtComponent {

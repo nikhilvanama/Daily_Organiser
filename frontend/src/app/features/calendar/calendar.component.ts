@@ -279,8 +279,10 @@ interface CalendarDay {
   styles: [`
     /* Calendar header: horizontal flex with centered month/year title */
     .cal-header { display: flex; align-items: center; gap: 0.75rem; position: relative; }
-    /* Short header row — compact decorative art floated right of center */
+    /* Short header row — compact decorative art floated right of center.
+       Hidden on phones: the month nav fills the header. */
     app-page-art { height: 74px; top: 58%; right: 120px; }
+    @media (max-width: 768px) { app-page-art { display: none; } }
     .nav-btn { padding: 6px 10px; }
 
     /* Month title button — triggers the picker */
