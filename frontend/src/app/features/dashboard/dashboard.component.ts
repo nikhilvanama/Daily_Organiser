@@ -441,15 +441,17 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
     /* Pulled up a little so the greeting sits closer to the header */
     .dash { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 1.1rem; align-items: start; position: relative; margin-top: -0.9rem; }
     .dash-main { display: flex; flex-direction: column; gap: 1.1rem; min-width: 0; position: relative; z-index: 1; }
-    /* Right rail stays pinned while the main column scrolls; capped to the
-       viewport with hidden overflow so it never travels with the page */
+    /* Right rail stays pinned while the main column scrolls. It shows in
+       full by default; only on short viewports does it cap to the screen
+       and scroll invisibly inside itself. */
     .dash-side {
       display: flex; flex-direction: column; gap: .9rem; z-index: 1;
       position: sticky; top: 0; align-self: start;
-      max-height: calc(100dvh - 64px - 4rem); overflow-y: auto;
-      scrollbar-width: none;
     }
-    .dash-side::-webkit-scrollbar { display: none; }
+    @media (max-height: 849px) {
+      .dash-side { max-height: calc(100dvh - 52px - 3rem); overflow-y: auto; scrollbar-width: none; }
+      .dash-side::-webkit-scrollbar { display: none; }
+    }
     @media (max-width: 1150px) { .dash { grid-template-columns: 1fr; } .dash-side { position: static; max-height: none; overflow: visible; } }
 
     /* Aurora curves pinned to the top of the viewport, behind the
