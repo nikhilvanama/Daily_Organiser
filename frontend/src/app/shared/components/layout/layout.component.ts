@@ -96,9 +96,10 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
     :host { display: block; height: 100vh; height: 100dvh; }
     .layout { display: flex; height: 100vh; height: 100dvh; width: 100vw; overflow: hidden; }
     .layout-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg-secondary); min-width: 0; }
-    /* z-index 1 keeps page content above the fixed aurora (z 0); the
-       transparent gaps still let the glow show through */
-    .layout-content { flex: 1; overflow-y: auto; padding: 1rem 1.5rem 2rem; position: relative; z-index: 1; }
+    /* position:relative (no z-index!) paints content above the earlier
+       aurora by DOM order, without trapping page overlays (day drawer,
+       modals) in a stacking context below the topbar */
+    .layout-content { flex: 1; overflow-y: auto; padding: 1rem 1.5rem 2rem; position: relative; }
     .layout-content.board-route { padding-bottom: 0; overflow: hidden; }
 
     /* Aurora curves pinned to the top of the viewport, behind the
