@@ -59,6 +59,29 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
 
       <!-- Main content -->
       <div class="layout-main">
+        <!-- Decorative aurora curves pinned to the top of the viewport on
+             every page, flowing behind the transparent header -->
+        <svg class="aurora" viewBox="0 0 900 260" preserveAspectRatio="xMidYMin slice" aria-hidden="true">
+          <defs>
+            <linearGradient id="auroraV" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0"/>
+              <stop offset="45%" stop-color="#8b5cf6" stop-opacity=".55"/>
+              <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="auroraG" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#10b981" stop-opacity="0"/>
+              <stop offset="50%" stop-color="#34d399" stop-opacity=".5"/>
+              <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+            </linearGradient>
+            <filter id="auroraBlur" x="-20%" y="-50%" width="140%" height="220%">
+              <feGaussianBlur stdDeviation="14"/>
+            </filter>
+          </defs>
+          <path d="M240 -40 C 420 90, 620 20, 940 130" stroke="url(#auroraV)" stroke-width="56" fill="none" filter="url(#auroraBlur)"/>
+          <path d="M380 -60 C 560 110, 740 -10, 980 70" stroke="url(#auroraG)" stroke-width="40" fill="none" filter="url(#auroraBlur)"/>
+          <path d="M300 -30 C 500 100, 680 10, 920 100" stroke="#a78bfa" stroke-opacity=".35" stroke-width="2" fill="none"/>
+          <path d="M420 -40 C 600 100, 760 0, 960 60" stroke="#34d399" stroke-opacity=".3" stroke-width="1.6" fill="none"/>
+        </svg>
         <app-topbar />
         <main class="layout-content" [class.board-route]="isBoardRoute()">
           <router-outlet />
@@ -73,8 +96,22 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
     :host { display: block; height: 100vh; height: 100dvh; }
     .layout { display: flex; height: 100vh; height: 100dvh; width: 100vw; overflow: hidden; }
     .layout-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg-secondary); min-width: 0; }
-    .layout-content { flex: 1; overflow-y: auto; padding: 1rem 1.5rem 2rem; }
+    /* z-index 1 keeps page content above the fixed aurora (z 0); the
+       transparent gaps still let the glow show through */
+    .layout-content { flex: 1; overflow-y: auto; padding: 1rem 1.5rem 2rem; position: relative; z-index: 1; }
     .layout-content.board-route { padding-bottom: 0; overflow: hidden; }
+
+    /* Aurora curves pinned to the top of the viewport, behind the
+       transparent header bar (topbar z 2, content z 1) */
+    .aurora {
+      position: fixed; top: 0; right: 0; width: min(84vw, 1340px); height: 220px;
+      pointer-events: none; z-index: 0; opacity: .35;
+    }
+    [data-theme="dark"] .aurora { opacity: .85; }
+    @media (max-width: 768px) {
+      .aurora { width: 100vw; height: 170px; opacity: .5; }
+      [data-theme="dark"] .aurora { opacity: 1; }
+    }
 
     .sidebar-wrap { flex-shrink: 0; }
     .mobile-topbar { display: none; }

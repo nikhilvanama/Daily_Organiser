@@ -36,33 +36,8 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
       </div>
     }
 
-    <!-- Decorative aurora curves pinned to the very top of the viewport,
-         flowing behind the transparent header (pointer-transparent).
-         Lives outside .dash so position:fixed isn't trapped by its animation. -->
-    @if (!loading()) {
-      <svg class="aurora" viewBox="0 0 900 260" preserveAspectRatio="xMidYMin slice" aria-hidden="true">
-        <defs>
-          <linearGradient id="auroraV" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0"/>
-            <stop offset="45%" stop-color="#8b5cf6" stop-opacity=".55"/>
-            <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
-          </linearGradient>
-          <linearGradient id="auroraG" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stop-color="#10b981" stop-opacity="0"/>
-            <stop offset="50%" stop-color="#34d399" stop-opacity=".5"/>
-            <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
-          </linearGradient>
-          <filter id="auroraBlur" x="-20%" y="-50%" width="140%" height="220%">
-            <feGaussianBlur stdDeviation="14"/>
-          </filter>
-        </defs>
-        <path d="M240 -40 C 420 90, 620 20, 940 130" stroke="url(#auroraV)" stroke-width="56" fill="none" filter="url(#auroraBlur)"/>
-        <path d="M380 -60 C 560 110, 740 -10, 980 70" stroke="url(#auroraG)" stroke-width="40" fill="none" filter="url(#auroraBlur)"/>
-        <path d="M300 -30 C 500 100, 680 10, 920 100" stroke="#a78bfa" stroke-opacity=".35" stroke-width="2" fill="none"/>
-        <path d="M420 -40 C 600 100, 760 0, 960 60" stroke="#34d399" stroke-opacity=".3" stroke-width="1.6" fill="none"/>
-      </svg>
-    }
-
+    <!-- The aurora header curves now live in the app layout so every page
+         gets them, not just the dashboard -->
     <div class="dash animate-in" [style.display]="loading() ? 'none' : ''">
 
       <!-- ═══ MAIN COLUMN ═══ -->
@@ -440,32 +415,10 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
     /* ── Layout ─────────────────────────────────────────── */
     .dash { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 1.1rem; align-items: start; position: relative; }
     .dash-main { display: flex; flex-direction: column; gap: 1.1rem; min-width: 0; position: relative; z-index: 1; }
-    /* Right rail stays pinned while the main column scrolls. It shows in
-       full by default; only on short viewports does it cap to the screen
-       and scroll invisibly inside itself. */
-    .dash-side {
-      display: flex; flex-direction: column; gap: .9rem; z-index: 1;
-      position: sticky; top: 0; align-self: start;
-    }
-    @media (max-height: 849px) {
-      .dash-side { max-height: calc(100dvh - 44px - 3rem); overflow-y: auto; scrollbar-width: none; }
-      .dash-side::-webkit-scrollbar { display: none; }
-    }
-    @media (max-width: 1150px) { .dash { grid-template-columns: 1fr; } .dash-side { position: static; max-height: none; overflow: visible; } }
-
-    /* Aurora curves pinned to the top of the viewport, behind the
-       transparent header bar (topbar has z-index 2, cards z-index 1) */
-    .aurora {
-      position: fixed; top: 0; right: 0; width: min(84vw, 1340px); height: 220px;
-      pointer-events: none; z-index: 0; opacity: .35;
-    }
-    [data-theme="dark"] .aurora { opacity: .85; }
-    /* Phones keep the aurora, just scaled down to the screen; it glows
-       through the translucent mobile topbar */
-    @media (max-width: 768px) {
-      .aurora { width: 100vw; height: 170px; opacity: .5; }
-      [data-theme="dark"] .aurora { opacity: 1; }
-    }
+    /* Right rail scrolls together with the page content — no pinning,
+       no internal overflow */
+    .dash-side { display: flex; flex-direction: column; gap: .9rem; z-index: 1; min-width: 0; }
+    @media (max-width: 1150px) { .dash { grid-template-columns: 1fr; } }
 
     .card {
       background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px;
