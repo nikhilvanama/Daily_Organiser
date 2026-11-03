@@ -301,14 +301,10 @@ import { AnalyticsRange, AnalyticsSummary } from '../../../core/models/analytics
     /* KPI Cards */
     .kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.75rem; }
     .kpi-card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
+      background: var(--card-surface); border: 1px solid var(--card-border); border-radius: 16px;
+      box-shadow: var(--card-shadow);
       padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 6px;
       position: relative; overflow: hidden; transition: border-color 0.2s;
-    }
-    [data-theme="dark"] .kpi-card {
-      border-color: rgba(100, 112, 190, 0.30);
-      background: linear-gradient(168deg, rgba(104, 118, 196, 0.085), rgba(104, 118, 196, 0.015) 58%), var(--bg-card);
-      box-shadow: 0 14px 34px -18px rgba(0, 0, 0, 0.85);
     }
     .kpi-card:hover { border-color: rgba(16,185,129,0.3); }
     /* Gradient glyph tiles with soft glow — white icons on colorful squares */
@@ -339,7 +335,6 @@ import { AnalyticsRange, AnalyticsSummary } from '../../../core/models/analytics
     .goals-progress-fill { height: 100%; background: #c084fc; border-radius: 99px; transition: width 0.4s; }
 
     /* Chart card */
-    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); }
     .chart-card { padding: 1.25rem 1.5rem; }
     .chart-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
     .chart-header h3 { font-size: 0.95rem; font-weight: 700; margin: 0; color: var(--text-primary); }

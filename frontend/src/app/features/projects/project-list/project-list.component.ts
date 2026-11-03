@@ -149,13 +149,9 @@ import { ToastService } from '../../../core/services/toast.service';
   styles: [`
     .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; }
     .stat-card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+      background: var(--card-surface); border: 1px solid var(--card-border); border-radius: 14px;
+      box-shadow: var(--card-shadow);
       padding: 0.85rem 1rem; display: flex; align-items: center; gap: 11px;
-    }
-    [data-theme="dark"] .stat-card {
-      border-color: rgba(100, 112, 190, 0.30);
-      background: linear-gradient(168deg, rgba(104, 118, 196, 0.085), rgba(104, 118, 196, 0.015) 58%), var(--bg-card);
-      box-shadow: 0 14px 34px -18px rgba(0, 0, 0, 0.85);
     }
     .stat-ico {
       width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
@@ -205,12 +201,8 @@ import { ToastService } from '../../../core/services/toast.service';
     .project-list { display: flex; flex-direction: column; gap: 8px; }
     .project-row {
       display: flex; align-items: center; gap: 14px; padding: 14px 16px;
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+      background: var(--card-surface); border: 1px solid var(--card-border); border-radius: 14px;
       text-decoration: none; color: inherit; transition: all 0.15s;
-    }
-    [data-theme="dark"] .project-row {
-      border-color: rgba(100, 112, 190, 0.30);
-      background: linear-gradient(168deg, rgba(104, 118, 196, 0.07), rgba(104, 118, 196, 0.012) 58%), var(--bg-card);
     }
     .project-row:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: var(--shadow-md); }
     .project-row.overdue { border-color: rgba(239, 68, 68, 0.4); }

@@ -180,7 +180,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
     .cal-backdrop { position: fixed; inset: 0; z-index: 99; }
     .cal-popup {
       position: absolute; top: calc(100% + 8px); right: 0; z-index: 100;
-      background: var(--bg-card); border: 1px solid var(--border);
+      background: var(--card-surface); border: 1px solid var(--card-border);
       border-radius: 14px; padding: 14px; width: 252px;
       box-shadow: 0 12px 40px rgba(0,0,0,0.4);
     }

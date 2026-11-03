@@ -76,7 +76,7 @@ interface SearchGroup {
     .gs-panel {
       position: fixed; top: 12vh; left: 50%; transform: translateX(-50%);
       width: min(600px, calc(100vw - 2rem)); max-height: 65vh; z-index: 991;
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+      background: var(--card-surface); border: 1px solid var(--card-border); border-radius: 14px;
       box-shadow: 0 24px 70px rgba(0,0,0,0.45); display: flex; flex-direction: column; overflow: hidden;
     }
     .gs-input-row { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border); color: var(--text-muted); }

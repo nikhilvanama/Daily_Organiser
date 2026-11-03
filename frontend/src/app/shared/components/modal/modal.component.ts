@@ -38,7 +38,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
     }
     /* Modal panel: card-styled container with theme-aware colors and a subtle shadow */
     .modal-panel {
-      background: var(--bg-card); border-radius: var(--radius);
+      background: var(--card-surface); border: 1px solid var(--card-border); border-radius: var(--radius);
       border: 1px solid var(--border); width: 100%; max-height: 90vh;
       overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     }

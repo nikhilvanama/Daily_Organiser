@@ -115,13 +115,9 @@ import { ToastService } from '../../../core/services/toast.service';
     .board { display: grid; grid-template-columns: repeat(4, minmax(240px, 1fr)); gap: 0.75rem; min-width: 1000px; height: 100%; }
 
     .lane {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
+      background: var(--card-surface); border: 1px solid var(--card-border); border-radius: 16px;
+      box-shadow: var(--card-shadow);
       padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; overflow: hidden;
-    }
-    [data-theme="dark"] .lane {
-      border-color: rgba(100, 112, 190, 0.30);
-      background: linear-gradient(168deg, rgba(104, 118, 196, 0.085), rgba(104, 118, 196, 0.015) 58%), var(--bg-card);
-      box-shadow: 0 14px 34px -18px rgba(0, 0, 0, 0.85);
     }
     .lane-header { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
     .lane-title-block { display: flex; align-items: center; gap: 6px; min-width: 0; }

@@ -31,7 +31,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
     .dialog {
-      background: var(--bg-card); border: 1px solid var(--border);
+      background: var(--card-surface); border: 1px solid var(--card-border);
       border-radius: 16px; padding: 2rem; width: 100%; max-width: 380px;
       text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
       animation: slideUp 0.2s ease;

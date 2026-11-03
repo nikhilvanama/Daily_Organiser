@@ -424,17 +424,12 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
     .dash-side { display: flex; flex-direction: column; gap: .9rem; z-index: 1; min-width: 0; }
     @media (max-width: 1150px) { .dash { grid-template-columns: 1fr; } }
 
+    /* Card surface comes from the global --card-* theme variables so every
+       page shares the exact same look; only the padding is local */
     .card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px;
-      box-shadow: var(--shadow-sm);
+      background: var(--card-surface); border: 1px solid var(--card-border); border-radius: 18px;
+      box-shadow: var(--card-shadow);
       padding: 1.1rem 1.25rem;
-    }
-    /* Dark cards: navy-blue border + soft indigo surface tint — no white
-       hairline highlight on the top edge */
-    [data-theme="dark"] .card {
-      border-color: rgba(100, 112, 190, 0.30);
-      background: linear-gradient(168deg, rgba(104, 118, 196, 0.085), rgba(104, 118, 196, 0.015) 55%), var(--bg-card);
-      box-shadow: 0 14px 34px -18px rgba(0, 0, 0, 0.85);
     }
     .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .9rem; }
     .card-head.slim { margin-bottom: .6rem; }
@@ -457,8 +452,8 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
     @media (max-width: 760px) { .stats-row { grid-template-columns: 1fr; } }
     .stat-card {
       display: flex; align-items: center; gap: 13px;
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
-      padding: 1rem 1.1rem; text-decoration: none; box-shadow: var(--shadow-sm);
+      background: var(--card-surface); border: 1px solid var(--card-border); border-radius: 16px;
+      padding: 1rem 1.1rem; text-decoration: none; box-shadow: var(--card-shadow);
       transition: transform .16s, box-shadow .16s, border-color .16s; position: relative; overflow: hidden;
     }
     .stat-card::after {
@@ -466,11 +461,6 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
       background: radial-gradient(240px 90px at 15% 0%, var(--hue-soft), transparent 70%);
     }
     .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--hue-border); }
-    [data-theme="dark"] .stat-card {
-      border-color: rgba(100, 112, 190, 0.30);
-      background: linear-gradient(168deg, rgba(104, 118, 196, 0.085), rgba(104, 118, 196, 0.015) 58%), var(--bg-card);
-      box-shadow: 0 12px 30px -18px rgba(0, 0, 0, 0.8);
-    }
     .hue-green  { --hue-soft: rgba(16,185,129,.12);  --hue-border: rgba(16,185,129,.45);  --hue-g1: #34d399; --hue-g2: #059669; --hue-sh: rgba(16,185,129,.5); }
     .hue-violet { --hue-soft: rgba(139,92,246,.12);  --hue-border: rgba(139,92,246,.45);  --hue-g1: #a78bfa; --hue-g2: #7c3aed; --hue-sh: rgba(139,92,246,.5); }
     .hue-blue   { --hue-soft: rgba(59,130,246,.12);  --hue-border: rgba(59,130,246,.45);  --hue-g1: #60a5fa; --hue-g2: #2563eb; --hue-sh: rgba(59,130,246,.5); }

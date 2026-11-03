@@ -143,7 +143,7 @@ interface ChatMsg {
     .ai-panel {
       position: fixed; bottom: 84px; right: 20px; z-index: 941;
       width: min(360px, calc(100vw - 2rem)); height: min(460px, calc(100vh - 120px));
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
+      background: var(--card-surface); border: 1px solid var(--card-border); border-radius: 16px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.35);
       display: flex; flex-direction: column; overflow: hidden;
       animation: ai-pop 0.18s ease;
