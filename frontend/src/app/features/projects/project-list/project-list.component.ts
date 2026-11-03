@@ -25,27 +25,37 @@ import { ToastService } from '../../../core/services/toast.service';
         </button>
       </div>
 
-      <!-- Stats summary -->
+      <!-- Stats summary: gradient icon tile + number + label -->
       <div class="stats-row">
         <div class="stat-card">
-          <span class="stat-num">{{ projects().length }}</span>
-          <span class="stat-label">Total</span>
+          <span class="stat-ico ico-blue">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z" fill="#fff" stroke="none"/><path d="M3 13l9 5 9-5"/></svg>
+          </span>
+          <div class="stat-txt"><span class="stat-num">{{ projects().length }}</span><span class="stat-label">Total</span></div>
         </div>
         <div class="stat-card">
-          <span class="stat-num">{{ countByStatus('IN_PROGRESS') }}</span>
-          <span class="stat-label">In progress</span>
+          <span class="stat-ico ico-purple">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M6 3h12M6 21h12M8 3c0 6 8 6 8 10s-8 4-8 8M16 3c0 6-8 6-8 10s8 4 8 8"/></svg>
+          </span>
+          <div class="stat-txt"><span class="stat-num">{{ countByStatus('IN_PROGRESS') }}</span><span class="stat-label">In progress</span></div>
         </div>
         <div class="stat-card">
-          <span class="stat-num">{{ formatMoney(outstanding()) }}</span>
-          <span class="stat-label">Outstanding</span>
+          <span class="stat-ico ico-amber">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.6" stroke="#fff" stroke-width="2.2"/><path d="M9.2 8.6h5.6M9.2 11.4h5.6M10 8.6c2.6 0 3.8 1.6 3.4 3.4-.3 1.5-1.6 2.4-3.2 2.4l3.4 3.2" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </span>
+          <div class="stat-txt"><span class="stat-num">{{ formatMoney(outstanding()) }}</span><span class="stat-label">Outstanding</span></div>
         </div>
         <div class="stat-card">
-          <span class="stat-num">{{ formatMoney(receivedThisMonth()) }}</span>
-          <span class="stat-label">This month</span>
+          <span class="stat-ico ico-green">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-8"/><path d="M15 8h5v5"/></svg>
+          </span>
+          <div class="stat-txt"><span class="stat-num">{{ formatMoney(receivedThisMonth()) }}</span><span class="stat-label">This month</span></div>
         </div>
         <div class="stat-card">
-          <span class="stat-num">{{ formatMoney(totalRevenue()) }}</span>
-          <span class="stat-label">Total revenue</span>
+          <span class="stat-ico ico-teal">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>
+          </span>
+          <div class="stat-txt"><span class="stat-num">{{ formatMoney(totalRevenue()) }}</span><span class="stat-label">Total revenue</span></div>
         </div>
       </div>
 
@@ -138,9 +148,27 @@ import { ToastService } from '../../../core/services/toast.service';
   `,
   styles: [`
     .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; }
-    .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 2px; }
-    .stat-num { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); line-height: 1.1; }
-    .stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+    .stat-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+      padding: 0.85rem 1rem; display: flex; align-items: center; gap: 11px;
+    }
+    [data-theme="dark"] .stat-card {
+      border-color: rgba(100, 112, 190, 0.30);
+      background: linear-gradient(168deg, rgba(104, 118, 196, 0.085), rgba(104, 118, 196, 0.015) 58%), var(--bg-card);
+      box-shadow: 0 14px 34px -18px rgba(0, 0, 0, 0.85);
+    }
+    .stat-ico {
+      width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .ico-blue   { background: linear-gradient(140deg, #60a5fa, #2563eb); box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), 0 4px 12px rgba(59, 130, 246, .45); }
+    .ico-purple { background: linear-gradient(140deg, #a78bfa, #6d28d9); box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), 0 4px 12px rgba(139, 92, 246, .45); }
+    .ico-amber  { background: linear-gradient(140deg, #fde047, #f59e0b); box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), 0 4px 12px rgba(245, 158, 11, .45); }
+    .ico-green  { background: linear-gradient(140deg, #4ade80, #059669); box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), 0 4px 12px rgba(16, 185, 129, .45); }
+    .ico-teal   { background: linear-gradient(140deg, #2dd4bf, #0d9488); box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), 0 4px 12px rgba(20, 184, 166, .45); }
+    .stat-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .stat-num { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.02em; color: var(--text-primary); line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stat-label { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
 
     .chip-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 
@@ -174,11 +202,15 @@ import { ToastService } from '../../../core/services/toast.service';
     .chip.active { background: var(--chip-color, var(--accent)); color: #fff; border-color: transparent; }
     .chip-count { font-size: 0.7rem; opacity: 0.8; }
 
-    .project-list { display: flex; flex-direction: column; gap: 6px; }
+    .project-list { display: flex; flex-direction: column; gap: 8px; }
     .project-row {
       display: flex; align-items: center; gap: 14px; padding: 14px 16px;
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
       text-decoration: none; color: inherit; transition: all 0.15s;
+    }
+    [data-theme="dark"] .project-row {
+      border-color: rgba(100, 112, 190, 0.30);
+      background: linear-gradient(168deg, rgba(104, 118, 196, 0.07), rgba(104, 118, 196, 0.012) 58%), var(--bg-card);
     }
     .project-row:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: var(--shadow-md); }
     .project-row.overdue { border-color: rgba(239, 68, 68, 0.4); }
@@ -200,7 +232,12 @@ import { ToastService } from '../../../core/services/toast.service';
 
     .proj-progress { display: flex; align-items: center; gap: 8px; width: 130px; flex-shrink: 0; }
     .prog-bar { flex: 1; height: 6px; background: var(--bg-secondary); border-radius: 99px; overflow: hidden; }
-    .prog-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.4s; }
+    [data-theme="dark"] .prog-bar { background: rgba(100, 112, 190, 0.12); }
+    .prog-fill {
+      height: 100%; border-radius: 99px; transition: width 0.4s;
+      background: linear-gradient(90deg, var(--accent-hover), var(--accent));
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
     .prog-pct { font-size: 0.75rem; font-weight: 600; color: var(--text-primary); width: 32px; text-align: right; }
 
     .empty-card { padding: 2.5rem 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.9rem; }

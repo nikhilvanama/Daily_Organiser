@@ -301,21 +301,27 @@ import { AnalyticsRange, AnalyticsSummary } from '../../../core/models/analytics
     /* KPI Cards */
     .kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.75rem; }
     .kpi-card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
       padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 6px;
       position: relative; overflow: hidden; transition: border-color 0.2s;
     }
-    .kpi-card:hover { border-color: rgba(16,185,129,0.3); }
-    .kpi-icon {
-      width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
-      margin-bottom: 2px;
+    [data-theme="dark"] .kpi-card {
+      border-color: rgba(100, 112, 190, 0.30);
+      background: linear-gradient(168deg, rgba(104, 118, 196, 0.085), rgba(104, 118, 196, 0.015) 58%), var(--bg-card);
+      box-shadow: 0 14px 34px -18px rgba(0, 0, 0, 0.85);
     }
-    .tasks-icon   { background: rgba(99,102,241,0.12); color: #818cf8; }
-    .habits-icon  { background: rgba(16,185,129,0.12); color: #34d399; }
-    .streak-icon  { background: rgba(249,115,22,0.12); color: #fb923c; }
-    .journal-icon { background: rgba(245,158,11,0.12); color: #fbbf24; }
-    .revenue-icon { background: rgba(52,211,153,0.12); color: #10b981; }
-    .goals-icon   { background: rgba(168,85,247,0.12); color: #c084fc; }
+    .kpi-card:hover { border-color: rgba(16,185,129,0.3); }
+    /* Gradient glyph tiles with soft glow — white icons on colorful squares */
+    .kpi-icon {
+      width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      margin-bottom: 2px; color: #fff;
+    }
+    .tasks-icon   { background: linear-gradient(140deg, #818cf8, #4f46e5); box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), 0 4px 12px rgba(99, 102, 241, .45); }
+    .habits-icon  { background: linear-gradient(140deg, #4ade80, #059669); box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), 0 4px 12px rgba(16, 185, 129, .45); }
+    .streak-icon  { background: linear-gradient(140deg, #fb923c, #ea580c); box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), 0 4px 12px rgba(249, 115, 22, .45); }
+    .journal-icon { background: linear-gradient(140deg, #fde047, #f59e0b); box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), 0 4px 12px rgba(245, 158, 11, .45); }
+    .revenue-icon { background: linear-gradient(140deg, #2dd4bf, #0d9488); box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), 0 4px 12px rgba(20, 184, 166, .45); }
+    .goals-icon   { background: linear-gradient(140deg, #c084fc, #7c3aed); box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), 0 4px 12px rgba(168, 85, 247, .45); }
 
     .kpi-body { display: flex; flex-direction: column; gap: 2px; }
     .kpi-value { font-size: 1.65rem; font-weight: 800; color: var(--text-primary); line-height: 1; letter-spacing: -0.02em; }

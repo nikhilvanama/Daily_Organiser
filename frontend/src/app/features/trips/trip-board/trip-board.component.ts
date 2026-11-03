@@ -107,12 +107,17 @@ import { ToastService } from '../../../core/services/toast.service';
     .board { display: grid; grid-template-columns: repeat(4, minmax(260px, 1fr)); gap: 0.75rem; min-width: 1080px; height: 100%; }
 
     .lane {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
       padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; overflow: hidden;
+    }
+    [data-theme="dark"] .lane {
+      border-color: rgba(100, 112, 190, 0.30);
+      background: linear-gradient(168deg, rgba(104, 118, 196, 0.085), rgba(104, 118, 196, 0.015) 58%), var(--bg-card);
+      box-shadow: 0 14px 34px -18px rgba(0, 0, 0, 0.85);
     }
     .lane-header { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
     .lane-title-block { display: flex; align-items: center; gap: 6px; min-width: 0; }
-    .lane-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--lane-color); flex-shrink: 0; }
+    .lane-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--lane-color); flex-shrink: 0; box-shadow: 0 0 8px var(--lane-color); }
     .lane-header h3 { font-size: 0.88rem; font-weight: 600; margin: 0; }
     .lane-count { font-size: 0.7rem; color: var(--text-muted); background: var(--bg-hover); padding: 1px 8px; border-radius: 99px; font-weight: 600; }
     .lane-add {
@@ -126,10 +131,11 @@ import { ToastService } from '../../../core/services/toast.service';
     .lane-empty { padding: 0.75rem; text-align: center; color: var(--text-muted); font-size: 0.78rem; border: 1px dashed var(--border); border-radius: 8px; }
 
     .trip-card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px;
       padding: 10px 12px; cursor: grab; transition: all 0.15s;
       display: flex; flex-direction: column; gap: 6px;
     }
+    [data-theme="dark"] .trip-card { background: rgba(100, 112, 190, 0.07); border-color: rgba(100, 112, 190, 0.20); }
     .trip-card:active { cursor: grabbing; }
     .trip-card:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: var(--shadow-md); }
     .trip-card.dragging { opacity: 0.4; transform: rotate(2deg); cursor: grabbing; }

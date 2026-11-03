@@ -332,8 +332,10 @@ interface CalendarDay {
     /* 7-column grid: 1px gap creates grid lines via the card's background color */
     .cal-grid {
       display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px;
-      background: var(--border); overflow: hidden; border-radius: var(--radius);
+      background: var(--border); overflow: hidden; border-radius: 16px;
     }
+    /* Navy grid lines in dark mode, matching the command-center card borders */
+    [data-theme="dark"] .cal-grid { background: rgba(100, 112, 190, 0.22); }
     /* Day-of-week header labels: centered uppercase text */
     .cal-label {
       background: var(--bg-card); padding: 10px; text-align: center;

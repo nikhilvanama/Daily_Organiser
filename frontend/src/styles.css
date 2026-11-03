@@ -202,9 +202,16 @@ img { max-width: 100%; display: block; }
 .card {
   background: var(--bg-card); /* Theme-aware card background */
   border: 1px solid var(--border); /* Subtle border for definition */
-  border-radius: var(--radius); /* 12px rounded corners */
+  border-radius: 16px; /* Softer, larger corners (command-center look) */
   box-shadow: var(--shadow-sm); /* Slight elevation shadow */
   transition: background 0.25s, border-color 0.25s; /* Smooth theme transition */
+}
+/* Dark cards everywhere match the dashboard's command-center surface:
+   navy-blue border + soft indigo tint, deep drop shadow, no white hairline */
+[data-theme="dark"] .card {
+  border-color: rgba(100, 112, 190, 0.30);
+  background: linear-gradient(168deg, rgba(104, 118, 196, 0.085), rgba(104, 118, 196, 0.015) 55%), var(--bg-card);
+  box-shadow: 0 14px 34px -18px rgba(0, 0, 0, 0.85);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -368,8 +375,8 @@ textarea.input { resize: vertical; min-height: 80px; }
 .page { display: flex; flex-direction: column; gap: 1.5rem; }
 /* Page header: space-between layout for title area and action buttons */
 .page-header { display: flex; justify-content: space-between; align-items: flex-start; }
-/* Page title: large bold heading */
-.page-header h2 { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+/* Page title: hero-weight heading matching the dashboard greeting */
+.page-header h2 { font-size: 1.65rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text-primary); margin-bottom: 2px; }
 /* Page subtitle: smaller secondary text */
 .page-header p { font-size: 0.875rem; color: var(--text-secondary); }
 

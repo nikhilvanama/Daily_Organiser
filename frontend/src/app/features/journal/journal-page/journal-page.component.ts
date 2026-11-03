@@ -225,11 +225,15 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
     .mood-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-right: 4px; }
     .mood-chip {
       width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--border);
-      background: transparent; cursor: pointer; font-size: 1.1rem; line-height: 1;
+      background: var(--bg-secondary); cursor: pointer; font-size: 1.1rem; line-height: 1;
       transition: all 0.15s; padding: 0;
     }
+    [data-theme="dark"] .mood-chip { background: rgba(100, 112, 190, 0.07); border-color: rgba(100, 112, 190, 0.20); }
     .mood-chip:hover { border-color: var(--text-muted); }
-    .mood-chip.active { border-color: var(--accent); background: var(--bg-hover); transform: scale(1.1); }
+    .mood-chip.active {
+      border-color: var(--accent); background: var(--accent-subtle); transform: scale(1.1);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
 
     .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 0.75rem; }
     .title-input { font-size: 1rem; font-weight: 600; }
@@ -247,12 +251,14 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
     .other-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); }
     .other-header h3 { font-size: 0.95rem; font-weight: 600; margin: 0; }
     .past-list { padding: 0.4rem; }
+    /* Each past entry is its own rounded pill, matching the checklist look */
     .past-row {
       display: flex; align-items: stretch; gap: 12px; padding: 10px 12px; width: 100%;
-      background: transparent; border: 1px solid transparent; border-radius: 8px; text-align: left;
+      background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; text-align: left;
       cursor: pointer; transition: all 0.15s; font-family: inherit; color: inherit;
     }
-    .past-row:hover { background: var(--bg-hover); border-color: var(--border); }
+    [data-theme="dark"] .past-row { background: rgba(100, 112, 190, 0.07); border-color: rgba(100, 112, 190, 0.20); }
+    .past-row:hover { background: var(--bg-hover); }
     .past-date-block { display: flex; flex-direction: column; min-width: 75px; gap: 1px; flex-shrink: 0; }
     .past-date { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
     .past-day { font-size: 0.7rem; color: var(--text-muted); }

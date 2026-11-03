@@ -6,11 +6,13 @@ import { HabitFormComponent } from '../habit-form/habit-form.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { ToastService } from '../../../core/services/toast.service';
 import { Subscription } from 'rxjs';
+// Shared gradient-tile glyphs (same look as the dashboard checklist)
+import { HabitIconComponent, habitGlyphFor, habitTileBg, habitTileShadow } from '../../../shared/components/habit-icon/habit-icon.component';
 
 @Component({
   selector: 'app-habit-list',
   standalone: true,
-  imports: [ModalComponent, HabitFormComponent, ConfirmDialogComponent],
+  imports: [ModalComponent, HabitFormComponent, ConfirmDialogComponent, HabitIconComponent],
   template: `
     <div class="page animate-in">
       <div class="page-header">
@@ -123,7 +125,9 @@ import { Subscription } from 'rxjs';
                     <svg width="14" height="14" fill="none" stroke="#fff" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                   }
                 </span>
-                <span class="check-icon" [style.background]="h.color + '22'" [style.color]="h.color">{{ h.icon }}</span>
+                <span class="check-icon" [style.background]="tileBg(h)" [style.box-shadow]="tileShadow(h)">
+                  <app-habit-icon [glyph]="glyphOf(h)" [size]="16" />
+                </span>
                 <div class="check-main">
                   <span class="check-title">{{ h.title }}</span>
                   <span class="check-meta">
@@ -160,7 +164,9 @@ import { Subscription } from 'rxjs';
             @for (h of filteredAllHabits; track h.id) {
               <div class="habit-card">
                 <div class="hc-top">
-                  <span class="check-icon" [style.background]="h.color + '22'" [style.color]="h.color">{{ h.icon }}</span>
+                  <span class="check-icon" [style.background]="tileBg(h)" [style.box-shadow]="tileShadow(h)">
+                    <app-habit-icon [glyph]="glyphOf(h)" [size]="16" />
+                  </span>
                   <div class="hc-title-wrap">
                     <span class="check-title">{{ h.title }}</span>
                     <span class="check-meta">{{ scheduleLabel(h) }}</span>
@@ -202,7 +208,9 @@ import { Subscription } from 'rxjs';
           <div class="other-list">
             @for (h of notScheduledForSelected(); track h.id) {
               <div class="other-row">
-                <span class="check-icon sm" [style.background]="h.color + '22'" [style.color]="h.color">{{ h.icon }}</span>
+                <span class="check-icon sm" [style.background]="tileBg(h)" [style.box-shadow]="tileShadow(h)">
+                  <app-habit-icon [glyph]="glyphOf(h)" [size]="14" />
+                </span>
                 <div class="check-main">
                   <span class="check-title">{{ h.title }}</span>
                   <span class="check-meta">{{ scheduleLabel(h) }}</span>
@@ -335,12 +343,15 @@ import { Subscription } from 'rxjs';
     .other-row { display: flex; align-items: center; gap: 10px; padding: 9px 8px; border-radius: 8px; }
     .other-row:hover { background: var(--bg-hover); }
 
-    .checklist { display: flex; flex-direction: column; gap: 4px; }
+    /* Each row is its own rounded pill, like the dashboard checklist */
+    .checklist { display: flex; flex-direction: column; gap: 8px; }
     .check-row {
-      display: flex; align-items: center; gap: 12px; padding: 10px 8px;
-      background: transparent; border: none; border-radius: 8px; width: 100%; text-align: left;
-      cursor: pointer; transition: background 0.1s; font-family: inherit; color: inherit;
+      display: flex; align-items: center; gap: 12px; padding: 9px 12px;
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      border-radius: 12px; width: 100%; text-align: left;
+      cursor: pointer; transition: background 0.12s, border-color 0.12s; font-family: inherit; color: inherit;
     }
+    [data-theme="dark"] .check-row { background: rgba(100, 112, 190, 0.07); border-color: rgba(100, 112, 190, 0.20); }
     .check-row:hover { background: var(--bg-hover); }
     .check-row.done .check-title { text-decoration: line-through; color: var(--text-muted); }
     .check-row.done { opacity: 0.7; }
@@ -350,8 +361,9 @@ import { Subscription } from 'rxjs';
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
       transition: background 0.15s;
     }
-    .check-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; flex-shrink: 0; }
-    .check-icon.sm { width: 26px; height: 26px; font-size: 0.85rem; }
+    /* Gradient glyph tile (background + glow come inline from tileBg/tileShadow) */
+    .check-icon { width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #fff; }
+    .check-icon.sm { width: 26px; height: 26px; border-radius: 8px; }
 
     .check-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
     .check-title { font-size: 0.92rem; font-weight: 500; color: var(--text-primary); }
@@ -365,7 +377,8 @@ import { Subscription } from 'rxjs';
     .streak-badge.sm { font-size: 0.7rem; }
 
     .habit-grid { padding: 0.75rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.75rem; }
-    .habit-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.85rem; display: flex; flex-direction: column; gap: 8px; }
+    .habit-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 14px; padding: 0.85rem; display: flex; flex-direction: column; gap: 8px; }
+    [data-theme="dark"] .habit-card { background: rgba(100, 112, 190, 0.07); border-color: rgba(100, 112, 190, 0.20); }
     .hc-top { display: flex; align-items: center; gap: 10px; }
     .hc-title-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; }
     .hc-actions { display: flex; gap: 2px; }
@@ -685,6 +698,11 @@ export class HabitListComponent implements OnInit, OnDestroy {
     if (h.startTime && h.endTime) return `${h.startTime} - ${h.endTime}`;
     return h.startTime ?? h.endTime ?? '';
   }
+
+  // Gradient tile helpers shared with the dashboard checklist
+  glyphOf(h: Habit): string { return habitGlyphFor(h.title); }
+  tileBg(h: Habit): string { return habitTileBg(h.title); }
+  tileShadow(h: Habit): string { return habitTileShadow(h.title); }
 
   scheduleLabel(h: Habit): string {
     if (h.weekdays.length === 7) return 'Every day';

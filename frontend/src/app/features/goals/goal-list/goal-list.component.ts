@@ -55,8 +55,11 @@ import { Goal } from '../../../core/models/goal.model';
                (dragenter)="onDragEnter(goal.id)"
                (dragover)="$event.preventDefault()"
                (drop)="onDrop($event, goal.id)">
-            <!-- Card header: goal title (link to detail) + link icon + status badge -->
+            <!-- Card header: gradient target tile + goal title (link to detail) + link icon + status badge -->
             <div class="goal-card-header">
+              <span class="goal-ico" [class]="'goal-ico tile-' + goal.status.toLowerCase()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><circle cx="12" cy="12" r="8.6"/><circle cx="12" cy="12" r="4.6"/><circle cx="12" cy="12" r="1.4" fill="#fff" stroke="none"/></svg>
+              </span>
               <a [routerLink]="['/goals', toSlug(goal.title)]" class="goal-title" draggable="false">{{ goal.title }}</a>
               @if (goal.link) {
                 <a class="goal-link-icon" [href]="goal.link" target="_blank" rel="noopener" title="Open link" draggable="false" (click)="$event.stopPropagation()">
@@ -125,14 +128,21 @@ import { Goal } from '../../../core/models/goal.model';
   styles: [`
     /* Page layout: vertical flex with spacing */
     .page { display: flex; flex-direction: column; gap: 1.25rem; }
-    .page-header { display: flex; justify-content: space-between; align-items: flex-start; }
-    .page-header h2 { font-size: 1.375rem; font-weight: 700; margin: 0 0 0.25rem; color: var(--text-primary); }
-    .page-header p { margin: 0; font-size: 0.875rem; color: var(--text-secondary); }
     .goals-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
     @media (max-width: 768px) { .goals-grid { grid-template-columns: 1fr; gap: 0.75rem; } }
     /* Goal card: padded flex column */
     .goal-card { padding: 1.25rem; display: flex; flex-direction: column; gap: 0.875rem; }
-    .goal-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
+    .goal-card-header { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; }
+    /* Gradient target tile — color follows the goal status */
+    .goal-ico {
+      width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), 0 4px 12px rgba(0,0,0,.25);
+    }
+    .tile-active    { background: linear-gradient(140deg, #4ade80, #059669); box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), 0 4px 12px rgba(16, 185, 129, .45); }
+    .tile-completed { background: linear-gradient(140deg, #60a5fa, #2563eb); box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), 0 4px 12px rgba(59, 130, 246, .45); }
+    .tile-paused    { background: linear-gradient(140deg, #fde047, #f59e0b); box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), 0 4px 12px rgba(245, 158, 11, .45); }
+    .tile-abandoned { background: linear-gradient(140deg, #94a3b8, #475569); box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4), 0 4px 12px rgba(100, 116, 139, .45); }
     /* Goal title: clickable link to the detail page */
     .goal-title { font-size: 1rem; font-weight: 600; color: var(--text-primary); text-decoration: none; flex: 1; }
     .goal-title:hover { color: var(--accent); }
@@ -153,9 +163,14 @@ import { Goal } from '../../../core/models/goal.model';
     .progress-header { display: flex; justify-content: space-between; }
     .progress-label { font-size: 0.75rem; color: var(--text-muted); }
     .progress-value { font-size: 0.75rem; font-weight: 600; color: var(--text-primary); }
-    /* Progress track: rounded bar with accent-colored fill */
-    .progress-track { height: 6px; background: var(--bg-secondary); border-radius: 9999px; overflow: hidden; }
-    .progress-fill { height: 100%; background: var(--accent); border-radius: 9999px; transition: width 0.4s ease; }
+    /* Progress track: rounded bar with glowing gradient fill */
+    .progress-track { height: 7px; background: var(--bg-secondary); border-radius: 9999px; overflow: hidden; }
+    [data-theme="dark"] .progress-track { background: rgba(100, 112, 190, 0.12); }
+    .progress-fill {
+      height: 100%; border-radius: 9999px; transition: width 0.4s ease;
+      background: linear-gradient(90deg, var(--accent-hover), var(--accent));
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
     /* Footer: milestone count on the left, action buttons on the right */
     .goal-footer { display: flex; justify-content: space-between; align-items: center; }
     .milestone-count { font-size: 0.75rem; color: var(--text-muted); }
