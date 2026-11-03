@@ -130,7 +130,9 @@ import { Goal } from '../../../core/models/goal.model';
   styles: [`
     /* Page layout: vertical flex with spacing */
     .page { display: flex; flex-direction: column; gap: 1.25rem; }
-    .goals-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+    /* Always 3 per row on desktop, 2 on mid widths, 1 on phones */
+    .goals-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    @media (max-width: 1100px) { .goals-grid { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 768px) { .goals-grid { grid-template-columns: 1fr; gap: 0.75rem; } }
     /* Goal card: padded flex column */
     .goal-card { padding: 1.25rem; display: flex; flex-direction: column; gap: 0.875rem; }
