@@ -131,7 +131,7 @@ import { ToastService } from '../../../core/services/toast.service';
       padding: 10px 12px; cursor: grab; transition: all 0.15s;
       display: flex; flex-direction: column; gap: 6px;
     }
-    [data-theme="dark"] .trip-card { background: rgba(100, 112, 190, 0.07); border-color: rgba(100, 112, 190, 0.20); }
+    [data-theme="dark"] .trip-card { background: rgba(255, 255, 255, 0.045); border-color: rgba(100, 112, 190, 0.20); }
     .trip-card:active { cursor: grabbing; }
     .trip-card:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: var(--shadow-md); }
     .trip-card.dragging { opacity: 0.4; transform: rotate(2deg); cursor: grabbing; }

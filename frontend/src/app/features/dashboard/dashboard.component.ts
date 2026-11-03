@@ -528,7 +528,7 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
       background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px;
       cursor: pointer; font-family: inherit; text-align: left; transition: background .12s, border-color .12s; min-width: 0;
     }
-    [data-theme="dark"] .chk-row { background: rgba(100, 112, 190, 0.07); border-color: rgba(100, 112, 190, 0.20); }
+    [data-theme="dark"] .chk-row { background: rgba(255, 255, 255, 0.045); border-color: rgba(100, 112, 190, 0.20); }
     .chk-row:hover { background: var(--bg-hover); border-color: var(--hue-border, var(--border)); }
     [data-theme="dark"] .chk-row:hover { background: rgba(100, 112, 190, 0.13); }
     .chk-box {

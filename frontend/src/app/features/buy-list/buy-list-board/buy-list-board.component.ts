@@ -139,7 +139,7 @@ import { ToastService } from '../../../core/services/toast.service';
       padding: 10px 12px; cursor: grab; transition: all 0.15s;
       display: flex; flex-direction: column; gap: 6px;
     }
-    [data-theme="dark"] .buy-card { background: rgba(100, 112, 190, 0.07); border-color: rgba(100, 112, 190, 0.20); }
+    [data-theme="dark"] .buy-card { background: rgba(255, 255, 255, 0.045); border-color: rgba(100, 112, 190, 0.20); }
     .buy-card:active { cursor: grabbing; }
     .buy-card:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: var(--shadow-md); }
     .buy-card.dragging { opacity: 0.4; transform: rotate(2deg); cursor: grabbing; }
