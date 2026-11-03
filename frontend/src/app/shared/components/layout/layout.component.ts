@@ -214,13 +214,14 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
       .tab-ai { gap: 4px; overflow: visible; }
       .tab-ai span:last-child { color: var(--accent); }
       .ai-orb {
-        width: 48px; height: 48px; border-radius: 50%; margin-top: -30px;
+        width: 60px; height: 60px; border-radius: 50%; margin-top: -40px;
         display: flex; align-items: center; justify-content: center;
         background: linear-gradient(145deg, var(--accent), var(--accent-hover));
         border: 4px solid var(--bg-card);
-        box-shadow: 0 6px 20px var(--accent-glow), inset 0 2px 0 rgba(255, 255, 255, 0.35);
+        box-shadow: 0 8px 24px var(--accent-glow), inset 0 2px 0 rgba(255, 255, 255, 0.35);
         transition: transform 0.15s;
       }
+      .ai-orb svg { width: 28px; height: 28px; }
       .tab-ai:active .ai-orb { transform: scale(0.92); }
       .hamburger {
         display: flex; align-items: center; justify-content: center;

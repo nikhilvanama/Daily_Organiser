@@ -122,8 +122,8 @@ interface ChatMsg {
     /* Phones: the tab bar's center AI orb replaces the floating button;
        the panel opens just above the tab bar */
     @media (max-width: 768px) {
-      .ai-fab { display: none; }
-      .ai-panel { bottom: calc(80px + env(safe-area-inset-bottom)); }
+      .ai-fab { display: none !important; }
+      .ai-panel { bottom: calc(86px + env(safe-area-inset-bottom)); }
     }
     .ai-fab {
       width: 50px; height: 50px; border-radius: 16px; cursor: pointer;
