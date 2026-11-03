@@ -455,8 +455,8 @@ textarea.input { resize: vertical; min-height: 80px; }
   /* Reduce page padding */
   .page { gap: 1rem; }
 
-  /* Toast notifications: full width at bottom */
-  .toast-container { left: 1rem; right: 1rem; bottom: 1rem; }
+  /* Toast notifications: full width, above the mobile bottom tab bar */
+  .toast-container { left: 1rem; right: 1rem; bottom: calc(72px + env(safe-area-inset-bottom)); }
   .toast { min-width: auto; }
 
   /* Buttons: slightly smaller */

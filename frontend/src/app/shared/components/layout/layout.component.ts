@@ -1,5 +1,5 @@
 import { Component, HostListener, inject, OnDestroy, OnInit, signal } from '@angular/core';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map, startWith } from 'rxjs/operators';
 import { SidebarComponent } from '../sidebar/sidebar.component';
@@ -17,7 +17,7 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [RouterOutlet, SidebarComponent, TopbarComponent, ToastContainerComponent, GlobalSearchComponent, AiChatComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, SidebarComponent, TopbarComponent, ToastContainerComponent, GlobalSearchComponent, AiChatComponent],
   template: `
     <div class="layout">
       <!-- Mobile top bar -->
@@ -90,6 +90,55 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
         </main>
       </div>
     </div>
+
+    <!-- Mobile bottom tab bar: 5 tabs for an app-like feel on phones -->
+    <nav class="mobile-tabbar">
+      <a routerLink="/dashboard" routerLinkActive="active" class="tab">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/>
+          <path d="M10 21v-6h4v6" fill="currentColor" opacity=".25" stroke="none"/>
+        </svg>
+        <span>Home</span>
+      </a>
+      <a routerLink="/tasks" routerLinkActive="active" class="tab">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4.5" y="3.5" width="15" height="17" rx="2.5"/>
+          <rect x="4.5" y="3.5" width="15" height="5" rx="2.5" fill="currentColor" opacity=".25" stroke="none"/>
+          <path d="M8.5 12.5h7M8.5 16h4.5"/>
+        </svg>
+        <span>Plans</span>
+      </a>
+      <a routerLink="/calendar" routerLinkActive="active" class="tab">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/>
+          <path d="M3.5 10h17" />
+          <path d="M3.5 7.5a2.5 2.5 0 0 1 2.5-2.5h12a2.5 2.5 0 0 1 2.5 2.5V10h-17z" fill="currentColor" opacity=".25" stroke="none"/>
+          <path d="M8 3v3.4M16 3v3.4"/>
+          <circle cx="12" cy="15" r="1.6" fill="currentColor" stroke="none"/>
+        </svg>
+        <span>Calendar</span>
+      </a>
+      <a routerLink="/habits" routerLinkActive="active" class="tab">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="8.6"/>
+          <path d="M12 3.4a8.6 8.6 0 0 1 0 17.2z" fill="currentColor" opacity=".18" stroke="none"/>
+          <path d="M12 7.6V12l3.2 2.2"/>
+        </svg>
+        <span>Routine</span>
+      </a>
+      <button class="tab" (click)="sidebarOpen.set(true)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round">
+          <rect x="4" y="4" width="7" height="7" rx="2.2" fill="currentColor" opacity=".25" stroke="none"/>
+          <rect x="4" y="4" width="7" height="7" rx="2.2"/>
+          <rect x="13" y="4" width="7" height="7" rx="2.2"/>
+          <rect x="4" y="13" width="7" height="7" rx="2.2"/>
+          <rect x="13" y="13" width="7" height="7" rx="2.2" fill="currentColor" opacity=".25" stroke="none"/>
+          <rect x="13" y="13" width="7" height="7" rx="2.2"/>
+        </svg>
+        <span>More</span>
+      </button>
+    </nav>
+
     <app-toast-container />
     <app-global-search />
     <app-ai-chat />
@@ -121,21 +170,44 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
 
     .sidebar-wrap { flex-shrink: 0; }
     .mobile-topbar { display: none; }
+    .mobile-tabbar { display: none; }
     .sidebar-overlay { display: none; }
 
     @media (max-width: 768px) {
-      /* 52px fixed mobile topbar + exactly 1rem gap below it; extra bottom
-         padding so the last content can scroll clear of the floating AI button */
-      .layout-content { padding: 1rem; padding-top: calc(52px + 1rem); padding-bottom: 92px; }
-      .layout-content.board-route { padding-bottom: 0; }
+      /* 56px fixed mobile topbar + exactly 1rem gap below it; extra bottom
+         padding so the last content can scroll clear of the floating AI
+         button AND the bottom tab bar */
+      .layout-content { padding: 1rem; padding-top: calc(56px + 1rem); padding-bottom: calc(66px + 96px + env(safe-area-inset-bottom)); }
+      .layout-content.board-route { padding-bottom: calc(66px + env(safe-area-inset-bottom)); }
 
       .mobile-topbar {
         display: flex; align-items: center; gap: 10px;
         position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-        height: 52px; padding: 0 12px;
+        height: 56px; padding: 0 12px;
         background: var(--bg-card); border-bottom: 1px solid var(--border);
         box-shadow: var(--shadow-sm);
       }
+
+      /* App-like bottom tab bar */
+      .mobile-tabbar {
+        display: grid; grid-template-columns: repeat(5, 1fr);
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 1000;
+        height: calc(62px + env(safe-area-inset-bottom));
+        padding: 7px 6px calc(7px + env(safe-area-inset-bottom));
+        background: var(--bg-card); border-top: 1px solid var(--border);
+        box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.18);
+      }
+      .tab {
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+        border: none; background: transparent; color: var(--text-muted);
+        text-decoration: none; cursor: pointer; border-radius: 12px; padding: 0;
+        font-family: inherit;
+      }
+      .tab span { font-size: 0.6rem; font-weight: 600; letter-spacing: 0.02em; line-height: 1; }
+      .tab svg { transition: transform 0.15s; }
+      .tab.active { color: var(--accent); }
+      .tab.active svg { transform: translateY(-1px); }
+      .tab:active svg { transform: scale(0.92); }
       .hamburger {
         display: flex; align-items: center; justify-content: center;
         width: 36px; height: 36px; border-radius: 8px;

@@ -118,6 +118,13 @@ interface ChatMsg {
   styles: [`
     .ai-fab {
       position: fixed; bottom: 20px; right: 20px; z-index: 940;
+    }
+    /* Phones: sit above the bottom tab bar */
+    @media (max-width: 768px) {
+      .ai-fab { bottom: calc(76px + env(safe-area-inset-bottom)); }
+      .ai-panel { bottom: calc(138px + env(safe-area-inset-bottom)); }
+    }
+    .ai-fab {
       width: 50px; height: 50px; border-radius: 16px; cursor: pointer;
       border: 1px solid rgba(255, 255, 255, 0.25);
       background: linear-gradient(145deg, var(--accent) 0%, var(--accent-hover) 100%);
