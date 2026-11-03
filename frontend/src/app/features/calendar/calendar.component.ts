@@ -335,7 +335,7 @@ interface CalendarDay {
       background: var(--border); overflow: hidden; border-radius: 16px;
     }
     /* Navy grid lines in dark mode, matching the command-center card borders */
-    [data-theme="dark"] .cal-grid { background: rgba(100, 112, 190, 0.22); }
+    [data-theme="dark"] .cal-grid { background: rgba(255, 255, 255, 0.10); }
     /* Day-of-week header labels: centered uppercase text */
     .cal-label {
       background: var(--bg-card); padding: 10px; text-align: center;

@@ -90,7 +90,7 @@
   /* Command-center card surface: neutral grey with a faint top sheen
      (no blue tint — it fought with the colorful tiles), navy hairline border */
   --card-surface: linear-gradient(168deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.004) 55%), #131316;
-  --card-border: rgba(100, 112, 190, 0.30);
+  --card-border: #2c2c31;
   --card-shadow: 0 14px 34px -18px rgba(0, 0, 0, 0.85);
 }
 

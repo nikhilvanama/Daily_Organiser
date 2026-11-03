@@ -228,7 +228,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
       background: var(--bg-secondary); cursor: pointer; font-size: 1.1rem; line-height: 1;
       transition: all 0.15s; padding: 0;
     }
-    [data-theme="dark"] .mood-chip { background: rgba(255, 255, 255, 0.045); border-color: rgba(100, 112, 190, 0.20); }
+    [data-theme="dark"] .mood-chip { background: rgba(255, 255, 255, 0.045); border-color: rgba(255, 255, 255, 0.09); }
     .mood-chip:hover { border-color: var(--text-muted); }
     .mood-chip.active {
       border-color: var(--accent); background: var(--accent-subtle); transform: scale(1.1);
@@ -257,7 +257,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
       background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; text-align: left;
       cursor: pointer; transition: all 0.15s; font-family: inherit; color: inherit;
     }
-    [data-theme="dark"] .past-row { background: rgba(255, 255, 255, 0.045); border-color: rgba(100, 112, 190, 0.20); }
+    [data-theme="dark"] .past-row { background: rgba(255, 255, 255, 0.045); border-color: rgba(255, 255, 255, 0.09); }
     .past-row:hover { background: var(--bg-hover); }
     .past-date-block { display: flex; flex-direction: column; min-width: 75px; gap: 1px; flex-shrink: 0; }
     .past-date { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }

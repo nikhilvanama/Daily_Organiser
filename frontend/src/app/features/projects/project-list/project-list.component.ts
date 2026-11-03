@@ -224,7 +224,7 @@ import { ToastService } from '../../../core/services/toast.service';
 
     .proj-progress { display: flex; align-items: center; gap: 8px; width: 130px; flex-shrink: 0; }
     .prog-bar { flex: 1; height: 6px; background: var(--bg-secondary); border-radius: 99px; overflow: hidden; }
-    [data-theme="dark"] .prog-bar { background: rgba(100, 112, 190, 0.12); }
+    [data-theme="dark"] .prog-bar { background: rgba(255, 255, 255, 0.07); }
     .prog-fill {
       height: 100%; border-radius: 99px; transition: width 0.4s;
       background: linear-gradient(90deg, var(--accent-hover), var(--accent));

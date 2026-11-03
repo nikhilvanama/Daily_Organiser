@@ -512,7 +512,7 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
       margin-left: -1.6rem;
     }
     .cheer-div { width: 1px; align-self: stretch; background: var(--border); }
-    [data-theme="dark"] .cheer-div { background: rgba(100, 112, 190, 0.22); }
+    [data-theme="dark"] .cheer-div { background: rgba(255, 255, 255, 0.10); }
     .cheer-body { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
     @media (max-width: 860px) { .cheer-div { display: none; } .cheer { padding: .4rem 0 0; margin-left: 0; } }
     .cheer-art { width: min(280px, 100%); height: auto; margin-bottom: .15rem; }
@@ -528,9 +528,9 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
       background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px;
       cursor: pointer; font-family: inherit; text-align: left; transition: background .12s, border-color .12s; min-width: 0;
     }
-    [data-theme="dark"] .chk-row { background: rgba(255, 255, 255, 0.045); border-color: rgba(100, 112, 190, 0.20); }
+    [data-theme="dark"] .chk-row { background: rgba(255, 255, 255, 0.045); border-color: rgba(255, 255, 255, 0.09); }
     .chk-row:hover { background: var(--bg-hover); border-color: var(--hue-border, var(--border)); }
-    [data-theme="dark"] .chk-row:hover { background: rgba(100, 112, 190, 0.13); }
+    [data-theme="dark"] .chk-row:hover { background: rgba(255, 255, 255, 0.08); }
     .chk-box {
       width: 21px; height: 21px; border-radius: 7px; border: 2px solid var(--border);
       display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .15s;

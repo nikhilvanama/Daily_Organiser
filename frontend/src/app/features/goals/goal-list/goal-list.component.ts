@@ -165,7 +165,7 @@ import { Goal } from '../../../core/models/goal.model';
     .progress-value { font-size: 0.75rem; font-weight: 600; color: var(--text-primary); }
     /* Progress track: rounded bar with glowing gradient fill */
     .progress-track { height: 7px; background: var(--bg-secondary); border-radius: 9999px; overflow: hidden; }
-    [data-theme="dark"] .progress-track { background: rgba(100, 112, 190, 0.12); }
+    [data-theme="dark"] .progress-track { background: rgba(255, 255, 255, 0.07); }
     .progress-fill {
       height: 100%; border-radius: 9999px; transition: width 0.4s ease;
       background: linear-gradient(90deg, var(--accent-hover), var(--accent));

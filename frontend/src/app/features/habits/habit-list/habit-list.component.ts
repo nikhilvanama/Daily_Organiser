@@ -351,7 +351,7 @@ import { HabitIconComponent, habitGlyphFor, habitTileBg, habitTileShadow } from 
       border-radius: 12px; width: 100%; text-align: left;
       cursor: pointer; transition: background 0.12s, border-color 0.12s; font-family: inherit; color: inherit;
     }
-    [data-theme="dark"] .check-row { background: rgba(255, 255, 255, 0.045); border-color: rgba(100, 112, 190, 0.20); }
+    [data-theme="dark"] .check-row { background: rgba(255, 255, 255, 0.045); border-color: rgba(255, 255, 255, 0.09); }
     .check-row:hover { background: var(--bg-hover); }
     .check-row.done .check-title { text-decoration: line-through; color: var(--text-muted); }
     .check-row.done { opacity: 0.7; }
@@ -378,7 +378,7 @@ import { HabitIconComponent, habitGlyphFor, habitTileBg, habitTileShadow } from 
 
     .habit-grid { padding: 0.75rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.75rem; }
     .habit-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 14px; padding: 0.85rem; display: flex; flex-direction: column; gap: 8px; }
-    [data-theme="dark"] .habit-card { background: rgba(255, 255, 255, 0.045); border-color: rgba(100, 112, 190, 0.20); }
+    [data-theme="dark"] .habit-card { background: rgba(255, 255, 255, 0.045); border-color: rgba(255, 255, 255, 0.09); }
     .hc-top { display: flex; align-items: center; gap: 10px; }
     .hc-title-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; }
     .hc-actions { display: flex; gap: 2px; }
