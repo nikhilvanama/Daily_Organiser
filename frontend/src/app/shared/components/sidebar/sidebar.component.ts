@@ -137,7 +137,7 @@ import { SidebarPrefsService } from '../../../core/services/sidebar-prefs.servic
 
     /* Header — height matches the topbar (44px + 10px top padding), no
        divider line under the logo */
-    .sidebar-header { flex-shrink: 0; height: 54px; display: flex; align-items: center; padding: 10px 0.75rem 0; }
+    .sidebar-header { flex-shrink: 0; height: 54px; display: flex; align-items: center; padding: 10px 0.75rem 0; margin-bottom: 12px; }
     .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
     .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, var(--accent), var(--accent-hover)); border-radius: 11px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px var(--accent-glow); flex-shrink: 0; }
     .logo-text { color: var(--sidebar-logo-text); font-weight: 700; font-size: 0.98rem; letter-spacing: -0.01em; white-space: nowrap; }
