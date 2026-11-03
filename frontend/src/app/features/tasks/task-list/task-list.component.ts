@@ -18,6 +18,8 @@ import { ToastService } from '../../../core/services/toast.service';
 // Task model and PLAN_TYPES for type-specific icons and colors
 import { Task, PLAN_TYPES } from '../../../core/models/task.model';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+// Custom duotone category glyphs (replaces the emoji icons)
+import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-icon.component';
 
 // TaskListComponent ("My Plans" page) displays all the user's tasks/plans with filtering
 // by plan type (chips), status, and priority. Each plan row shows type icon, title, metadata,
@@ -25,7 +27,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
 @Component({
   selector: 'app-task-list', // Loaded by the router at /tasks
   standalone: true, // Angular 19 standalone component
-  imports: [RouterLink, DatePipe, ReactiveFormsModule, ModalComponent, TaskFormComponent, ConfirmDialogComponent],
+  imports: [RouterLink, DatePipe, ReactiveFormsModule, ModalComponent, TaskFormComponent, ConfirmDialogComponent, PlanIconComponent],
   template: `
     <!-- Page container with fade-in animation -->
     <div class="page animate-in">
@@ -50,7 +52,9 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
         @for (t of planTypes; track t.value) {
           <button class="chip" [class.active]="activeType === t.value"
             [style.--chip-color]="t.color" (click)="filterType(t.value)">
-            {{ t.icon }} {{ t.label }}
+            <app-plan-icon [type]="t.value" [size]="14"
+              [style.color]="activeType === t.value ? '#fff' : t.color" />
+            {{ t.label }}
           </button>
         }
       </div>
@@ -86,9 +90,9 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
             @for (plan of pagedTasks; track plan.id) {
               <!-- Each plan row: type icon, title/metadata, priority badge, status dropdown, actions -->
               <div class="plan-row" [class.done]="plan.status === 'DONE'">
-                <!-- Plan type icon: colored square with emoji -->
-                <div class="plan-type-icon" [style.background]="getColor(plan.type) + '18'" [style.color]="getColor(plan.type)">
-                  {{ getIcon(plan.type) }}
+                <!-- Plan type icon: white custom glyph on a glowing gradient tile -->
+                <div class="plan-type-icon" [style.background]="tileBg(plan.type)" [style.box-shadow]="tileShadow(plan.type)">
+                  <app-plan-icon [type]="plan.type" [size]="19" />
                 </div>
                 <!-- Main content: title (links to detail page) + metadata (date, time, category) -->
                 <div class="plan-main">
@@ -159,8 +163,9 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
   styles: [`
     /* Plan type filter chips: horizontal wrapping row */
     .type-filters { display: flex; gap: 6px; flex-wrap: wrap; }
-    /* Individual chip: pill-shaped button with border */
+    /* Individual chip: pill-shaped button with border + custom category icon */
     .chip {
+      display: inline-flex; align-items: center; gap: 6px;
       padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;
       border: 1.5px solid var(--border); background: transparent; color: var(--text-secondary);
       cursor: pointer; transition: all 0.15s; font-family: inherit;
@@ -189,11 +194,12 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
     .plan-row.done { opacity: 0.55; }
     .plan-row.done .plan-title { text-decoration: line-through; }
 
-    /* Plan type icon: colored rounded square with emoji */
+    /* Plan type icon: white custom glyph on a glowing gradient tile
+       (background + box-shadow come inline from tileBg()/tileShadow()) */
     .plan-type-icon {
-      width: 36px; height: 36px; border-radius: 10px;
+      width: 36px; height: 36px; border-radius: 11px; color: #fff;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1rem; flex-shrink: 0;
+      flex-shrink: 0;
     }
     /* Main content column: grows to fill available space */
     .plan-main { flex: 1; min-width: 0; }
@@ -337,7 +343,23 @@ export class TaskListComponent implements OnInit {
   // Reset all filters to their default values and reload the unfiltered list
   resetFilters() { this.filterForm.reset({ status: '', priority: '' }); this.activeType = ''; this.loadTasks(); }
 
-  // Helper methods to look up plan type color and icon from PLAN_TYPES
-  getColor(type: string) { return this.planTypes.find((t) => t.value === type)?.color ?? '#3b82f6'; }
-  getIcon(type: string) { return this.planTypes.find((t) => t.value === type)?.icon ?? '✓'; }
+  // Gradient + glow per plan type for the row icon tiles — same visual
+  // language as the dashboard checklist tiles.
+  private static readonly TILES: Record<string, { bg: string; glow: string }> = {
+    task:        { bg: 'linear-gradient(140deg, #60a5fa, #2563eb)', glow: 'rgba(59, 130, 246, .45)' },
+    trip:        { bg: 'linear-gradient(140deg, #4ade80, #059669)', glow: 'rgba(16, 185, 129, .45)' },
+    train:       { bg: 'linear-gradient(140deg, #818cf8, #4f46e5)', glow: 'rgba(99, 102, 241, .45)' },
+    dinner:      { bg: 'linear-gradient(140deg, #fb923c, #ea580c)', glow: 'rgba(249, 115, 22, .45)' },
+    meeting:     { bg: 'linear-gradient(140deg, #a78bfa, #6d28d9)', glow: 'rgba(139, 92, 246, .45)' },
+    event:       { bg: 'linear-gradient(140deg, #22d3ee, #0891b2)', glow: 'rgba(6, 182, 212, .45)' },
+    reminder:    { bg: 'linear-gradient(140deg, #fde047, #f59e0b)', glow: 'rgba(245, 158, 11, .45)' },
+    outing:      { bg: 'linear-gradient(140deg, #f9a8d4, #db2777)', glow: 'rgba(236, 72, 153, .45)' },
+    health:      { bg: 'linear-gradient(140deg, #2dd4bf, #0d9488)', glow: 'rgba(20, 184, 166, .45)' },
+    celebration: { bg: 'linear-gradient(140deg, #fb7185, #e11d48)', glow: 'rgba(244, 63, 94, .45)' },
+  };
+  private tile(type: string) { return TaskListComponent.TILES[type] ?? TaskListComponent.TILES['task']; }
+  tileBg(type: string): string { return this.tile(type).bg; }
+  tileShadow(type: string): string {
+    return `inset 0 1.5px 0 rgba(255,255,255,.4), 0 4px 12px ${this.tile(type).glow}`;
+  }
 }
