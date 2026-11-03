@@ -38,6 +38,29 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
 
     <div class="dash animate-in" [style.display]="loading() ? 'none' : ''">
 
+      <!-- Decorative aurora curves behind the header (pointer-transparent) -->
+      <svg class="aurora" viewBox="0 0 900 260" preserveAspectRatio="xMidYMin slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="auroraV" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0"/>
+            <stop offset="45%" stop-color="#8b5cf6" stop-opacity=".55"/>
+            <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="auroraG" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#10b981" stop-opacity="0"/>
+            <stop offset="50%" stop-color="#34d399" stop-opacity=".5"/>
+            <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+          </linearGradient>
+          <filter id="auroraBlur" x="-20%" y="-50%" width="140%" height="220%">
+            <feGaussianBlur stdDeviation="14"/>
+          </filter>
+        </defs>
+        <path d="M240 -40 C 420 90, 620 20, 940 130" stroke="url(#auroraV)" stroke-width="56" fill="none" filter="url(#auroraBlur)"/>
+        <path d="M380 -60 C 560 110, 740 -10, 980 70" stroke="url(#auroraG)" stroke-width="40" fill="none" filter="url(#auroraBlur)"/>
+        <path d="M300 -30 C 500 100, 680 10, 920 100" stroke="#a78bfa" stroke-opacity=".35" stroke-width="2" fill="none"/>
+        <path d="M420 -40 C 600 100, 760 0, 960 60" stroke="#34d399" stroke-opacity=".3" stroke-width="1.6" fill="none"/>
+      </svg>
+
       <!-- ═══ MAIN COLUMN ═══ -->
       <div class="dash-main">
 
@@ -57,10 +80,9 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
         <div class="stats-row">
           <a routerLink="/tasks" class="stat-card hue-green">
             <span class="stat-tile">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-linejoin="round" stroke-linecap="round">
-                <defs><linearGradient id="icoPlans" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34d399"/><stop offset="100%" stop-color="#059669"/></linearGradient></defs>
-                <path d="M12 3l9 4.5-9 4.5-9-4.5z" fill="url(#icoPlans)" stroke="url(#icoPlans)" stroke-width="1.6"/>
-                <path d="M3 12l9 4.5 9-4.5M3 16.5L12 21l9-4.5" fill="none" stroke="url(#icoPlans)" stroke-width="1.8" opacity=".55"/>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-linejoin="round" stroke-linecap="round">
+                <path d="M12 3.4 20.6 7.7 12 12 3.4 7.7z" fill="rgba(255,255,255,.28)" stroke-width="1.7"/>
+                <path d="M3.4 12 12 16.3 20.6 12M3.4 16.3 12 20.6l8.6-4.3" stroke-width="1.8"/>
               </svg>
             </span>
             <div class="stat-body">
@@ -68,17 +90,16 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
               <span class="stat-label">Active Plans</span>
             </div>
             <svg class="spark" viewBox="0 0 120 36" preserveAspectRatio="none">
-              <polyline [attr.points]="sparkPlans()" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path [attr.d]="sparkPlans()" fill="none" stroke="#10b981" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </a>
 
           <a routerLink="/tasks" class="stat-card hue-violet">
             <span class="stat-tile">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                <defs><linearGradient id="icoDone" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient></defs>
-                <rect x="3.2" y="4.5" width="17.6" height="16" rx="3.4" stroke="url(#icoDone)" stroke-width="1.8"/>
-                <path d="M8 2.8v3.4M16 2.8v3.4" stroke="url(#icoDone)" stroke-width="1.8"/>
-                <path d="M8.4 14l2.5 2.5 4.8-5" stroke="url(#icoDone)" stroke-width="2"/>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3.4" y="4.6" width="17.2" height="15.8" rx="3.4" stroke-width="1.7" fill="rgba(255,255,255,.14)"/>
+                <path d="M8 2.8v3.4M16 2.8v3.4" stroke-width="1.7"/>
+                <path d="M8.4 13.6l2.5 2.5 4.8-5" stroke-width="2"/>
               </svg>
             </span>
             <div class="stat-body">
@@ -86,17 +107,16 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
               <span class="stat-label">Done Today</span>
             </div>
             <svg class="spark" viewBox="0 0 120 36" preserveAspectRatio="none">
-              <polyline [attr.points]="sparkDone()" fill="none" stroke="#8b5cf6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path [attr.d]="sparkDone()" fill="none" stroke="#8b5cf6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </a>
 
           <a routerLink="/goals" class="stat-card hue-blue">
             <span class="stat-tile">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                <defs><linearGradient id="icoGoals" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#60a5fa"/><stop offset="100%" stop-color="#2563eb"/></linearGradient></defs>
-                <circle cx="12" cy="12" r="8.6" stroke="url(#icoGoals)" stroke-width="1.8"/>
-                <circle cx="12" cy="12" r="5" stroke="url(#icoGoals)" stroke-width="1.8" opacity=".6"/>
-                <circle cx="12" cy="12" r="1.8" fill="url(#icoGoals)"/>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff">
+                <circle cx="12" cy="12" r="8.4" stroke-width="1.7"/>
+                <circle cx="12" cy="12" r="4.8" stroke-width="1.7" opacity=".65"/>
+                <circle cx="12" cy="12" r="1.9" fill="#fff" stroke="none"/>
               </svg>
             </span>
             <div class="stat-body">
@@ -104,7 +124,7 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
               <span class="stat-label">Goals</span>
             </div>
             <svg class="spark" viewBox="0 0 120 36" preserveAspectRatio="none">
-              <polyline [attr.points]="sparkGoals()" fill="none" stroke="#3b82f6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path [attr.d]="sparkGoals()" fill="none" stroke="#3b82f6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </a>
         </div>
@@ -163,17 +183,29 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
 
               <!-- Sunrise illustration + encouragement -->
               <div class="cheer">
-                <svg class="cheer-art" viewBox="0 0 220 110" fill="none">
+                <svg class="cheer-art" viewBox="0 0 260 120" fill="none">
                   <defs>
-                    <linearGradient id="sunG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#f97316"/></linearGradient>
-                    <linearGradient id="hillG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)"/><stop offset="100%" stop-color="var(--accent-hover)"/></linearGradient>
+                    <radialGradient id="sunCore" cx=".5" cy=".42" r=".6">
+                      <stop offset="0%" stop-color="#fde68a"/><stop offset="55%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#f97316"/>
+                    </radialGradient>
+                    <radialGradient id="sunHalo" cx=".5" cy=".5" r=".5">
+                      <stop offset="0%" stop-color="#fbbf24" stop-opacity=".5"/><stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/>
+                    </radialGradient>
+                    <linearGradient id="hillBack" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#34d399"/><stop offset="100%" stop-color="#059669"/></linearGradient>
+                    <linearGradient id="hillFront" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#047857"/></linearGradient>
                   </defs>
-                  <circle cx="110" cy="62" r="26" fill="url(#sunG)" opacity=".9"/>
-                  <circle cx="110" cy="62" r="36" stroke="url(#sunG)" stroke-width="2" opacity=".28"/>
-                  <path d="M0 110 C 40 76, 80 76, 110 92 C 150 72, 190 78, 220 96 L220 110 Z" fill="url(#hillG)" opacity=".85"/>
-                  <path d="M0 110 C 50 92, 110 96, 220 104 L220 110 Z" fill="url(#hillG)"/>
-                  <path d="M38 86 l5 -12 5 12 M43 74 v16" stroke="var(--accent-hover)" stroke-width="2.4" stroke-linecap="round"/>
-                  <path d="M176 82 l5 -12 5 12 M181 70 v16" stroke="var(--accent-hover)" stroke-width="2.4" stroke-linecap="round"/>
+                  <circle cx="130" cy="58" r="48" fill="url(#sunHalo)"/>
+                  <circle cx="130" cy="58" r="25" fill="url(#sunCore)"/>
+                  <circle cx="130" cy="58" r="31" stroke="#fbbf24" stroke-opacity=".4" stroke-width="2"/>
+                  <!-- back hill -->
+                  <path d="M0 120 C 44 84, 92 82, 132 98 C 172 80, 216 84, 260 100 L260 120 Z" fill="url(#hillBack)" opacity=".8"/>
+                  <!-- front hill -->
+                  <path d="M0 120 C 60 98, 140 102, 260 110 L260 120 Z" fill="url(#hillFront)"/>
+                  <!-- pine trees -->
+                  <g fill="#047857">
+                    <path d="M56 92 l8-14 8 14 z M58 84 l6-11 6 11 z"/><rect x="62.6" y="92" width="2.8" height="7" rx="1.2"/>
+                    <path d="M196 88 l8-14 8 14 z M198 80 l6-11 6 11 z"/><rect x="202.6" y="88" width="2.8" height="7" rx="1.2"/>
+                  </g>
                 </svg>
                 <strong>{{ cheerTitle() }}</strong>
                 <span>You're {{ consistency30() | number:'1.0-0' }}% consistent this month.</span>
@@ -288,7 +320,7 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
               </span>
             }
           </div>
-          <div class="streak-num">{{ bestStreak() }} <span>days</span></div>
+          <div class="streak-num">{{ bestStreak() }} <span>{{ bestStreak() === 1 ? 'day' : 'days' }}</span></div>
           <div class="week-dots">
             @for (d of weekDots(); track d.label) {
               <span class="wd">
@@ -352,14 +384,26 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
   `,
   styles: [`
     /* ── Layout ─────────────────────────────────────────── */
-    .dash { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 1.1rem; align-items: start; }
-    .dash-main { display: flex; flex-direction: column; gap: 1.1rem; min-width: 0; }
-    .dash-side { display: flex; flex-direction: column; gap: 1.1rem; position: sticky; top: 0; }
+    .dash { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 1.1rem; align-items: start; position: relative; }
+    .dash-main { display: flex; flex-direction: column; gap: 1.1rem; min-width: 0; position: relative; z-index: 1; }
+    .dash-side { display: flex; flex-direction: column; gap: 1.1rem; position: sticky; top: 0; z-index: 1; }
     @media (max-width: 1150px) { .dash { grid-template-columns: 1fr; } .dash-side { position: static; } }
+
+    /* Aurora curves behind the header */
+    .aurora {
+      position: absolute; top: -2.2rem; left: 10%; right: 0; width: 90%; height: 230px;
+      pointer-events: none; z-index: 0; opacity: .35;
+    }
+    [data-theme="dark"] .aurora { opacity: .85; }
 
     .card {
       background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px;
-      box-shadow: var(--shadow-sm); padding: 1.1rem 1.25rem;
+      box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+      padding: 1.1rem 1.25rem;
+    }
+    [data-theme="dark"] .card {
+      border-color: rgba(255, 255, 255, 0.07);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 14px 34px -18px rgba(0, 0, 0, 0.85);
     }
     .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .9rem; }
     .card-head.slim { margin-bottom: .6rem; }
@@ -391,18 +435,19 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
       background: radial-gradient(240px 90px at 15% 0%, var(--hue-soft), transparent 70%);
     }
     .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--hue-border); }
-    .hue-green  { --hue-soft: rgba(16,185,129,.12); --hue-border: rgba(16,185,129,.45); }
-    .hue-violet { --hue-soft: rgba(139,92,246,.12); --hue-border: rgba(139,92,246,.45); }
-    .hue-blue   { --hue-soft: rgba(59,130,246,.12); --hue-border: rgba(59,130,246,.45); }
+    .hue-green  { --hue-soft: rgba(16,185,129,.12);  --hue-border: rgba(16,185,129,.45);  --hue-g1: #34d399; --hue-g2: #059669; --hue-sh: rgba(16,185,129,.5); }
+    .hue-violet { --hue-soft: rgba(139,92,246,.12);  --hue-border: rgba(139,92,246,.45);  --hue-g1: #a78bfa; --hue-g2: #7c3aed; --hue-sh: rgba(139,92,246,.5); }
+    .hue-blue   { --hue-soft: rgba(59,130,246,.12);  --hue-border: rgba(59,130,246,.45);  --hue-g1: #60a5fa; --hue-g2: #2563eb; --hue-sh: rgba(59,130,246,.5); }
     .stat-tile {
-      width: 46px; height: 46px; border-radius: 13px; flex-shrink: 0;
+      width: 48px; height: 48px; border-radius: 14px; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      background: var(--hue-soft); border: 1px solid var(--hue-border);
+      background: linear-gradient(140deg, var(--hue-g1), var(--hue-g2));
+      box-shadow: 0 7px 16px var(--hue-sh), inset 0 1px 0 rgba(255,255,255,.35);
     }
     .stat-body { display: flex; flex-direction: column; min-width: 0; }
-    .stat-num { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); line-height: 1.1; letter-spacing: -0.02em; }
+    .stat-num { font-size: 1.7rem; font-weight: 800; color: var(--text-primary); line-height: 1.1; letter-spacing: -0.02em; }
     .stat-label { font-size: .78rem; color: var(--text-muted); font-weight: 600; }
-    .spark { margin-left: auto; width: 86px; height: 34px; flex-shrink: 0; opacity: .9; }
+    .spark { margin-left: auto; width: 92px; height: 36px; flex-shrink: 0; filter: drop-shadow(0 3px 5px var(--hue-sh)); }
 
     /* ── Routine card ───────────────────────────────────── */
     .routine-top {
@@ -430,10 +475,15 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
 
     .cheer {
       display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
-      padding: .6rem 1rem; border-radius: 14px; background: var(--accent-subtle); min-height: 128px;
+      padding: .7rem 1rem .9rem; border-radius: 16px; min-height: 140px; overflow: hidden;
+      background: linear-gradient(180deg, var(--accent-subtle), transparent 130%);
+      border: 1px solid var(--accent-glow);
     }
-    .cheer-art { width: min(220px, 100%); height: auto; margin-bottom: .2rem; }
-    .cheer strong { font-size: 1.05rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.01em; }
+    [data-theme="dark"] .cheer {
+      background: radial-gradient(130% 110% at 50% -15%, rgba(16,185,129,.22), rgba(16,185,129,.05) 65%, transparent);
+    }
+    .cheer-art { width: min(240px, 100%); height: auto; margin-bottom: .1rem; }
+    .cheer strong { font-size: 1.08rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.01em; }
     .cheer span { font-size: .8rem; color: var(--text-secondary); }
 
     .checklist-title { font-size: .95rem; font-weight: 700; color: var(--text-primary); margin: 0 0 .6rem; }
@@ -484,11 +534,11 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
       display: flex; align-items: center; justify-content: center;
     }
     .mc-nav button:hover { background: var(--bg-hover); color: var(--text-primary); }
-    .mc-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-    .mc-dow { text-align: center; font-size: .6rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; padding: 3px 0 6px; }
+    .mc-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px 2px; }
+    .mc-dow { text-align: center; font-size: .6rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .02em; padding: 3px 0 7px; }
     .mc-cell {
-      aspect-ratio: 1; border: none; background: transparent; border-radius: 8px;
-      font-size: .74rem; font-weight: 600; color: var(--text-primary); cursor: pointer; font-family: inherit;
+      height: 31px; border: none; background: transparent; border-radius: 9px;
+      font-size: .76rem; font-weight: 600; color: var(--text-primary); cursor: pointer; font-family: inherit;
       display: flex; align-items: center; justify-content: center; transition: background .12s;
     }
     .mc-cell:hover { background: var(--bg-hover); }
@@ -669,14 +719,23 @@ export class DashboardComponent implements OnInit {
     });
   });
 
-  // --- Sparklines: polyline point strings from real recent data ---
+  // --- Sparklines: smooth SVG paths from real recent data.
+  // Quadratic segments through midpoints give the soft curve the design wants.
   private sparkPoints(values: number[]): string {
-    if (values.length < 2) return '0,30 120,30';
+    if (values.length < 2) return 'M0 30 L120 30';
     const max = Math.max(...values, 0.001);
     const stepX = 120 / (values.length - 1);
-    return values
-      .map((v, i) => `${(i * stepX).toFixed(1)},${(32 - (v / max) * 26 + 2).toFixed(1)}`)
-      .join(' ');
+    const pts = values.map((v, i) => [i * stepX, 32 - (v / max) * 24 + 2] as const);
+    let d = `M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+    for (let i = 1; i < pts.length; i++) {
+      const [px, py] = pts[i - 1];
+      const [cx, cy] = pts[i];
+      const mx = (px + cx) / 2, my = (py + cy) / 2;
+      d += ` Q${px.toFixed(1)} ${py.toFixed(1)} ${mx.toFixed(1)} ${my.toFixed(1)}`;
+    }
+    const last = pts[pts.length - 1];
+    d += ` L${last[0].toFixed(1)} ${last[1].toFixed(1)}`;
+    return d;
   }
   sparkPlans = computed(() => {
     const days = this.dailyRatios().slice(-14);
@@ -694,7 +753,7 @@ export class DashboardComponent implements OnInit {
   });
 
   // --- Mini calendar ---
-  readonly mcDow = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  readonly mcDow = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   private calRef = signal(new Date());
   calLabel = computed(() => this.calRef().toLocaleDateString(undefined, { month: 'long', year: 'numeric' }));
   calCells = computed(() => {

@@ -20,29 +20,29 @@ import { SidebarPrefsService } from '../../../core/services/sidebar-prefs.servic
         </div>
       </div>
 
-      <!-- Scrollable nav -->
+      <!-- Scrollable nav — custom duotone icon set: 1.7 stroke + soft filled detail -->
       <div class="sidebar-nav-area">
         <nav class="sidebar-nav">
           <span class="nav-section">Overview</span>
           <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.8 12 4l8 6.8V19a1.6 1.6 0 0 1-1.6 1.6H5.6A1.6 1.6 0 0 1 4 19z"/><path d="M9.6 20.6v-5.4a1.2 1.2 0 0 1 1.2-1.2h2.4a1.2 1.2 0 0 1 1.2 1.2v5.4" fill="currentColor" opacity=".3" stroke="none"/><path d="M9.6 20.6v-5.4a1.2 1.2 0 0 1 1.2-1.2h2.4a1.2 1.2 0 0 1 1.2 1.2v5.4"/></svg>
             <span>Dashboard</span>
           </a>
           @if (prefs.visible('tasks')) {
             <a routerLink="/tasks" routerLinkActive="active" class="nav-link">
-              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="4" width="15" height="17" rx="2.6"/><path d="M9 2.6h6a1.4 1.4 0 0 1 1.4 1.4v.6A1.4 1.4 0 0 1 15 6H9a1.4 1.4 0 0 1-1.4-1.4V4A1.4 1.4 0 0 1 9 2.6z" fill="currentColor" opacity=".3"/><path d="M8.6 12h6.8M8.6 15.6h4.2"/><path d="m14.6 17.6 1.5 1.5 2.6-2.8"/></svg>
               <span>My Plans</span>
             </a>
           }
           @if (prefs.visible('calendar')) {
             <a routerLink="/calendar" routerLinkActive="active" class="nav-link">
-              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3.6" y="5" width="16.8" height="15.4" rx="2.8"/><path d="M8 2.8v3.6M16 2.8v3.6M3.9 9.8h16.2"/><rect x="7" y="12.6" width="4.2" height="4.2" rx="1.2" fill="currentColor" opacity=".35" stroke="none"/></svg>
               <span>Calendar</span>
             </a>
           }
           @if (prefs.visible('analytics')) {
             <a routerLink="/analytics" routerLinkActive="active" class="nav-link">
-              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M5.2 20.4v-6.2M18.8 20.4v-9.6"/><rect x="9.9" y="3.6" width="4.2" height="16.8" rx="2.1" fill="currentColor" opacity=".3" stroke="none"/><path d="M12 20.4V3.6"/></svg>
               <span>Analytics</span>
             </a>
           }
@@ -52,25 +52,25 @@ import { SidebarPrefsService } from '../../../core/services/sidebar-prefs.servic
           }
           @if (prefs.visible('goals')) {
             <a routerLink="/goals" routerLinkActive="active" class="nav-link">
-              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8.6"/><circle cx="12" cy="12" r="4.8" opacity=".55"/><circle cx="12" cy="12" r="1.9" fill="currentColor" stroke="none"/></svg>
               <span>Goals</span>
             </a>
           }
           @if (prefs.visible('habits')) {
             <a routerLink="/habits" routerLinkActive="active" class="nav-link">
-              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.6"/><path d="M12 12 12 7.2" /><path d="m12 12 3.4 2.2"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><path d="M12 3.4v1M20.6 12h-1M12 20.6v-1M3.4 12h1" opacity=".55"/></svg>
               <span>Daily Routine</span>
             </a>
           }
           @if (prefs.visible('journal')) {
             <a routerLink="/journal" routerLinkActive="active" class="nav-link">
-              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.2C10.8 4.9 9 4.2 6.8 4.2c-1.2 0-2.3.2-3.2.6v14.4c.9-.4 2-.6 3.2-.6 2.2 0 4 .7 5.2 2 1.2-1.3 3-2 5.2-2 1.2 0 2.3.2 3.2.6V4.8c-.9-.4-2-.6-3.2-.6-2.2 0-4 .7-5.2 2z"/><path d="M12 6.2v14.4" opacity=".55"/><path d="M15.4 4.6v6l1.8-1.3 1.8 1.3v-5.4" fill="currentColor" opacity=".3" stroke="none"/></svg>
               <span>Journal</span>
             </a>
           }
           @if (prefs.visible('projects')) {
             <a routerLink="/projects" routerLinkActive="active" class="nav-link">
-              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20 7h-3V5a2 2 0 00-2-2H9a2 2 0 00-2 2v2H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><line x1="12" y1="11" x2="12" y2="15"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.4" y="7.6" width="17.2" height="12.8" rx="2.6"/><path d="M9 7.4V5.8A1.8 1.8 0 0 1 10.8 4h2.4A1.8 1.8 0 0 1 15 5.8v1.6" /><path d="M3.6 12.6c2.6 1.1 5.5 1.7 8.4 1.7s5.8-.6 8.4-1.7" opacity=".55"/><rect x="10.4" y="12.4" width="3.2" height="2.8" rx=".9" fill="currentColor" opacity=".35" stroke="none"/></svg>
               <span>Projects</span>
             </a>
           }
@@ -80,20 +80,20 @@ import { SidebarPrefsService } from '../../../core/services/sidebar-prefs.servic
           }
           @if (prefs.visible('trips')) {
             <a routerLink="/trips" routerLinkActive="active" class="nav-link">
-              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 3.2 3.4 10l5.2 2.6L10 18.6l3-4.2 5 2.4z"/><path d="M8.6 12.6 20.8 3.2l-7.8 11.2z" fill="currentColor" opacity=".3" stroke="none"/></svg>
               <span>Trips</span>
             </a>
           }
           @if (prefs.visible('buy-list')) {
             <a routerLink="/buy-list" routerLinkActive="active" class="nav-link">
-              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 002 1.6h9.7a2 2 0 002-1.6L23 6H6"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-.9 11a2 2 0 0 1-2 1.8H7.9a2 2 0 0 1-2-1.8z"/><path d="M5.6 8h12.8l-.3 3.4H5.9z" fill="currentColor" opacity=".25" stroke="none"/><path d="M8.6 10.6V6.4a3.4 3.4 0 0 1 6.8 0v4.2"/></svg>
               <span>Buy List</span>
             </a>
           }
 
           <span class="nav-section">Account</span>
           <a routerLink="/profile" routerLinkActive="active" class="nav-link">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="7.8" r="3.6"/><circle cx="12" cy="7.8" r="1.6" fill="currentColor" opacity=".3" stroke="none"/><path d="M4.8 20.4c.8-3.6 3.8-5.7 7.2-5.7s6.4 2.1 7.2 5.7"/></svg>
             <span>Profile</span>
           </a>
 
@@ -133,13 +133,13 @@ import { SidebarPrefsService } from '../../../core/services/sidebar-prefs.servic
       --sidebar-hover-border: rgba(120,90,40,0.14);
     }
 
-    .sidebar { width: 250px; min-width: 250px; height: 100vh; height: 100dvh; background: var(--sidebar-bg); display: flex; flex-direction: column; border-right: 1px solid var(--sidebar-border); overflow: hidden; }
+    .sidebar { width: 182px; min-width: 182px; height: 100vh; height: 100dvh; background: var(--sidebar-bg); display: flex; flex-direction: column; border-right: 1px solid var(--sidebar-border); overflow: hidden; }
 
     /* Header — height matches topbar (64px) */
     .sidebar-header { flex-shrink: 0; height: 64px; display: flex; align-items: center; padding: 0 0.75rem; border-bottom: 1px solid var(--sidebar-border); }
     .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
-    .logo-icon { width: 34px; height: 34px; background: linear-gradient(135deg, var(--accent), var(--accent-hover)); border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px var(--accent-glow); flex-shrink: 0; }
-    .logo-text { color: var(--sidebar-logo-text); font-weight: 700; font-size: 0.95rem; letter-spacing: -0.01em; }
+    .logo-icon { width: 30px; height: 30px; background: linear-gradient(135deg, var(--accent), var(--accent-hover)); border-radius: 9px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px var(--accent-glow); flex-shrink: 0; }
+    .logo-text { color: var(--sidebar-logo-text); font-weight: 700; font-size: 0.82rem; letter-spacing: -0.01em; white-space: nowrap; }
 
     /* Scrollable nav */
     .sidebar-nav-area { flex: 1; overflow-y: auto; padding: 0.25rem 0.75rem 1rem; }
@@ -153,21 +153,22 @@ import { SidebarPrefsService } from '../../../core/services/sidebar-prefs.servic
     .sidebar-nav > .nav-section:first-child { padding-top: 10px; }
 
     .nav-link {
-      display: flex; align-items: center; gap: 12px;
-      padding: 10px 14px; margin-bottom: 2px;
-      border-left: 3px solid transparent; border-radius: 0 8px 8px 0;
-      color: var(--sidebar-text); font-size: 0.865rem; font-weight: 500;
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 11px; margin-bottom: 3px;
+      border: 1px solid transparent; border-radius: 10px;
+      color: var(--sidebar-text); font-size: 0.82rem; font-weight: 500;
       text-decoration: none; transition: all 0.15s; cursor: pointer;
     }
-    .nav-link svg { flex-shrink: 0; opacity: 0.55; transition: opacity 0.15s; }
-    .nav-link:hover { background: var(--sidebar-hover); color: var(--sidebar-text-strong); border-left-color: var(--sidebar-hover-border); }
-    .nav-link:hover svg { opacity: 0.9; }
+    .nav-link svg { flex-shrink: 0; opacity: 0.6; transition: opacity 0.15s; }
+    .nav-link:hover { background: var(--sidebar-hover); color: var(--sidebar-text-strong); }
+    .nav-link:hover svg { opacity: 0.95; }
 
-    /* Active link follows the user-chosen accent color (see ThemeService) */
+    /* Active link: glowing accent pill (follows the user-chosen accent) */
     .nav-link.active {
       background: var(--accent-subtle);
-      border-left-color: var(--accent);
+      border-color: var(--accent-glow);
       color: var(--accent); font-weight: 600;
+      box-shadow: 0 0 14px var(--accent-subtle), inset 0 1px 0 rgba(255,255,255,0.06);
     }
     .nav-link.active svg { opacity: 1; }
 
