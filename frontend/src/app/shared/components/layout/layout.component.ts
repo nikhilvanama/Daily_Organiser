@@ -60,8 +60,10 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
       <!-- Main content -->
       <div class="layout-main">
         <!-- Decorative aurora curves pinned to the top of the viewport on
-             every page, flowing behind the transparent header -->
-        <svg class="aurora" viewBox="0 0 900 260" preserveAspectRatio="xMidYMin slice" aria-hidden="true">
+             every page, flowing behind the transparent header. Fades out
+             while the page is scrolled so the curves never hang over
+             content, and returns at the top. -->
+        <svg class="aurora" [class.away]="contentScrolled()" viewBox="0 0 900 260" preserveAspectRatio="xMidYMin slice" aria-hidden="true">
           <defs>
             <linearGradient id="auroraV" x1="0" y1="0" x2="1" y2="1">
               <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0"/>
@@ -83,7 +85,7 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
           <path d="M420 -40 C 600 100, 760 0, 960 60" stroke="#34d399" stroke-opacity=".3" stroke-width="1.6" fill="none"/>
         </svg>
         <app-topbar />
-        <main class="layout-content" [class.board-route]="isBoardRoute()">
+        <main class="layout-content" [class.board-route]="isBoardRoute()" (scroll)="onContentScroll($event)">
           <router-outlet />
         </main>
       </div>
@@ -107,12 +109,15 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
     .aurora {
       position: fixed; top: 0; right: 0; width: min(84vw, 1340px); height: 220px;
       pointer-events: none; z-index: 0; opacity: .35;
+      transition: opacity .4s ease, transform .4s ease;
     }
     [data-theme="dark"] .aurora { opacity: .85; }
     @media (max-width: 768px) {
       .aurora { width: 100vw; height: 170px; opacity: .5; }
       [data-theme="dark"] .aurora { opacity: 1; }
     }
+    /* Scrolled: drift up and fade so the curves never sit over content */
+    .aurora.away { opacity: 0 !important; transform: translateY(-24px); }
 
     .sidebar-wrap { flex-shrink: 0; }
     .mobile-topbar { display: none; }
@@ -180,6 +185,13 @@ export class LayoutComponent implements OnInit, OnDestroy {
   private toast = inject(ToastService);
   sidebarOpen = signal(false);
   gcalSyncing = false;
+
+  // True while the content area is scrolled away from the top — fades the
+  // aurora curves out so they never hang over scrolled cards.
+  contentScrolled = signal(false);
+  onContentScroll(e: Event) {
+    this.contentScrolled.set((e.target as HTMLElement).scrollTop > 24);
+  }
 
   // Same behavior as the desktop topbar button (hidden on phones):
   // connected → sync all plans; not connected → start the OAuth flow.
