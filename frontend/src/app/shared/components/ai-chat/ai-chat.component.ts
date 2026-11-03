@@ -123,7 +123,12 @@ interface ChatMsg {
        the panel opens just above the tab bar */
     @media (max-width: 768px) {
       .ai-fab { display: none !important; }
-      .ai-panel { bottom: calc(86px + env(safe-area-inset-bottom)); }
+      /* Height capped to the space between the mobile topbar and tab bar
+         so the input row always stays on screen */
+      .ai-panel {
+        bottom: calc(86px + env(safe-area-inset-bottom));
+        height: min(440px, calc(100dvh - 86px - 70px - env(safe-area-inset-bottom)));
+      }
     }
     .ai-fab {
       width: 50px; height: 50px; border-radius: 16px; cursor: pointer;
@@ -150,7 +155,10 @@ interface ChatMsg {
 
     .ai-panel {
       position: fixed; bottom: 84px; right: 20px; z-index: 941;
-      width: min(360px, calc(100vw - 2rem)); height: min(460px, calc(100vh - 120px));
+      width: min(360px, calc(100vw - 2rem));
+      /* dvh, not vh: on phones vh includes the browser chrome and pushes
+         the input row off-screen */
+      height: min(460px, calc(100dvh - 120px));
       background: var(--card-surface); border: 1px solid var(--card-border); border-radius: 16px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.35);
       display: flex; flex-direction: column; overflow: hidden;
@@ -232,9 +240,11 @@ interface ChatMsg {
 
     @media (max-width: 640px) {
       .ai-fab { bottom: 16px; right: 16px; }
-      /* Full-width bottom sheet, like messaging apps */
+      /* Full-width bottom sheet, like messaging apps — slides OVER the
+         mobile tab bar (z 1000), so the input row is always visible */
+      .ai-backdrop { z-index: 1001; }
       .ai-panel {
-        left: 0; right: 0; bottom: 0; width: 100%;
+        left: 0; right: 0; bottom: 0; width: 100%; z-index: 1002;
         height: min(78dvh, 560px);
         border-radius: 20px 20px 0 0; border-left: none; border-right: none; border-bottom: none;
         animation: ai-sheet 0.22s ease;
