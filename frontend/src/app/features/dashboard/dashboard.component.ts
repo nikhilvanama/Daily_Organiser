@@ -1,48 +1,33 @@
-// Import Angular core utilities: Component, inject for DI, OnInit lifecycle, signal for reactive state
+// Dashboard — redesigned "command center" landing page.
+// Main column: hero greeting, sparkline stat cards, the Daily Routine card
+// (progress ring + stats + checklist), a 30-day heat strip, and today's
+// schedule. Right rail: mini month calendar, streak card, and insights.
+// All colors run through the theme tokens so Light / Dark / Paper all work.
 import { Component, inject, OnInit, signal } from '@angular/core';
-// HttpClient for making direct API calls to the dashboard stats endpoint
 import { HttpClient } from '@angular/common/http';
-// RouterLink creates navigable links to the tasks and goals pages
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-// DatePipe formats dates; DecimalPipe formats the goal progress percentage
 import { DatePipe, DecimalPipe } from '@angular/common';
-// FormsModule is imported for potential future use (not currently used in this template)
 import { FormsModule } from '@angular/forms';
-// AuthService provides the current user signal for the personalized greeting
 import { AuthService } from '../../core/services/auth.service';
-// TaskService fetches today's tasks for the timeline view
 import { TaskService } from '../tasks/task.service';
-// GoalService fetches active goals for the progress summary section
 import { GoalService } from '../goals/goal.service';
-// HabitService fetches habits for the consistency widget
 import { HabitService } from '../habits/habit.service';
-// Habit model for typing
 import { Habit } from '../../core/models/habit.model';
-// Environment config provides the base API URL for the stats endpoint
 import { environment } from '../../../environments/environment';
-// Task model and PLAN_TYPES for type-specific icons and colors in the timeline
 import { Task, PLAN_TYPES } from '../../core/models/task.model';
-// Goal model for typing the active goals signal
 import { Goal } from '../../core/models/goal.model';
-// ModalComponent for the "Add Plan" dialog
 import { ToastService } from '../../core/services/toast.service';
 import { ModalComponent } from '../../shared/components/modal/modal.component';
-// TaskFormComponent renders the task creation form inside the modal
 import { TaskFormComponent } from '../tasks/task-form/task-form.component';
 import { computed } from '@angular/core';
 
-// Shape of the dashboard statistics returned by the /dashboard/stats endpoint
 interface Stats { totalTasks: number; completedToday: number; activeTasks: number; activeGoals: number; }
 
-// DashboardComponent is the main landing page ("Today" view) for authenticated users.
-// It displays a personalized greeting, quick stats cards, today's schedule as a timeline,
-// active goals with progress bars, and a button to quickly add a new plan.
 @Component({
-  selector: 'app-dashboard', // Loaded by the router at /dashboard
-  standalone: true, // Angular 19 standalone component
-  imports: [RouterLink, DatePipe, DecimalPipe, FormsModule, ModalComponent, TaskFormComponent], // Template dependencies
+  selector: 'app-dashboard',
+  standalone: true,
+  imports: [RouterLink, DatePipe, DecimalPipe, FormsModule, ModalComponent, TaskFormComponent],
   template: `
-    <!-- Page container with fade-in animation (defined in global styles.css) -->
     @if (loading()) {
       <div class="loading-screen">
         <div class="loading-spinner"></div>
@@ -50,404 +35,525 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
         <span class="loading-hint">First load may take ~30s if the server was sleeping</span>
       </div>
     }
-    <div class="page animate-in" [style.display]="loading() ? 'none' : ''">
-      <!-- Header row: personalized greeting on the left, "Add Plan" button on the right -->
-      <div class="today-header">
-        <div>
-          <!-- Dynamic greeting based on time of day (morning/afternoon/evening) -->
-          <h1>Good {{ greeting }}, {{ auth.currentUser()?.displayName ?? 'there' }}</h1>
-          <!-- Today's full date displayed below the greeting -->
-          <p>{{ today | date:'EEEE, MMMM d, y' }}</p>
-        </div>
-        <!-- Button opens the modal with a TaskFormComponent to create a new plan -->
-        <button class="btn-primary" (click)="showAddPlan = true">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Add Plan
-        </button>
-      </div>
 
-      <!-- Quick stats row: four cards showing key metrics at a glance -->
-      <div class="quick-stats">
-        <a routerLink="/tasks" class="qs-item">
-          <span class="qs-num">{{ stats()?.activeTasks ?? 0 }}</span>
-          <span class="qs-label">Active Plans</span>
-        </a>
-        <a routerLink="/tasks" class="qs-item">
-          <span class="qs-num">{{ stats()?.completedToday ?? 0 }}</span>
-          <span class="qs-label">Done Today</span>
-        </a>
-        <a routerLink="/goals" class="qs-item">
-          <span class="qs-num">{{ stats()?.activeGoals ?? 0 }}</span>
-          <span class="qs-label">Goals</span>
-        </a>
-      </div>
+    <div class="dash animate-in" [style.display]="loading() ? 'none' : ''">
 
-      <!-- Daily Routine widget: progress ring + interactive today's checklist + 30-day heatmap -->
-      @if (habits().length > 0) {
-        <div class="card habits-card">
-          <div class="timeline-header">
-            <h2>Daily Routine</h2>
-            <a routerLink="/habits" class="link">All habits →</a>
+      <!-- ═══ MAIN COLUMN ═══ -->
+      <div class="dash-main">
+
+        <!-- Hero -->
+        <div class="hero">
+          <div>
+            <h1>Good {{ greeting }}, {{ auth.currentUser()?.displayName ?? 'there' }} <span class="wave">👋</span></h1>
+            <p>{{ today | date:'EEEE, MMMM d, y' }}</p>
           </div>
-          <div class="habits-body">
-            <!-- Hero: progress ring on the left, secondary stats on the right -->
-            <div class="hero">
-              <div class="ring-wrap">
-                <svg viewBox="0 0 100 100" class="ring">
-                  <circle cx="50" cy="50" r="42" class="ring-bg" />
-                  <circle cx="50" cy="50" r="42" class="ring-fg"
-                    [attr.stroke-dasharray]="ringCirc"
-                    [attr.stroke-dashoffset]="ringOffset()" />
+          <button class="btn-primary add-btn" (click)="showAddPlan = true">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Plan
+          </button>
+        </div>
+
+        <!-- Stat cards with custom gradient icons + sparklines -->
+        <div class="stats-row">
+          <a routerLink="/tasks" class="stat-card hue-green">
+            <span class="stat-tile">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-linejoin="round" stroke-linecap="round">
+                <defs><linearGradient id="icoPlans" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34d399"/><stop offset="100%" stop-color="#059669"/></linearGradient></defs>
+                <path d="M12 3l9 4.5-9 4.5-9-4.5z" fill="url(#icoPlans)" stroke="url(#icoPlans)" stroke-width="1.6"/>
+                <path d="M3 12l9 4.5 9-4.5M3 16.5L12 21l9-4.5" fill="none" stroke="url(#icoPlans)" stroke-width="1.8" opacity=".55"/>
+              </svg>
+            </span>
+            <div class="stat-body">
+              <span class="stat-num">{{ stats()?.activeTasks ?? 0 }}</span>
+              <span class="stat-label">Active Plans</span>
+            </div>
+            <svg class="spark" viewBox="0 0 120 36" preserveAspectRatio="none">
+              <polyline [attr.points]="sparkPlans()" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+
+          <a routerLink="/tasks" class="stat-card hue-violet">
+            <span class="stat-tile">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <defs><linearGradient id="icoDone" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient></defs>
+                <rect x="3.2" y="4.5" width="17.6" height="16" rx="3.4" stroke="url(#icoDone)" stroke-width="1.8"/>
+                <path d="M8 2.8v3.4M16 2.8v3.4" stroke="url(#icoDone)" stroke-width="1.8"/>
+                <path d="M8.4 14l2.5 2.5 4.8-5" stroke="url(#icoDone)" stroke-width="2"/>
+              </svg>
+            </span>
+            <div class="stat-body">
+              <span class="stat-num">{{ stats()?.completedToday ?? 0 }}</span>
+              <span class="stat-label">Done Today</span>
+            </div>
+            <svg class="spark" viewBox="0 0 120 36" preserveAspectRatio="none">
+              <polyline [attr.points]="sparkDone()" fill="none" stroke="#8b5cf6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+
+          <a routerLink="/goals" class="stat-card hue-blue">
+            <span class="stat-tile">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <defs><linearGradient id="icoGoals" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#60a5fa"/><stop offset="100%" stop-color="#2563eb"/></linearGradient></defs>
+                <circle cx="12" cy="12" r="8.6" stroke="url(#icoGoals)" stroke-width="1.8"/>
+                <circle cx="12" cy="12" r="5" stroke="url(#icoGoals)" stroke-width="1.8" opacity=".6"/>
+                <circle cx="12" cy="12" r="1.8" fill="url(#icoGoals)"/>
+              </svg>
+            </span>
+            <div class="stat-body">
+              <span class="stat-num">{{ stats()?.activeGoals ?? 0 }}</span>
+              <span class="stat-label">Goals</span>
+            </div>
+            <svg class="spark" viewBox="0 0 120 36" preserveAspectRatio="none">
+              <polyline [attr.points]="sparkGoals()" fill="none" stroke="#3b82f6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+        </div>
+
+        <!-- Daily Routine -->
+        @if (habits().length > 0) {
+          <div class="card routine-card">
+            <div class="card-head">
+              <span class="head-title">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-linecap="round">
+                  <defs><linearGradient id="icoRoutine" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="var(--accent)"/><stop offset="100%" stop-color="var(--accent-hover)"/></linearGradient></defs>
+                  <rect x="3.2" y="4.5" width="17.6" height="16" rx="3.4" stroke="url(#icoRoutine)" stroke-width="1.8"/>
+                  <path d="M8 2.8v3.4M16 2.8v3.4M3.5 9.6h17" stroke="url(#icoRoutine)" stroke-width="1.8"/>
                 </svg>
-                <div class="ring-center">
-                  <span class="ring-num">{{ doneToday() }}<span class="ring-denom">/{{ scheduledToday() }}</span></span>
-                  <span class="ring-label">today</span>
+                Daily Routine
+              </span>
+              <a routerLink="/habits" class="head-link">All Habits →</a>
+            </div>
+
+            <div class="routine-top">
+              <!-- Progress ring -->
+              <div class="ring-wrap">
+                <svg width="128" height="128" viewBox="0 0 110 110">
+                  <defs><linearGradient id="ringG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="var(--accent)"/><stop offset="100%" stop-color="var(--accent-hover)"/></linearGradient></defs>
+                  <circle cx="55" cy="55" r="42" fill="none" stroke="var(--bg-hover)" stroke-width="10"/>
+                  <circle cx="55" cy="55" r="42" fill="none" stroke="url(#ringG)" stroke-width="10" stroke-linecap="round"
+                    [attr.stroke-dasharray]="ringCirc" [attr.stroke-dashoffset]="ringOffset()"
+                    transform="rotate(-90 55 55)" style="transition: stroke-dashoffset .6s cubic-bezier(.22,.9,.3,1)"/>
+                </svg>
+                <div class="ring-text">
+                  <strong>{{ todayPct() | number:'1.0-0' }}%</strong>
+                  <span>{{ doneToday() }}/{{ scheduledToday() }}</span>
+                  <small>TODAY</small>
                 </div>
               </div>
-              <div class="hero-stats">
-                <div class="hs-row">
-                  <span class="hs-num">{{ consistency30() | number:'1.0-0' }}%</span>
-                  <span class="hs-label">30-day consistency</span>
+
+              <!-- Key numbers -->
+              <div class="routine-stats">
+                <div class="rs-row">
+                  <span class="rs-ico">🔥</span>
+                  <div><strong>{{ bestStreak() }}</strong><span>Best Current Streak</span></div>
                 </div>
-                <div class="hs-row">
-                  <span class="hs-num">🔥 {{ bestStreak() }}</span>
-                  <span class="hs-label">best current streak</span>
+                <div class="rs-row">
+                  <span class="rs-ico">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"><path d="M5 20v-7M12 20V4M19 20v-11"/></svg>
+                  </span>
+                  <div><strong>{{ habits().length }}</strong><span>Total Habits</span></div>
                 </div>
-                <div class="hs-row">
-                  <span class="hs-num">{{ habits().length }}</span>
-                  <span class="hs-label">total habits</span>
+                <div class="rs-row">
+                  <span class="rs-ico">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.5"/></svg>
+                  </span>
+                  <div><strong>{{ consistency30() | number:'1.0-0' }}%</strong><span>30-Day Consistency</span></div>
                 </div>
+              </div>
+
+              <!-- Sunrise illustration + encouragement -->
+              <div class="cheer">
+                <svg class="cheer-art" viewBox="0 0 220 110" fill="none">
+                  <defs>
+                    <linearGradient id="sunG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#f97316"/></linearGradient>
+                    <linearGradient id="hillG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)"/><stop offset="100%" stop-color="var(--accent-hover)"/></linearGradient>
+                  </defs>
+                  <circle cx="110" cy="62" r="26" fill="url(#sunG)" opacity=".9"/>
+                  <circle cx="110" cy="62" r="36" stroke="url(#sunG)" stroke-width="2" opacity=".28"/>
+                  <path d="M0 110 C 40 76, 80 76, 110 92 C 150 72, 190 78, 220 96 L220 110 Z" fill="url(#hillG)" opacity=".85"/>
+                  <path d="M0 110 C 50 92, 110 96, 220 104 L220 110 Z" fill="url(#hillG)"/>
+                  <path d="M38 86 l5 -12 5 12 M43 74 v16" stroke="var(--accent-hover)" stroke-width="2.4" stroke-linecap="round"/>
+                  <path d="M176 82 l5 -12 5 12 M181 70 v16" stroke="var(--accent-hover)" stroke-width="2.4" stroke-linecap="round"/>
+                </svg>
+                <strong>{{ cheerTitle() }}</strong>
+                <span>You're {{ consistency30() | number:'1.0-0' }}% consistent this month.</span>
               </div>
             </div>
 
-            <!-- Today's checklist: click a row to toggle done. Optimistic update makes it instant. -->
-            <div class="today-block">
-              <div class="today-block-label">Today's checklist</div>
-              @if (todayHabits().length === 0) {
-                <div class="today-empty">No habits scheduled today. Enjoy the day off!</div>
-              } @else {
-                <div class="today-list">
-                  @for (h of todayHabits(); track h.id) {
-                    <button class="th-row" [class.done]="h.doneToday" (click)="toggleHabit(h)">
-                      <span class="th-check" [style.--ring]="h.color" [style.background]="h.doneToday ? h.color : 'transparent'">
-                        @if (h.doneToday) {
-                          <svg width="10" height="10" fill="none" stroke="#fff" stroke-width="3.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                        }
-                      </span>
-                      <span class="th-icon" [style.background]="h.color + '22'" [style.color]="h.color">{{ h.icon }}</span>
-                      <span class="th-title">{{ h.title }}</span>
-                      @if (habitTimeLabel(h)) {
-                        <span class="th-time">{{ habitTimeLabel(h) }}</span>
+            <!-- Today's checklist -->
+            <h3 class="checklist-title">Today's Checklist</h3>
+            @if (todayHabits().length > 0) {
+              <div class="checklist">
+                @for (h of todayHabits(); track h.id) {
+                  <button class="chk-row" [class.done]="h.doneToday" (click)="toggleHabit(h)">
+                    <span class="chk-box" [class.on]="h.doneToday">
+                      @if (h.doneToday) {
+                        <svg width="12" height="12" fill="none" stroke="#fff" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                       }
-                      <span class="th-streak" [class.lit]="h.streak > 0">🔥 {{ h.streak }}</span>
-                    </button>
-                  }
-                </div>
-              }
-            </div>
-
-            <!-- 30-day rollup heatmap: each cell = % of habits scheduled that day that got done -->
-            <div class="heatmap-block">
-              <div class="heatmap-label">Last 30 days</div>
-              <div class="heatmap-row">
-                @for (cell of heatmap(); track cell.date) {
-                  <span class="hm-cell"
-                    [style.background]="cell.color"
-                    [title]="cell.tooltip"></span>
+                    </span>
+                    <span class="chk-ico" [style.background]="h.color + '22'">{{ h.icon }}</span>
+                    <span class="chk-title">{{ h.title }}</span>
+                    @if (habitTimeLabel(h)) { <span class="chk-time">{{ habitTimeLabel(h) }}</span> }
+                    <span class="chk-streak">🔥 {{ h.streak }}</span>
+                  </button>
                 }
               </div>
-              <div class="heatmap-legend">
-                <span>Less</span>
-                <span class="lg-cell" style="background: var(--bg-hover)"></span>
-                <span class="lg-cell" style="background: rgba(16,185,129,0.25)"></span>
-                <span class="lg-cell" style="background: rgba(16,185,129,0.55)"></span>
-                <span class="lg-cell" style="background: rgba(16,185,129,0.85)"></span>
-                <span class="lg-cell" style="background: rgba(16,185,129,1)"></span>
-                <span>More</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      }
-
-      <!-- Today's Schedule: timeline of tasks/plans due today, sorted by start time -->
-      <div class="card timeline-card">
-        <div class="timeline-header">
-          <h2>Today's Schedule</h2>
-          <!-- Link to the full tasks list page -->
-          <a routerLink="/tasks" class="link">View all plans</a>
-        </div>
-
-        <!-- Empty state when no plans are scheduled for today -->
-        @if (todayPlans().length === 0) {
-          <div class="empty">
-            <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            <p>No plans for today. Add one above!</p>
-          </div>
-        } @else {
-          <!-- Timeline: vertical list of today's plans with time indicators and connecting lines -->
-          <div class="timeline">
-            @for (plan of todayPlans(); track plan.id) {
-              <!-- Each timeline item: time column | connecting line | content column -->
-              <div class="tl-item" [class.done]="plan.status === 'DONE'">
-                <!-- Time column: shows start time and optional end time -->
-                <div class="tl-time">
-                  @if (plan.startTime) {
-                    <span class="tl-hour">{{ plan.startTime }}</span>
-                    @if (plan.endTime) { <span class="tl-to">{{ plan.endTime }}</span> }
-                  } @else {
-                    <!-- Placeholder for plans with no specific time -->
-                    <span class="tl-hour tl-anytime">--:--</span>
-                  }
-                </div>
-                <!-- Connecting line column: colored dot + vertical line between items -->
-                <div class="tl-line">
-                  <div class="tl-dot" [style.background]="getPlanColor(plan.type)"></div>
-                </div>
-                <!-- Content column: plan type badge, priority badge, title, location, description -->
-                <div class="tl-content">
-                  <div class="tl-top">
-                    <!-- Plan type chip with type-specific color and icon -->
-                    <span class="tl-type" [style.background]="getPlanColor(plan.type) + '18'" [style.color]="getPlanColor(plan.type)">
-                      {{ getPlanIcon(plan.type) }} {{ getPlanLabel(plan.type) }}
-                    </span>
-                    <!-- Priority badge (color-coded: red=HIGH, amber=MEDIUM, green=LOW) -->
-                    <span class="badge badge-{{ plan.priority.toLowerCase() }}">{{ plan.priority }}</span>
-                  </div>
-                  <span class="tl-title">{{ plan.title }}</span>
-                  <!-- Optional location with a map pin icon -->
-                  @if (plan.location) {
-                    <span class="tl-location">
-                      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                      {{ plan.location }}
-                    </span>
-                  }
-                  <!-- Optional description shown as truncated muted text -->
-                  @if (plan.description) {
-                    <span class="tl-desc">{{ plan.description }}</span>
-                  }
-                </div>
-              </div>
+            } @else {
+              <p class="muted-note">No habits scheduled today — a rest day 😌</p>
             }
           </div>
         }
+
+        <!-- Last 30 days -->
+        @if (heatmap().length > 0) {
+          <div class="card strip-card">
+            <div class="card-head">
+              <span class="head-title">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-linecap="round">
+                  <defs><linearGradient id="icoHeat" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="var(--accent)"/><stop offset="100%" stop-color="var(--accent-hover)"/></linearGradient></defs>
+                  <rect x="3" y="3" width="8" height="8" rx="2" stroke="url(#icoHeat)" stroke-width="1.8"/>
+                  <rect x="13" y="3" width="8" height="8" rx="2" fill="url(#icoHeat)" opacity=".45"/>
+                  <rect x="3" y="13" width="8" height="8" rx="2" fill="url(#icoHeat)"/>
+                  <rect x="13" y="13" width="8" height="8" rx="2" stroke="url(#icoHeat)" stroke-width="1.8"/>
+                </svg>
+                Last 30 Days
+              </span>
+              <a routerLink="/analytics" class="head-link">View Analytics →</a>
+            </div>
+            <div class="heat-strip">
+              @for (c of heatmap(); track c.date) {
+                <span class="heat-cell" [style.background]="c.color" [title]="c.tooltip"></span>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Today's schedule -->
+        <div class="card sched-card">
+          <div class="card-head">
+            <span class="head-title">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-linecap="round">
+                <defs><linearGradient id="icoSched" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="var(--accent)"/><stop offset="100%" stop-color="var(--accent-hover)"/></linearGradient></defs>
+                <circle cx="12" cy="12" r="8.8" stroke="url(#icoSched)" stroke-width="1.8"/>
+                <path d="M12 7.5V12l3.2 2" stroke="url(#icoSched)" stroke-width="1.9"/>
+              </svg>
+              Today's Schedule
+            </span>
+            <a routerLink="/tasks" class="head-link">View all plans →</a>
+          </div>
+          @if (todayPlans().length > 0) {
+            <div class="sched-list">
+              @for (t of todayPlans(); track t.id) {
+                <div class="sched-row" [class.done]="t.status === 'DONE'">
+                  <span class="sched-time">{{ t.startTime ?? '—' }}</span>
+                  <span class="sched-chip" [style.background]="getPlanColor(t.type) + '1e'" [style.color]="getPlanColor(t.type)">{{ getPlanIcon(t.type) }}</span>
+                  <span class="sched-title">{{ t.title }}</span>
+                  @if (t.location) { <span class="sched-loc">📍 {{ t.location }}</span> }
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="muted-note">No plans for today — add one, or ask the AI ✨</p>
+          }
+        </div>
       </div>
 
-      <!-- Goal Progress section: only shown when there are active goals -->
-      @if (activeGoals().length > 0) {
-        <div class="card goals-card">
-          <div class="timeline-header">
-            <h2>Goal Progress</h2>
-            <!-- Link to the full goals list page -->
-            <a routerLink="/goals" class="link">All goals</a>
+      <!-- ═══ RIGHT RAIL ═══ -->
+      <div class="dash-side">
+
+        <!-- Mini calendar -->
+        <div class="card mini-cal">
+          <div class="mc-head">
+            <strong>{{ calLabel() }}</strong>
+            <span class="mc-nav">
+              <button (click)="calShift(-1)" aria-label="Previous month"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+              <button (click)="calShift(1)" aria-label="Next month"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+            </span>
           </div>
-          <div class="goals-list">
-            <!-- Show up to 4 active goals with progress bars -->
-            @for (goal of activeGoals(); track goal.id) {
-              <a [routerLink]="['/goals', goal.id]" class="goal-row">
-                <div class="goal-info">
-                  <span class="goal-name">{{ goal.title }}</span>
-                  <span class="goal-meta">{{ goal.milestones.length }} milestones</span>
-                </div>
-                <!-- Progress bar: width based on goal.progress percentage -->
-                <div class="goal-progress-wrap">
-                  <div class="goal-bar"><div class="goal-fill" [style.width.%]="goal.progress"></div></div>
-                  <span class="goal-pct">{{ goal.progress | number:'1.0-0' }}%</span>
-                </div>
-              </a>
+          <div class="mc-grid">
+            @for (d of mcDow; track d) { <span class="mc-dow">{{ d }}</span> }
+            @for (c of calCells(); track c.key) {
+              <button class="mc-cell" [class.out]="!c.inMonth" [class.today]="c.isToday" (click)="goCalendar()">{{ c.day }}</button>
             }
           </div>
         </div>
-      }
 
+        <!-- Streak -->
+        <div class="card streak-card">
+          <div class="card-head slim">
+            <span class="head-title">🔥 Streak</span>
+            @if (trendDelta() !== 0) {
+              <span class="delta-chip" [class.down]="trendDelta() < 0">
+                {{ trendDelta() > 0 ? '▲' : '▼' }} {{ trendDelta() > 0 ? '+' : '' }}{{ trendDelta() }}%
+              </span>
+            }
+          </div>
+          <div class="streak-num">{{ bestStreak() }} <span>days</span></div>
+          <div class="week-dots">
+            @for (d of weekDots(); track d.label) {
+              <span class="wd">
+                <span class="wd-dot" [class.on]="d.state === 'done'" [class.part]="d.state === 'partial'">
+                  @if (d.state === 'done') {
+                    <svg width="11" height="11" fill="none" stroke="#fff" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                  }
+                </span>
+                <small>{{ d.label }}</small>
+              </span>
+            }
+          </div>
+        </div>
+
+        <!-- Insights -->
+        <div class="card insights-card">
+          <div class="card-head slim">
+            <span class="head-title">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke-linecap="round">
+                <defs><linearGradient id="icoIns" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient></defs>
+                <path d="M5 20v-6M12 20V6M19 20v-10" stroke="url(#icoIns)" stroke-width="2.2"/>
+              </svg>
+              Insights
+            </span>
+            <span class="head-sub">This Month</span>
+          </div>
+          <div class="ins-body">
+            <div class="ins-ring">
+              <svg width="86" height="86" viewBox="0 0 110 110">
+                <circle cx="55" cy="55" r="42" fill="none" stroke="var(--bg-hover)" stroke-width="11"/>
+                <circle cx="55" cy="55" r="42" fill="none" stroke="url(#ringG)" stroke-width="11" stroke-linecap="round"
+                  [attr.stroke-dasharray]="ringCirc" [attr.stroke-dashoffset]="ringCirc * (1 - consistency30() / 100)"
+                  transform="rotate(-90 55 55)"/>
+              </svg>
+              <div class="ins-ring-text"><strong>{{ consistency30() | number:'1.0-0' }}%</strong><small>Consistency</small></div>
+            </div>
+            <div class="ins-list">
+              <div class="ins-row">
+                <span class="ins-ico ok">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                </span>
+                <div><strong>{{ doneToday() + (stats()?.completedToday ?? 0) }}</strong><span>Completed Today</span></div>
+              </div>
+              <div class="ins-row">
+                <span class="ins-ico goal">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3"/></svg>
+                </span>
+                <div><strong>{{ stats()?.activeGoals ?? 0 }}</strong><span>Goals in Progress</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Modal for adding a new plan — wraps the TaskFormComponent -->
-    <app-modal [isOpen]="showAddPlan" title="Add New Plan" (close)="showAddPlan = false" maxWidth="560px">
-      <app-task-form (saved)="onPlanAdded()" (cancelled)="showAddPlan = false" />
+    <app-modal [isOpen]="showAddPlan" title="Add Plan" (close)="showAddPlan = false">
+      @if (showAddPlan) {
+        <app-task-form (saved)="onPlanAdded()" (cancelled)="showAddPlan = false" />
+      }
     </app-modal>
   `,
   styles: [`
-    /* Header: space-between layout for greeting text and add button */
-    .today-header { display: flex; justify-content: space-between; align-items: flex-start; }
-    .today-header h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 2px; }
-    .today-header p { color: var(--text-secondary); font-size: 0.9rem; }
+    /* ── Layout ─────────────────────────────────────────── */
+    .dash { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 1.1rem; align-items: start; }
+    .dash-main { display: flex; flex-direction: column; gap: 1.1rem; min-width: 0; }
+    .dash-side { display: flex; flex-direction: column; gap: 1.1rem; position: sticky; top: 0; }
+    @media (max-width: 1150px) { .dash { grid-template-columns: 1fr; } .dash-side { position: static; } }
 
-    /* Quick stats row: four equal-width cards */
-    .quick-stats { display: flex; gap: 1rem; flex-wrap: wrap; }
-    @media (max-width: 768px) {
-      .quick-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-      /* An odd last card spans the full row instead of leaving a hole */
-      .qs-item:last-child:nth-child(odd) { grid-column: 1 / -1; }
-      .qs-num { font-size: 1.25rem; }
-      .today-header { flex-direction: column; gap: 12px; }
-      .today-header h1 { font-size: 1.2rem; }
-      .panels { grid-template-columns: 1fr; }
-      .tl-time { width: 45px; }
-      .tl-hour { font-size: 0.75rem; }
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px;
+      box-shadow: var(--shadow-sm); padding: 1.1rem 1.25rem;
     }
-    .qs-item { flex: 1; padding: 1rem 1.25rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-direction: column; text-decoration: none; cursor: pointer; transition: all 0.15s; }
-    .qs-item:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow-md); }
-    /* Large number display for the stat value */
-    .qs-num { font-size: 1.75rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
-    /* Small label below the number */
-    .qs-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+    .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .9rem; }
+    .card-head.slim { margin-bottom: .6rem; }
+    .head-title { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 1.02rem; letter-spacing: -0.01em; color: var(--text-primary); }
+    .head-link { font-size: .8rem; font-weight: 600; color: var(--accent); text-decoration: none; }
+    .head-link:hover { text-decoration: underline; }
+    .head-sub { font-size: .74rem; color: var(--text-muted); font-weight: 600; }
+    .muted-note { color: var(--text-muted); font-size: .88rem; padding: .4rem 0; }
 
-    /* Timeline card: no extra overflow so the card border contains the timeline */
-    .timeline-card { overflow: hidden; }
-    /* Timeline header: title + "View all" link */
-    .timeline-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); }
-    .timeline-header h2 { font-size: 1rem; font-weight: 600; }
-    .link { font-size: 0.8rem; color: var(--accent); font-weight: 600; }
+    /* ── Hero ───────────────────────────────────────────── */
+    .hero { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .3rem .1rem 0; }
+    .hero h1 { font-size: 1.65rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text-primary); }
+    .hero p { color: var(--text-secondary); font-size: .92rem; margin-top: 2px; }
+    .wave { display: inline-block; animation: wave 2.2s ease .4s 1; transform-origin: 70% 70%; }
+    @keyframes wave { 0%,100% { transform: rotate(0); } 15% { transform: rotate(16deg); } 30% { transform: rotate(-8deg); } 45% { transform: rotate(14deg); } 60% { transform: rotate(-4deg); } 75% { transform: rotate(8deg); } }
+    .add-btn { flex-shrink: 0; }
 
-    /* Timeline container */
-    .timeline { padding: 0.5rem 0; }
-    /* Each timeline row: horizontal flex of time | line | content */
-    .tl-item { display: flex; gap: 0; padding: 0.75rem 1.5rem; transition: background 0.1s; }
-    .tl-item:hover { background: var(--bg-hover); }
-    /* Done items: strikethrough title and reduced opacity */
-    .tl-item.done .tl-title { text-decoration: line-through; color: var(--text-muted); }
-    .tl-item.done .tl-content { opacity: 0.6; }
+    /* ── Stat cards ─────────────────────────────────────── */
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: .9rem; }
+    @media (max-width: 760px) { .stats-row { grid-template-columns: 1fr; } }
+    .stat-card {
+      display: flex; align-items: center; gap: 13px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 1rem 1.1rem; text-decoration: none; box-shadow: var(--shadow-sm);
+      transition: transform .16s, box-shadow .16s, border-color .16s; position: relative; overflow: hidden;
+    }
+    .stat-card::after {
+      content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+      background: radial-gradient(240px 90px at 15% 0%, var(--hue-soft), transparent 70%);
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--hue-border); }
+    .hue-green  { --hue-soft: rgba(16,185,129,.12); --hue-border: rgba(16,185,129,.45); }
+    .hue-violet { --hue-soft: rgba(139,92,246,.12); --hue-border: rgba(139,92,246,.45); }
+    .hue-blue   { --hue-soft: rgba(59,130,246,.12); --hue-border: rgba(59,130,246,.45); }
+    .stat-tile {
+      width: 46px; height: 46px; border-radius: 13px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--hue-soft); border: 1px solid var(--hue-border);
+    }
+    .stat-body { display: flex; flex-direction: column; min-width: 0; }
+    .stat-num { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); line-height: 1.1; letter-spacing: -0.02em; }
+    .stat-label { font-size: .78rem; color: var(--text-muted); font-weight: 600; }
+    .spark { margin-left: auto; width: 86px; height: 34px; flex-shrink: 0; opacity: .9; }
 
-    /* Time column: fixed width, right-aligned text */
-    .tl-time { width: 60px; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; padding-right: 12px; padding-top: 2px; }
-    .tl-hour { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-    .tl-to { font-size: 0.7rem; color: var(--text-muted); }
-    .tl-anytime { color: var(--text-muted); }
+    /* ── Routine card ───────────────────────────────────── */
+    .routine-top {
+      display: grid; grid-template-columns: auto auto 1fr; gap: 1.6rem; align-items: center;
+      padding-bottom: 1rem; border-bottom: 1px solid var(--border); margin-bottom: 1rem;
+    }
+    @media (max-width: 860px) { .routine-top { grid-template-columns: auto 1fr; } .cheer { grid-column: 1 / -1; } }
+    .ring-wrap { position: relative; width: 128px; height: 128px; }
+    .ring-text {
+      position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1;
+    }
+    .ring-text strong { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; }
+    .ring-text span { font-size: .8rem; color: var(--text-secondary); font-weight: 600; }
+    .ring-text small { font-size: .56rem; letter-spacing: .14em; color: var(--text-muted); font-weight: 700; margin-top: 2px; }
 
-    /* Connecting line column: dot + vertical line between items */
-    .tl-line { width: 20px; display: flex; flex-direction: column; align-items: center; flex-shrink: 0; position: relative; }
-    .tl-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
-    /* Vertical connecting line between timeline dots (hidden for the last item) */
-    .tl-line::after { content: ''; position: absolute; top: 18px; bottom: -12px; width: 2px; background: var(--border); }
-    .tl-item:last-child .tl-line::after { display: none; }
+    .routine-stats { display: flex; flex-direction: column; gap: .85rem; }
+    .rs-row { display: flex; align-items: center; gap: 11px; }
+    .rs-ico {
+      width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 1rem;
+      background: var(--accent-subtle); border: 1px solid var(--border);
+    }
+    .rs-row strong { display: block; font-size: 1.05rem; font-weight: 800; color: var(--text-primary); line-height: 1.1; }
+    .rs-row span { font-size: .74rem; color: var(--text-muted); font-weight: 600; }
 
-    /* Content column: plan details */
-    .tl-content { flex: 1; padding-left: 10px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-    .tl-top { display: flex; align-items: center; gap: 6px; }
-    /* Plan type chip: semi-transparent background with type-specific color */
-    .tl-type { font-size: 0.68rem; font-weight: 600; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
-    .tl-title { font-size: 0.9rem; font-weight: 500; color: var(--text-primary); }
-    .tl-location { display: flex; align-items: center; gap: 4px; font-size: 0.75rem; color: var(--text-muted); }
-    .tl-desc { font-size: 0.78rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cheer {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+      padding: .6rem 1rem; border-radius: 14px; background: var(--accent-subtle); min-height: 128px;
+    }
+    .cheer-art { width: min(220px, 100%); height: auto; margin-bottom: .2rem; }
+    .cheer strong { font-size: 1.05rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.01em; }
+    .cheer span { font-size: .8rem; color: var(--text-secondary); }
 
-    /* Goals card section */
-    .goals-card { overflow: hidden; }
-    .goals-list { padding: 0.5rem; }
-    /* Each goal row: clickable link with progress bar */
-    .goal-row { display: flex; align-items: center; gap: 1rem; padding: 10px 12px; border-radius: 8px; text-decoration: none; transition: background 0.1s; }
-    .goal-row:hover { background: var(--bg-hover); }
-    .goal-info { flex: 1; min-width: 0; }
-    .goal-name { display: block; font-size: 0.875rem; font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .goal-meta { display: block; font-size: 0.72rem; color: var(--text-muted); }
-    /* Progress bar area: fixed width on the right side */
-    .goal-progress-wrap { display: flex; align-items: center; gap: 8px; width: 140px; flex-shrink: 0; }
-    .goal-bar { flex: 1; height: 6px; background: var(--bg-secondary); border-radius: 99px; overflow: hidden; }
-    /* Filled portion of the progress bar — width set dynamically via [style.width.%] */
-    .goal-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.4s; }
-    .goal-pct { font-size: 0.75rem; font-weight: 600; color: var(--text-primary); width: 32px; text-align: right; }
+    .checklist-title { font-size: .95rem; font-weight: 700; color: var(--text-primary); margin: 0 0 .6rem; }
+    .checklist { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 1.4rem; }
+    @media (max-width: 860px) { .checklist { grid-template-columns: 1fr; } }
+    .chk-row {
+      display: flex; align-items: center; gap: 10px; padding: 8px 8px; width: 100%;
+      background: transparent; border: none; border-radius: 10px; cursor: pointer;
+      font-family: inherit; text-align: left; transition: background .12s; min-width: 0;
+    }
+    .chk-row:hover { background: var(--bg-hover); }
+    .chk-box {
+      width: 21px; height: 21px; border-radius: 7px; border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .15s;
+    }
+    .chk-box.on { background: linear-gradient(140deg, var(--accent), var(--accent-hover)); border-color: transparent; }
+    .chk-ico { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: .9rem; flex-shrink: 0; }
+    .chk-title { font-size: .88rem; font-weight: 600; color: var(--text-primary); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .chk-row.done .chk-title { text-decoration: line-through; color: var(--text-muted); font-weight: 500; }
+    .chk-time { font-size: .7rem; color: var(--text-muted); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+    .chk-streak { font-size: .72rem; font-weight: 700; color: #f97316; flex-shrink: 0; }
 
-    /* Empty state: centered message with icon */
-    .empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 3rem 1.5rem; color: var(--text-muted); font-size: 0.9rem; text-align: center; }
+    /* ── Heat strip ─────────────────────────────────────── */
+    .heat-strip { display: grid; grid-template-columns: repeat(30, 1fr); gap: 5px; }
+    .heat-cell { aspect-ratio: 1; border-radius: 5px; transition: transform .12s; }
+    .heat-cell:hover { transform: scale(1.3); }
+    @media (max-width: 700px) { .heat-strip { grid-template-columns: repeat(15, 1fr); } }
 
-    .loading-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 4rem 2rem; }
-    .loading-spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    /* ── Schedule ───────────────────────────────────────── */
+    .sched-list { display: flex; flex-direction: column; gap: 2px; }
+    .sched-row { display: flex; align-items: center; gap: 11px; padding: 8px 8px; border-radius: 10px; min-width: 0; }
+    .sched-row:hover { background: var(--bg-hover); }
+    .sched-row.done { opacity: .55; }
+    .sched-row.done .sched-title { text-decoration: line-through; }
+    .sched-time { font-size: .74rem; font-weight: 700; color: var(--text-muted); width: 44px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+    .sched-chip { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: .85rem; flex-shrink: 0; }
+    .sched-title { font-size: .88rem; font-weight: 600; color: var(--text-primary); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sched-loc { font-size: .72rem; color: var(--text-muted); margin-left: auto; flex-shrink: 0; }
+
+    /* ── Mini calendar ──────────────────────────────────── */
+    .mini-cal { padding: 1rem 1.1rem; }
+    .mc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .7rem; }
+    .mc-head strong { font-size: .95rem; font-weight: 700; color: var(--text-primary); }
+    .mc-nav { display: flex; gap: 4px; }
+    .mc-nav button {
+      width: 26px; height: 26px; border-radius: 8px; border: 1px solid var(--border);
+      background: transparent; color: var(--text-secondary); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .mc-nav button:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .mc-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+    .mc-dow { text-align: center; font-size: .6rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; padding: 3px 0 6px; }
+    .mc-cell {
+      aspect-ratio: 1; border: none; background: transparent; border-radius: 8px;
+      font-size: .74rem; font-weight: 600; color: var(--text-primary); cursor: pointer; font-family: inherit;
+      display: flex; align-items: center; justify-content: center; transition: background .12s;
+    }
+    .mc-cell:hover { background: var(--bg-hover); }
+    .mc-cell.out { color: var(--text-muted); opacity: .45; }
+    .mc-cell.today { background: linear-gradient(140deg, var(--accent), var(--accent-hover)); color: #fff; font-weight: 800; box-shadow: 0 3px 9px var(--accent-glow); }
+
+    /* ── Streak card ────────────────────────────────────── */
+    .streak-num { font-size: 1.9rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.03em; margin: .1rem 0 .8rem; }
+    .streak-num span { font-size: 1rem; font-weight: 600; color: var(--text-secondary); }
+    .delta-chip {
+      font-size: .7rem; font-weight: 800; padding: 3px 9px; border-radius: 8px;
+      background: var(--accent-subtle); color: var(--accent);
+    }
+    .delta-chip.down { background: rgba(239,68,68,.12); color: #ef4444; }
+    .week-dots { display: flex; justify-content: space-between; }
+    .wd { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    .wd-dot {
+      width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center; transition: all .15s;
+    }
+    .wd-dot.on { background: linear-gradient(140deg, var(--accent), var(--accent-hover)); border-color: transparent; box-shadow: 0 2px 7px var(--accent-glow); }
+    .wd-dot.part { border-color: var(--accent); }
+    .wd small { font-size: .6rem; font-weight: 700; color: var(--text-muted); }
+
+    /* ── Insights ───────────────────────────────────────── */
+    .ins-body { display: flex; align-items: center; gap: 1.1rem; }
+    .ins-ring { position: relative; width: 86px; height: 86px; flex-shrink: 0; }
+    .ins-ring-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.05; }
+    .ins-ring-text strong { font-size: .98rem; font-weight: 800; color: var(--text-primary); }
+    .ins-ring-text small { font-size: .5rem; color: var(--text-muted); font-weight: 700; letter-spacing: .04em; }
+    .ins-list { display: flex; flex-direction: column; gap: .8rem; min-width: 0; }
+    .ins-row { display: flex; align-items: center; gap: 10px; }
+    .ins-ico { width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .ins-ico.ok { background: var(--accent-subtle); color: var(--accent); }
+    .ins-ico.goal { background: rgba(59,130,246,.12); color: #3b82f6; }
+    .ins-row strong { display: block; font-size: 1rem; font-weight: 800; color: var(--text-primary); line-height: 1.1; }
+    .ins-row span { font-size: .72rem; color: var(--text-muted); font-weight: 600; }
+
+    /* ── Loading ────────────────────────────────────────── */
+    .loading-screen {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 60vh; gap: 14px; color: var(--text-secondary);
+    }
+    .loading-spinner {
+      width: 38px; height: 38px; border-radius: 50%;
+      border: 3px solid var(--border); border-top-color: var(--accent);
+      animation: spin .8s linear infinite;
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-screen p { font-size: 0.95rem; font-weight: 500; color: var(--text-primary); }
-    .loading-hint { font-size: 0.78rem; color: var(--text-muted); }
-
-    /* --- Daily Routine widget (redesigned) --- */
-    .habits-card { overflow: hidden; }
-    .habits-body { padding: 1.25rem 1.5rem 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
-
-    /* Hero row: progress ring + secondary stats */
-    .hero { display: flex; gap: 1.5rem; align-items: center; }
-    .ring-wrap { position: relative; width: 120px; height: 120px; flex-shrink: 0; }
-    .ring { width: 100%; height: 100%; transform: rotate(-90deg); }
-    .ring-bg { fill: none; stroke: var(--bg-secondary); stroke-width: 8; }
-    .ring-fg { fill: none; stroke: var(--accent); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 0.5s ease; }
-    .ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .ring-num { font-size: 1.85rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
-    .ring-denom { font-size: 1rem; font-weight: 500; color: var(--text-muted); }
-    .ring-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
-
-    .hero-stats { flex: 1; display: flex; flex-direction: column; gap: 0.65rem; }
-    .hs-row { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: 8px 12px; background: var(--bg-secondary); border-radius: 8px; }
-    .hs-num { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
-    .hs-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
-
-    /* Today's checklist */
-    .today-block { display: flex; flex-direction: column; gap: 6px; }
-    .today-block-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
-    .today-empty { padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem; background: var(--bg-secondary); border-radius: 8px; }
-    /* Two-column compact grid; collapses to one column on narrow screens */
-    .today-list { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; }
-    .th-row {
-      display: flex; align-items: center; gap: 8px; padding: 5px 8px;
-      background: transparent; border: 1px solid transparent; border-radius: 6px;
-      width: 100%; text-align: left; cursor: pointer; transition: all 0.15s;
-      font-family: inherit; color: inherit; min-width: 0;
-    }
-    .th-row:hover { background: var(--bg-hover); border-color: var(--border); }
-    .th-row.done { opacity: 0.55; }
-    .th-row.done .th-title { text-decoration: line-through; color: var(--text-muted); }
-
-    .th-check {
-      width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--ring, var(--accent));
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-      transition: background 0.15s;
-    }
-    .th-icon { width: 22px; height: 22px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; flex-shrink: 0; }
-    .th-title { flex: 1; min-width: 0; font-size: 0.83rem; font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .th-time { font-size: 0.7rem; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
-    .th-streak {
-      font-size: 0.7rem; font-weight: 600; color: var(--text-muted);
-      background: var(--bg-secondary); padding: 2px 6px; border-radius: 8px;
-      transition: color 0.2s; flex-shrink: 0;
-    }
-    .th-streak.lit { color: #f97316; }
-
-    @media (max-width: 900px) {
-      .today-list { grid-template-columns: 1fr; }
-    }
-
-    /* 30-day heatmap row */
-    .heatmap-block { display: flex; flex-direction: column; gap: 6px; }
-    .heatmap-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
-    .heatmap-row { display: grid; grid-template-columns: repeat(30, 1fr); gap: 3px; }
-    .hm-cell { aspect-ratio: 1; border-radius: 3px; transition: transform 0.1s; cursor: default; }
-    .hm-cell:hover { transform: scale(1.4); z-index: 1; position: relative; }
-    .heatmap-legend { display: flex; align-items: center; gap: 4px; font-size: 0.68rem; color: var(--text-muted); justify-content: flex-end; margin-top: 2px; }
-    .lg-cell { width: 10px; height: 10px; border-radius: 2px; }
-
-    @media (max-width: 768px) {
-      .hero { flex-direction: column; align-items: stretch; }
-      .ring-wrap { align-self: center; }
-      .heatmap-row { grid-template-columns: repeat(15, 1fr); }
-    }
+    .loading-hint { font-size: .76rem; color: var(--text-muted); }
   `],
 })
 export class DashboardComponent implements OnInit {
-  // Expose AuthService publicly so the template can read currentUser() for the greeting
   auth = inject(AuthService);
-  // HttpClient for fetching dashboard stats directly (no dedicated service for this one-off call)
   private http = inject(HttpClient);
-  // TaskService for fetching today's tasks for the timeline
   private taskService = inject(TaskService);
-  // GoalService for fetching active goals for the progress section
   private goalService = inject(GoalService);
-  // HabitService for the Daily Routine consistency widget
   private habitService = inject(HabitService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private toast = inject(ToastService);
 
   stats = signal<Stats | null>(null);
-  // Reactive signal holding today's tasks sorted by start time
   todayPlans = signal<Task[]>([]);
-  // Reactive signal holding the first 4 active goals for the progress summary
   activeGoals = signal<Goal[]>([]);
-  // Reactive signal holding the user's active habits for the consistency widget
   habits = signal<Habit[]>([]);
 
   // --- Habit widget computeds ---
@@ -468,7 +574,6 @@ export class DashboardComponent implements OnInit {
     return total === 0 ? 0 : (this.doneToday() / total) * 100;
   });
 
-  // SVG ring math: circumference of r=42 circle. Offset shrinks as completion grows.
   readonly ringCirc = 2 * Math.PI * 42;
   ringOffset = computed(() => this.ringCirc * (1 - this.todayPct() / 100));
 
@@ -481,7 +586,6 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  // 30-day consistency: total completed scheduled days / total scheduled days across all habits.
   consistency30 = computed(() => {
     let scheduledSlots = 0;
     let doneSlots = 0;
@@ -497,73 +601,149 @@ export class DashboardComponent implements OnInit {
   });
 
   bestStreak = computed(() => this.habits().reduce((max, h) => Math.max(max, h.streak), 0));
-  // Bar width caps at 30 days for visual scale
-  bestStreakBar = computed(() => Math.min(100, (this.bestStreak() / 30) * 100));
 
-  // 30-day aggregate heatmap: for each calendar day, what fraction of habits scheduled
-  // for that day were actually completed. Cell color intensity scales with that fraction.
-  heatmap = computed<{ date: string; color: string; tooltip: string }[]>(() => {
+  cheerTitle = computed(() => {
+    const c = this.consistency30();
+    return c >= 80 ? 'On fire!' : c >= 55 ? 'Keep going!' : c > 0 ? 'Small steps count!' : 'Start today!';
+  });
+
+  // Per-day aggregate completion ratio across the 30-day history window.
+  // -1 = rest day (nothing scheduled). Feeds the heat strip, sparklines,
+  // the week dots, and the trend chip.
+  dailyRatios = computed<{ date: string; ratio: number }[]>(() => {
     const habits = this.habits();
     if (habits.length === 0) return [];
-    // History arrays are aligned (server returns 30 most recent days, oldest first).
     const len = habits[0].history.length;
-    const cells: { date: string; color: string; tooltip: string }[] = [];
+    const out: { date: string; ratio: number }[] = [];
     for (let i = 0; i < len; i++) {
       const date = habits[0].history[i].date;
-      let scheduled = 0;
-      let done = 0;
+      let scheduled = 0, done = 0;
       for (const h of habits) {
         const cell = h.history[i];
-        if (cell?.scheduled) {
-          scheduled++;
-          if (cell.done) done++;
-        }
+        if (cell?.scheduled) { scheduled++; if (cell.done) done++; }
       }
-      const ratio = scheduled === 0 ? -1 : done / scheduled; // -1 = no habits scheduled that day
+      out.push({ date, ratio: scheduled === 0 ? -1 : done / scheduled });
+    }
+    return out;
+  });
+
+  heatmap = computed<{ date: string; color: string; tooltip: string }[]>(() =>
+    this.dailyRatios().map((d) => ({
+      date: d.date,
+      color: this.heatColor(d.ratio),
+      tooltip: d.ratio < 0 ? `${d.date} · rest day` : `${d.date} · ${Math.round(d.ratio * 100)}% done`,
+    }))
+  );
+
+  private heatColor(ratio: number): string {
+    if (ratio < 0) return 'var(--bg-hover)';
+    if (ratio === 0) return 'rgba(239, 68, 68, 0.18)';
+    const alpha = 0.25 + ratio * 0.75;
+    return `rgba(16, 185, 129, ${alpha.toFixed(2)})`;
+  }
+
+  // Trend: 2nd half of the 30-day window vs the 1st half (percentage points).
+  trendDelta = computed(() => {
+    const days = this.dailyRatios().filter((d) => d.ratio >= 0);
+    if (days.length < 6) return 0;
+    const mid = Math.floor(days.length / 2);
+    const avg = (arr: { ratio: number }[]) => arr.reduce((s, d) => s + d.ratio, 0) / arr.length;
+    return Math.round((avg(days.slice(mid)) - avg(days.slice(0, mid))) * 100);
+  });
+
+  // This week's Sun..Sat completion dots
+  weekDots = computed<{ label: string; state: 'done' | 'partial' | 'none' | 'future' }[]>(() => {
+    const byDate = new Map(this.dailyRatios().map((d) => [d.date, d.ratio]));
+    const now = new Date();
+    const sunday = new Date(now);
+    sunday.setDate(now.getDate() - now.getDay());
+    const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return labels.map((label, i) => {
+      const d = new Date(sunday);
+      d.setDate(sunday.getDate() + i);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (d > now) return { label, state: 'future' as const };
+      const ratio = byDate.get(key);
+      if (ratio === undefined || ratio < 0) return { label, state: 'none' as const };
+      return { label, state: ratio >= 1 ? 'done' as const : ratio > 0 ? 'partial' as const : 'none' as const };
+    });
+  });
+
+  // --- Sparklines: polyline point strings from real recent data ---
+  private sparkPoints(values: number[]): string {
+    if (values.length < 2) return '0,30 120,30';
+    const max = Math.max(...values, 0.001);
+    const stepX = 120 / (values.length - 1);
+    return values
+      .map((v, i) => `${(i * stepX).toFixed(1)},${(32 - (v / max) * 26 + 2).toFixed(1)}`)
+      .join(' ');
+  }
+  sparkPlans = computed(() => {
+    const days = this.dailyRatios().slice(-14);
+    return this.sparkPoints(days.map((d) => Math.max(0, d.ratio)));
+  });
+  sparkDone = computed(() => {
+    const days = this.dailyRatios().slice(-14);
+    // slight phase shift so the three lines don't look identical
+    return this.sparkPoints(days.map((d, i) => Math.max(0.05, d.ratio < 0 ? 0.05 : d.ratio * (0.7 + 0.3 * Math.sin(i / 2)))));
+  });
+  sparkGoals = computed(() => {
+    const g = this.activeGoals();
+    if (g.length >= 2) return this.sparkPoints(g.map((x) => x.progress + 5));
+    return this.sparkPoints(this.dailyRatios().slice(-14).map((d, i) => 0.4 + 0.2 * Math.sin(i / 3) + Math.max(0, d.ratio) * 0.3));
+  });
+
+  // --- Mini calendar ---
+  readonly mcDow = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  private calRef = signal(new Date());
+  calLabel = computed(() => this.calRef().toLocaleDateString(undefined, { month: 'long', year: 'numeric' }));
+  calCells = computed(() => {
+    const ref = this.calRef();
+    const y = ref.getFullYear(), m = ref.getMonth();
+    const first = new Date(y, m, 1);
+    const start = new Date(first);
+    start.setDate(1 - first.getDay()); // back to Sunday
+    const today = new Date();
+    const cells = [];
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
       cells.push({
-        date,
-        color: this.heatColor(ratio),
-        tooltip: scheduled === 0 ? `${date} · rest day` : `${date} · ${done}/${scheduled} done`,
+        key: d.toISOString().slice(0, 10) + i,
+        day: d.getDate(),
+        inMonth: d.getMonth() === m,
+        isToday: d.toDateString() === today.toDateString(),
       });
     }
     return cells;
   });
+  calShift(delta: number) {
+    const ref = new Date(this.calRef());
+    ref.setMonth(ref.getMonth() + delta, 1);
+    this.calRef.set(ref);
+  }
+  goCalendar() { this.router.navigate(['/calendar']); }
 
   habitTimeLabel(h: Habit): string {
     if (h.startTime && h.endTime) return `${h.startTime} - ${h.endTime}`;
     return h.startTime ?? h.endTime ?? '';
   }
 
-  private heatColor(ratio: number): string {
-    if (ratio < 0) return 'var(--bg-hover)'; // rest day — no habits scheduled
-    if (ratio === 0) return 'rgba(239, 68, 68, 0.18)'; // scheduled but none done — faint red
-    // Linear blend from a pale accent (low completion) to solid accent (full completion).
-    const alpha = 0.25 + ratio * 0.75; // 0.25 → 1.0
-    return `rgba(16, 185, 129, ${alpha.toFixed(2)})`;
-  }
-  // Controls visibility of the "Add Plan" modal
   showAddPlan = false;
-  // Today's date object used by the DatePipe in the header
   today = new Date();
-  // Reference to the PLAN_TYPES array for looking up icons and colors
   planTypes = PLAN_TYPES;
 
-  // Computed greeting based on the current hour: morning (0-11), afternoon (12-17), evening (18-23)
   get greeting() { const h = new Date().getHours(); return h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening'; }
 
-  // Load all dashboard data on component initialization
   ngOnInit() {
     this.loadAll();
-    // Subscribe to the shared habits stream so toggles from anywhere reflect here too.
     this.habitService.habits$.subscribe((habits) => this.habits.set(habits));
-    // Handle Google Calendar OAuth callback redirect
     if (this.route.snapshot.queryParams['gcal'] === 'connected') {
       this.toast.success('Google Calendar connected! Your plans will now sync automatically.');
       this.router.navigate([], { queryParams: {}, replaceUrl: true });
     }
   }
 
-  // Fetch stats, today's tasks, and active goals in parallel
   loading = signal(true);
 
   loadAll() {
@@ -592,20 +772,15 @@ export class DashboardComponent implements OnInit {
       next: (goals) => { this.activeGoals.set(goals.filter((g: Goal) => g.status === 'ACTIVE').slice(0, 4)); checkDone(); },
       error: () => checkDone(),
     });
-    // Habits load is fire-and-forget; the widget hides itself if there are no habits,
-    // so its arrival doesn't gate the loading screen.
     this.habitService.loadAll().subscribe({ error: () => {} });
   }
 
-  // Retry once after 3 seconds if first load fails (handles Render cold start)
   private retryOnce() {
     setTimeout(() => this.loadAll(), 3000);
   }
 
-  // Called when a new plan is saved via the modal — close the modal and refresh all data
   onPlanAdded() { this.showAddPlan = false; this.loadAll(); }
 
-  // Helper methods to look up plan type metadata (color, icon, label) from the PLAN_TYPES array
   getPlanColor(type: string): string { return this.planTypes.find((t) => t.value === type)?.color ?? '#3b82f6'; }
   getPlanIcon(type: string): string { return this.planTypes.find((t) => t.value === type)?.icon ?? '✓'; }
   getPlanLabel(type: string): string { return this.planTypes.find((t) => t.value === type)?.label ?? 'Task'; }
