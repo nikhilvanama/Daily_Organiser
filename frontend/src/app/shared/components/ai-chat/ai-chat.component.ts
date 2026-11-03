@@ -119,10 +119,11 @@ interface ChatMsg {
     .ai-fab {
       position: fixed; bottom: 20px; right: 20px; z-index: 940;
     }
-    /* Phones: sit above the bottom tab bar */
+    /* Phones: the tab bar's center AI orb replaces the floating button;
+       the panel opens just above the tab bar */
     @media (max-width: 768px) {
-      .ai-fab { bottom: calc(76px + env(safe-area-inset-bottom)); }
-      .ai-panel { bottom: calc(138px + env(safe-area-inset-bottom)); }
+      .ai-fab { display: none; }
+      .ai-panel { bottom: calc(80px + env(safe-area-inset-bottom)); }
     }
     .ai-fab {
       width: 50px; height: 50px; border-radius: 16px; cursor: pointer;

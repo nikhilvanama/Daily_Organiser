@@ -1,4 +1,4 @@
-import { Component, HostListener, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, HostListener, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map, startWith } from 'rxjs/operators';
@@ -108,6 +108,15 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
         </svg>
         <span>Plans</span>
       </a>
+      <button class="tab tab-ai" (click)="toggleAi()" title="AI assistant">
+        <span class="ai-orb">
+          <svg width="22" height="22" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" viewBox="0 0 24 24">
+            <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" fill="#fff" fill-opacity=".25"/>
+            <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" fill="#fff"/>
+          </svg>
+        </span>
+        <span>AI</span>
+      </button>
       <a routerLink="/calendar" routerLinkActive="active" class="tab">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/>
@@ -117,14 +126,6 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
           <circle cx="12" cy="15" r="1.6" fill="currentColor" stroke="none"/>
         </svg>
         <span>Calendar</span>
-      </a>
-      <a routerLink="/habits" routerLinkActive="active" class="tab">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="8.6"/>
-          <path d="M12 3.4a8.6 8.6 0 0 1 0 17.2z" fill="currentColor" opacity=".18" stroke="none"/>
-          <path d="M12 7.6V12l3.2 2.2"/>
-        </svg>
-        <span>Routine</span>
       </a>
       <button class="tab" (click)="sidebarOpen.set(true)">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round">
@@ -177,7 +178,7 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
       /* 56px fixed mobile topbar + exactly 1rem gap below it; extra bottom
          padding so the last content can scroll clear of the floating AI
          button AND the bottom tab bar */
-      .layout-content { padding: 1rem; padding-top: calc(56px + 1rem); padding-bottom: calc(66px + 96px + env(safe-area-inset-bottom)); }
+      .layout-content { padding: 1rem; padding-top: calc(56px + 1rem); padding-bottom: calc(66px + 28px + env(safe-area-inset-bottom)); }
       .layout-content.board-route { padding-bottom: calc(66px + env(safe-area-inset-bottom)); }
 
       .mobile-topbar {
@@ -208,6 +209,19 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
       .tab.active { color: var(--accent); }
       .tab.active svg { transform: translateY(-1px); }
       .tab:active svg { transform: scale(0.92); }
+
+      /* Center AI tab: raised glowing orb that floats above the bar */
+      .tab-ai { gap: 4px; overflow: visible; }
+      .tab-ai span:last-child { color: var(--accent); }
+      .ai-orb {
+        width: 48px; height: 48px; border-radius: 50%; margin-top: -30px;
+        display: flex; align-items: center; justify-content: center;
+        background: linear-gradient(145deg, var(--accent), var(--accent-hover));
+        border: 4px solid var(--bg-card);
+        box-shadow: 0 6px 20px var(--accent-glow), inset 0 2px 0 rgba(255, 255, 255, 0.35);
+        transition: transform 0.15s;
+      }
+      .tab-ai:active .ai-orb { transform: scale(0.92); }
       .hamburger {
         display: flex; align-items: center; justify-content: center;
         width: 36px; height: 36px; border-radius: 8px;
@@ -257,6 +271,10 @@ export class LayoutComponent implements OnInit, OnDestroy {
   private toast = inject(ToastService);
   sidebarOpen = signal(false);
   gcalSyncing = false;
+
+  // Center tab of the mobile tab bar opens the AI assistant panel
+  @ViewChild(AiChatComponent) private aiChat?: AiChatComponent;
+  toggleAi() { this.aiChat?.toggle(); }
 
   // True while the content area is scrolled away from the top — fades the
   // aurora curves out so they never hang over scrolled cards.
