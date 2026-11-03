@@ -1,3 +1,4 @@
+import { PageArtComponent } from '../../../shared/components/page-art/page-art.component';
 import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { HabitService } from '../habit.service';
 import { Habit, WEEKDAY_LABELS, WEEKDAY_VALUES } from '../../../core/models/habit.model';
@@ -12,10 +13,11 @@ import { HabitIconComponent, habitGlyphFor, habitTileBg, habitTileShadow } from 
 @Component({
   selector: 'app-habit-list',
   standalone: true,
-  imports: [ModalComponent, HabitFormComponent, ConfirmDialogComponent, HabitIconComponent],
+  imports: [ModalComponent, HabitFormComponent, ConfirmDialogComponent, HabitIconComponent, PageArtComponent],
   template: `
     <div class="page animate-in">
       <div class="page-header">
+        <app-page-art scene="routine" />
         <div>
           <h2>Daily Routine</h2>
           <p>Check off your habits, build streaks</p>

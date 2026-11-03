@@ -1,4 +1,5 @@
 // Import Angular core utilities: Component, inject for DI, OnInit lifecycle hook
+import { PageArtComponent } from '../../../shared/components/page-art/page-art.component';
 import { Component, inject, OnInit } from '@angular/core';
 // RouterLink creates navigable links to individual task detail pages
 import { RouterLink } from '@angular/router';
@@ -27,12 +28,13 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
 @Component({
   selector: 'app-task-list', // Loaded by the router at /tasks
   standalone: true, // Angular 19 standalone component
-  imports: [RouterLink, DatePipe, ReactiveFormsModule, ModalComponent, TaskFormComponent, ConfirmDialogComponent, PlanIconComponent],
+  imports: [RouterLink, DatePipe, ReactiveFormsModule, ModalComponent, TaskFormComponent, ConfirmDialogComponent, PlanIconComponent, PageArtComponent],
   template: `
     <!-- Page container with fade-in animation -->
     <div class="page animate-in">
       <!-- Page header: title + "Add Plan" button -->
       <div class="page-header">
+        <app-page-art scene="plans" />
         <div>
           <h2>My Plans</h2>
           <p>All your tasks, trips, meetings & reminders</p>

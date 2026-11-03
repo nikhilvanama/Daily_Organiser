@@ -1,3 +1,4 @@
+import { PageArtComponent } from '../../../shared/components/page-art/page-art.component';
 import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { TripService } from '../trip.service';
@@ -10,10 +11,11 @@ import { ToastService } from '../../../core/services/toast.service';
 @Component({
   selector: 'app-trip-board',
   standalone: true,
-  imports: [ModalComponent, TripFormComponent, ConfirmDialogComponent],
+  imports: [ModalComponent, TripFormComponent, ConfirmDialogComponent, PageArtComponent],
   template: `
     <div class="page animate-in">
       <div class="page-header">
+        <app-page-art scene="trips" />
         <div>
           <h2>Trips</h2>
           <p>Save inspiration, plan the next one, look back on the last one</p>

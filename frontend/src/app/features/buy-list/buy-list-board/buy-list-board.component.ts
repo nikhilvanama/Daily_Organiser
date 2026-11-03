@@ -1,3 +1,4 @@
+import { PageArtComponent } from '../../../shared/components/page-art/page-art.component';
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { BuyListService } from '../buy-list.service';
@@ -10,10 +11,11 @@ import { ToastService } from '../../../core/services/toast.service';
 @Component({
   selector: 'app-buy-list-board',
   standalone: true,
-  imports: [ModalComponent, BuyListFormComponent, ConfirmDialogComponent],
+  imports: [ModalComponent, BuyListFormComponent, ConfirmDialogComponent, PageArtComponent],
   template: `
     <div class="page animate-in">
       <div class="page-header">
+        <app-page-art scene="buylist" />
         <div>
           <h2>Buy List</h2>
           <p>Things you'll forget the moment you walk into the shop</p>

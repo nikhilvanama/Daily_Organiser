@@ -1,3 +1,4 @@
+import { PageArtComponent } from '../../../shared/components/page-art/page-art.component';
 import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -11,10 +12,11 @@ import { ToastService } from '../../../core/services/toast.service';
 @Component({
   selector: 'app-project-list',
   standalone: true,
-  imports: [RouterLink, ModalComponent, ProjectFormComponent],
+  imports: [RouterLink, ModalComponent, ProjectFormComponent, PageArtComponent],
   template: `
     <div class="page animate-in">
       <div class="page-header">
+        <app-page-art scene="projects" />
         <div>
           <h2>Projects</h2>
           <p>Freelance pipeline — leads, quotes, work, payments</p>

@@ -378,8 +378,9 @@ textarea.input { resize: vertical; min-height: 80px; }
    ═══════════════════════════════════════════════════════════════════ */
 /* Page container: vertical flex with consistent spacing between sections */
 .page { display: flex; flex-direction: column; gap: 1.5rem; }
-/* Page header: space-between layout for title area and action buttons */
-.page-header { display: flex; justify-content: space-between; align-items: flex-start; }
+/* Page header: space-between layout for title area and action buttons.
+   position:relative anchors the decorative app-page-art illustration. */
+.page-header { display: flex; justify-content: space-between; align-items: flex-start; position: relative; }
 /* Page title: hero-weight heading matching the dashboard greeting */
 .page-header h2 { font-size: 1.65rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text-primary); margin-bottom: 2px; }
 /* Page subtitle: smaller secondary text */

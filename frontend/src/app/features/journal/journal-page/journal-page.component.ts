@@ -1,3 +1,4 @@
+import { PageArtComponent } from '../../../shared/components/page-art/page-art.component';
 import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -11,10 +12,11 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
 @Component({
   selector: 'app-journal-page',
   standalone: true,
-  imports: [ReactiveFormsModule, ConfirmDialogComponent],
+  imports: [ReactiveFormsModule, ConfirmDialogComponent, PageArtComponent],
   template: `
     <div class="page animate-in">
       <div class="page-header">
+        <app-page-art scene="journal" />
         <div>
           <h2>Journal</h2>
           <p>Reflect on your day — one entry per day, private to you</p>

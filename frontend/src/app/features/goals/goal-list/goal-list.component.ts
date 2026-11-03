@@ -1,4 +1,5 @@
 // Import Angular core utilities: Component, inject for DI, OnInit lifecycle, signal for reactive state
+import { PageArtComponent } from '../../../shared/components/page-art/page-art.component';
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { Subscription } from 'rxjs';
 // RouterLink creates navigable links to individual goal detail pages
@@ -24,12 +25,13 @@ import { Goal } from '../../../core/models/goal.model';
 @Component({
   selector: 'app-goal-list', // Loaded by the router at /goals
   standalone: true, // Angular 19 standalone component
-  imports: [RouterLink, DecimalPipe, ModalComponent, GoalFormComponent, ConfirmDialogComponent],
+  imports: [RouterLink, DecimalPipe, ModalComponent, GoalFormComponent, ConfirmDialogComponent, PageArtComponent],
   template: `
     <!-- Page container with fade-in animation -->
     <div class="page animate-in">
       <!-- Page header: title + goal count + "New Goal" button -->
       <div class="page-header">
+        <app-page-art scene="goals" />
         <div>
           <h2>Goals</h2>
           <!-- Display the total count of goals -->

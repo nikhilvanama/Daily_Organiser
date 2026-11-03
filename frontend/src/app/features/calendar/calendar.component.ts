@@ -1,5 +1,6 @@
 // Import Angular core utilities: Component, inject for DI, OnInit lifecycle, signal for reactive state, computed for derived state
 import { AfterViewInit, Component, ElementRef, ViewChild, inject, OnInit, signal, computed } from '@angular/core';
+import { PageArtComponent } from '../../shared/components/page-art/page-art.component';
 // HttpClient for fetching calendar tasks directly from the dashboard endpoint
 import { HttpClient } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
@@ -36,12 +37,13 @@ interface CalendarDay {
 @Component({
   selector: 'app-calendar', // Loaded by the router at /calendar
   standalone: true, // Angular 19 standalone component
-  imports: [DatePipe, FormsModule, RouterLink, ModalComponent, TaskFormComponent],
+  imports: [DatePipe, FormsModule, RouterLink, ModalComponent, TaskFormComponent, PageArtComponent],
   template: `
     <!-- Page container with fade-in animation -->
     <div class="page animate-in">
       <!-- Calendar header: prev/next month buttons, month/year title, today button -->
       <div class="cal-header">
+        <app-page-art scene="calendar" />
         <!-- Previous month button -->
         <button class="btn-ghost nav-btn" (click)="prevMonth()">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
@@ -276,7 +278,9 @@ interface CalendarDay {
   `,
   styles: [`
     /* Calendar header: horizontal flex with centered month/year title */
-    .cal-header { display: flex; align-items: center; gap: 0.75rem; }
+    .cal-header { display: flex; align-items: center; gap: 0.75rem; position: relative; }
+    /* Short header row — compact decorative art floated right of center */
+    app-page-art { height: 74px; top: 58%; right: 120px; }
     .nav-btn { padding: 6px 10px; }
 
     /* Month title button — triggers the picker */

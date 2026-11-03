@@ -1,3 +1,4 @@
+import { PageArtComponent } from '../../../shared/components/page-art/page-art.component';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { AnalyticsService } from '../analytics.service';
@@ -6,12 +7,13 @@ import { AnalyticsRange, AnalyticsSummary } from '../../../core/models/analytics
 @Component({
   selector: 'app-analytics-page',
   standalone: true,
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, PageArtComponent],
   template: `
     <div class="page animate-in">
 
       <!-- Header -->
       <div class="page-header">
+        <app-page-art scene="analytics" />
         <div>
           <p class="date-range">{{ dateRangeLabel() }}</p>
         </div>
@@ -293,6 +295,8 @@ import { AnalyticsRange, AnalyticsSummary } from '../../../core/models/analytics
     .range-pill { background: transparent; border: none; padding: 5px 14px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.15s; font-family: inherit; letter-spacing: 0.02em; }
     .range-pill:hover { color: var(--text-primary); }
     .range-pill.active { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    /* Header is short here — shrink the decorative art so it fits */
+    app-page-art { height: 70px; top: 62%; right: 220px; }
 
     .loading-state { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 5rem; color: var(--text-muted); font-size: 0.9rem; }
     .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
