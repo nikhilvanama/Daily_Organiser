@@ -14,7 +14,7 @@ import { SidebarPrefsService } from '../../../core/services/sidebar-prefs.servic
       <div class="sidebar-header">
         <div class="sidebar-logo">
           <div class="logo-icon">
-            <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <svg width="21" height="21" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           </div>
           <span class="logo-text">Daily Organizer</span>
         </div>
@@ -135,11 +135,12 @@ import { SidebarPrefsService } from '../../../core/services/sidebar-prefs.servic
 
     .sidebar { width: 212px; min-width: 212px; height: 100vh; height: 100dvh; background: var(--sidebar-bg); display: flex; flex-direction: column; border-right: 1px solid var(--sidebar-border); overflow: hidden; }
 
-    /* Header — height matches topbar (44px) */
-    .sidebar-header { flex-shrink: 0; height: 44px; display: flex; align-items: center; padding: 0 0.75rem; border-bottom: 1px solid var(--sidebar-border); }
+    /* Header — height matches the topbar (44px + 10px top padding), no
+       divider line under the logo */
+    .sidebar-header { flex-shrink: 0; height: 54px; display: flex; align-items: center; padding: 10px 0.75rem 0; }
     .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
-    .logo-icon { width: 30px; height: 30px; background: linear-gradient(135deg, var(--accent), var(--accent-hover)); border-radius: 9px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px var(--accent-glow); flex-shrink: 0; }
-    .logo-text { color: var(--sidebar-logo-text); font-weight: 700; font-size: 0.82rem; letter-spacing: -0.01em; white-space: nowrap; }
+    .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, var(--accent), var(--accent-hover)); border-radius: 11px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px var(--accent-glow); flex-shrink: 0; }
+    .logo-text { color: var(--sidebar-logo-text); font-weight: 700; font-size: 0.98rem; letter-spacing: -0.01em; white-space: nowrap; }
 
     /* Nav area: compact enough to fit every item without scrolling on normal
        desktop heights; if a short window ever overflows, it scrolls invisibly */

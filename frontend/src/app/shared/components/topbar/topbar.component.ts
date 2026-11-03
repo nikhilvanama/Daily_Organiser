@@ -78,7 +78,7 @@ import { ToastService } from '../../../core/services/toast.service';
   styles: [`
     .topbar {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 1.5rem; height: 44px; min-height: 44px; flex-shrink: 0;
+      padding: 10px 1.5rem 0; height: 54px; min-height: 54px; flex-shrink: 0;
       /* No bar: the header blends into the page so the dashboard aurora
          flows behind it, matching the reference's seamless top area */
       background: transparent; border-bottom: none; box-shadow: none;

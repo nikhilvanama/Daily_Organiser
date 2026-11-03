@@ -163,8 +163,11 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
                 </div>
               </div>
 
-              <!-- Sunrise illustration + encouragement (floats on the card, no box) -->
+              <!-- Sunrise illustration + encouragement (floats on the card, no box);
+                   the divider sits midway between the stats and the art -->
               <div class="cheer">
+                <div class="cheer-div"></div>
+                <div class="cheer-body">
                 <svg class="cheer-art" viewBox="0 0 300 126" fill="none">
                   <defs>
                     <radialGradient id="sunCore" cx=".5" cy=".4" r=".65">
@@ -207,6 +210,7 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
                 </svg>
                 <strong>{{ cheerTitle() }}</strong>
                 <span>You're {{ consistency30() | number:'1.0-0' }}% consistent this month.</span>
+                </div>
               </div>
             </div>
 
@@ -508,15 +512,19 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
     .rs-row strong { display: block; font-size: 1.05rem; font-weight: 800; color: var(--text-primary); line-height: 1.1; }
     .rs-row span { font-size: .74rem; color: var(--text-muted); font-weight: 600; }
 
-    /* The illustration floats directly on the card (no boxed sub-panel),
-       separated from the stats by a quiet vertical divider */
+    /* The illustration floats directly on the card (no boxed sub-panel).
+       space-evenly centers the quiet divider between the stats and the art,
+       with equal breathing room on each side */
     .cheer {
-      display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
-      padding: 0 .6rem 0 1.6rem; min-height: 150px;
-      border-left: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-evenly;
+      min-height: 150px; padding: 0 .2rem;
+      /* cancel the grid gap so stats→divider equals divider→art */
+      margin-left: -1.6rem;
     }
-    [data-theme="dark"] .cheer { border-left-color: rgba(100, 112, 190, 0.22); }
-    @media (max-width: 860px) { .cheer { border-left: none; padding-left: .6rem; } }
+    .cheer-div { width: 1px; align-self: stretch; background: var(--border); }
+    [data-theme="dark"] .cheer-div { background: rgba(100, 112, 190, 0.22); }
+    .cheer-body { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+    @media (max-width: 860px) { .cheer-div { display: none; } .cheer { padding: .4rem 0 0; margin-left: 0; } }
     .cheer-art { width: min(280px, 100%); height: auto; margin-bottom: .15rem; }
     .cheer strong { font-size: 1.08rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.01em; }
     .cheer span { font-size: .8rem; color: var(--text-secondary); }
