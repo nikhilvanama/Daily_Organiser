@@ -460,7 +460,12 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
       pointer-events: none; z-index: 0; opacity: .35;
     }
     [data-theme="dark"] .aurora { opacity: .85; }
-    @media (max-width: 768px) { .aurora { display: none; } }
+    /* Phones keep the aurora, just scaled down to the screen; it glows
+       through the translucent mobile topbar */
+    @media (max-width: 768px) {
+      .aurora { width: 100vw; height: 170px; opacity: .5; }
+      [data-theme="dark"] .aurora { opacity: 1; }
+    }
 
     .card {
       background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px;

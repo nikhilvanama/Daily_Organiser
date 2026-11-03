@@ -81,18 +81,22 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
     .sidebar-overlay { display: none; }
 
     @media (max-width: 768px) {
-      /* 52px fixed mobile topbar + exactly 1rem gap below it; extra bottom
+      /* 44px fixed mobile topbar + exactly 1rem gap below it; extra bottom
          padding so the last content can scroll clear of the floating AI button */
-      .layout-content { padding: 1rem; padding-top: calc(52px + 1rem); padding-bottom: 92px; }
+      .layout-content { padding: 1rem; padding-top: calc(44px + 1rem); padding-bottom: 92px; }
       .layout-content.board-route { padding-bottom: 0; }
 
+      /* Glassy, blended bar like the desktop header — the dashboard aurora
+         glows through the blur instead of being cut off by an opaque bar */
       .mobile-topbar {
         display: flex; align-items: center; gap: 10px;
         position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-        height: 52px; padding: 0 12px;
-        background: var(--bg-card); border-bottom: 1px solid var(--border);
-        box-shadow: var(--shadow-sm);
+        height: 44px; padding: 0 12px;
+        background: color-mix(in srgb, var(--bg-secondary) 72%, transparent);
+        -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+        border-bottom: 1px solid var(--border);
       }
+      [data-theme="dark"] .mobile-topbar { border-bottom-color: rgba(100, 112, 190, 0.22); }
       .hamburger {
         display: flex; align-items: center; justify-content: center;
         width: 36px; height: 36px; border-radius: 8px;
