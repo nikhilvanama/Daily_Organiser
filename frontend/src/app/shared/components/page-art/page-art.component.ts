@@ -38,8 +38,8 @@ import { Component, Input } from '@angular/core';
             <radialGradient id="plGlow" cx=".5" cy=".5" r=".5"><stop offset="0%" stop-color="#34d399" stop-opacity=".35"/><stop offset="100%" stop-color="#34d399" stop-opacity="0"/></radialGradient>
           </defs>
           <ellipse cx="240" cy="44" rx="70" ry="38" fill="url(#plGlow)"/>
-          <path d="M0 120 C 70 84, 150 96, 320 78 L320 120 Z" fill="url(#plHill)"/>
-          <path d="M120 120 C 190 94, 260 104, 320 96 L320 120 Z" fill="url(#plHill2)" opacity=".85"/>
+          <path d="M4 120 C 60 96, 130 92, 200 74 C 230 66, 254 66, 274 78 C 294 90, 308 108, 318 120 Z" fill="url(#plHill)"/>
+          <path d="M110 120 C 180 98, 250 100, 312 118 C 313 118.6, 314 120, 314 120 Z" fill="url(#plHill2)" opacity=".85"/>
           <path d="M40 112 C 110 100, 150 78, 238 60" stroke="#fef3c7" stroke-width="3" stroke-dasharray="7 8" stroke-linecap="round" opacity=".9"/>
           <rect x="236" y="26" width="3.4" height="36" rx="1.7" fill="#e2e8f0"/>
           <path d="M239.4 27 h30 v16 h-30 z" fill="#34d399"/>
@@ -86,8 +86,8 @@ import { Component, Input } from '@angular/core';
           <g stroke="#fcd34d" stroke-width="2.6" stroke-linecap="round" opacity=".9">
             <path d="M228 28v-8M228 92v4M196 60h-8M260 60h8M205 37l-6-6M251 83l4 4M251 37l6-6M205 83l-4 4"/>
           </g>
-          <path d="M0 120 C 60 92, 130 100, 320 86 L320 120 Z" fill="url(#rtHill)"/>
-          <path d="M130 120 C 200 98, 266 108, 320 100 L320 120 Z" fill="url(#rtHill2)" opacity=".85"/>
+          <path d="M6 120 C 60 88, 140 92, 220 105 C 266 112, 300 117, 314 120 Z" fill="url(#rtHill)"/>
+          <path d="M104 120 C 175 97, 248 102, 314 119 C 315 119.6, 316 120, 316 120 Z" fill="url(#rtHill2)" opacity=".85"/>
           <g fill="#fcd34d"><circle cx="120" cy="24" r="1.5" opacity=".7"/><circle cx="170" cy="14" r="1.3" opacity=".6"/><circle cx="296" cy="26" r="1.5" opacity=".7"/></g>
         }
 
