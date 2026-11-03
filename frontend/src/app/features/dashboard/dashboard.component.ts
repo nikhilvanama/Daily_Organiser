@@ -36,9 +36,10 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
       </div>
     }
 
-    <div class="dash animate-in" [style.display]="loading() ? 'none' : ''">
-
-      <!-- Decorative aurora curves behind the header (pointer-transparent) -->
+    <!-- Decorative aurora curves pinned to the very top of the viewport,
+         flowing behind the transparent header (pointer-transparent).
+         Lives outside .dash so position:fixed isn't trapped by its animation. -->
+    @if (!loading()) {
       <svg class="aurora" viewBox="0 0 900 260" preserveAspectRatio="xMidYMin slice" aria-hidden="true">
         <defs>
           <linearGradient id="auroraV" x1="0" y1="0" x2="1" y2="1">
@@ -60,6 +61,9 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
         <path d="M300 -30 C 500 100, 680 10, 920 100" stroke="#a78bfa" stroke-opacity=".35" stroke-width="2" fill="none"/>
         <path d="M420 -40 C 600 100, 760 0, 960 60" stroke="#34d399" stroke-opacity=".3" stroke-width="1.6" fill="none"/>
       </svg>
+    }
+
+    <div class="dash animate-in" [style.display]="loading() ? 'none' : ''">
 
       <!-- ═══ MAIN COLUMN ═══ -->
       <div class="dash-main">
@@ -242,32 +246,32 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
                         <svg width="12" height="12" fill="none" stroke="#fff" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                       }
                     </span>
-                    <!-- Custom duotone glyph picked from the habit's name, on a solid color tile -->
-                    <span class="chk-ico" [style.background]="h.color || 'var(--accent)'">
+                    <!-- Custom filled glyph on a per-category gradient tile with matching glow -->
+                    <span class="chk-ico" [style.background]="tileBg(h)" [style.box-shadow]="tileShadow(h)">
                       @switch (habitGlyph(h)) {
                         @case ('sun') {
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4.2" fill="rgba(255,255,255,.35)"/><path d="M12 3.2v2.2M12 18.6v2.2M3.2 12h2.2M18.6 12h2.2M5.8 5.8l1.6 1.6M16.6 16.6l1.6 1.6M18.2 5.8l-1.6 1.6M7.4 16.6l-1.6 1.6"/></svg>
+                          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.6" fill="#fff"/><g stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M12 2.8v2.3M12 18.9v2.3M2.8 12h2.3M18.9 12h2.3M5.5 5.5l1.6 1.6M16.9 16.9l1.6 1.6M18.5 5.5l-1.6 1.6M7.1 16.9l-1.6 1.6"/></g></svg>
                         }
                         @case ('bed') {
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 18.5V8"/><path d="M3.5 13.2h13.4a3.6 3.6 0 0 1 3.6 3.6v1.7"/><circle cx="7.2" cy="10.6" r="1.8" fill="#fff" stroke="none"/><path d="M3.5 16.4h17"/></svg>
+                          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><rect x="3" y="11.4" width="18" height="3.8" rx="1.9" fill="#fff"/><circle cx="7.2" cy="9" r="2.1" fill="#fff"/><path d="M3.4 19.2v-3.4M20.6 19.2v-3.4" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>
                         }
                         @case ('run') {
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="14.6" cy="4.6" r="2" fill="#fff" stroke="none"/><path d="M12.4 8.4 8.8 10.6l1.4 3.2L6.6 19.4"/><path d="M12.4 8.4l3 1.5 3.1.4"/><path d="M12.4 8.4l-.9 4.8 3.6 2.5 1 4.3"/></svg>
+                          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="14.8" cy="4.4" r="2.2" fill="#fff" stroke="none"/><path d="M12.6 8.2 9 10.4l1.4 3.2-3.6 5.6"/><path d="M12.6 8.2l3 1.5 3 .4"/><path d="M12.6 8.2l-.9 4.8 3.6 2.5 1 4.1"/></svg>
                         }
                         @case ('book') {
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.4C10.8 5.3 9.2 4.7 7.2 4.7c-1 0-2 .2-2.8.5v13c.8-.3 1.8-.5 2.8-.5 2 0 3.6.6 4.8 1.7 1.2-1.1 2.8-1.7 4.8-1.7 1 0 2 .2 2.8.5v-13c-.8-.3-1.8-.5-2.8-.5-2 0-3.6.6-4.8 1.7z" fill="rgba(255,255,255,.22)"/><path d="M12 6.4v13"/></svg>
+                          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 6.2C10.7 5 9 4.4 6.9 4.4c-1.1 0-2.1.2-2.9.6v13.2c.8-.4 1.8-.6 2.9-.6 2.1 0 3.8.7 5.1 1.9 1.3-1.2 3-1.9 5.1-1.9 1.1 0 2.1.2 2.9.6V5c-.8-.4-1.8-.6-2.9-.6-2.1 0-3.8.6-5.1 1.8z" fill="#fff"/><path d="M12 6.4v13" stroke="rgba(0,0,0,.25)" stroke-width="1.6"/></svg>
                         }
                         @case ('pencil') {
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m5 19 .9-3.7L16.4 4.8a2 2 0 0 1 2.8 2.8L8.7 18.1z" fill="rgba(255,255,255,.22)"/><path d="m14.8 6.4 2.8 2.8"/></svg>
+                          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="m4.8 19.2 1-4L15.9 5.1a2.3 2.3 0 0 1 3.2 3.2L9 18.4z" fill="#fff"/><path d="m14.2 6.8 3 3" stroke="rgba(0,0,0,.28)" stroke-width="1.6" stroke-linecap="round"/></svg>
                         }
                         @case ('laptop') {
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5.2" width="14" height="9.6" rx="1.7" fill="rgba(255,255,255,.22)"/><path d="M4.2 15 3 18.6h18L19.8 15"/></svg>
+                          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><rect x="5" y="4.6" width="14" height="9.4" rx="1.8" fill="#fff"/><rect x="7" y="6.6" width="10" height="5.4" rx=".9" fill="rgba(0,0,0,.24)"/><path d="M4.4 14.8 3.2 18.2h17.6l-1.2-3.4z" fill="#fff"/></svg>
                         }
                         @case ('meal') {
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5h15a7.5 7 0 0 1-15 0z" fill="rgba(255,255,255,.22)"/><path d="M12 9.2c0-1.5 1.4-1.8 1.4-3.2M8.6 9.2c0-1.2 1-1.5 1-2.6"/></svg>
+                          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M4 12.4h16a8 8 0 0 1-16 0z" fill="#fff"/><path d="M10 9.6c0-1.3 1-1.6 1-2.9M14 9.6c0-1.3 1-1.6 1-2.9" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
                         }
                         @default {
-                          <svg width="15" height="15" viewBox="0 0 24 24"><path d="M12 4l1.9 5.6L19.4 12l-5.5 2.4L12 20l-1.9-5.6L4.6 12l5.5-2.4z" fill="#fff" opacity=".95"/></svg>
+                          <svg width="17" height="17" viewBox="0 0 24 24"><path d="M12 3.6l2 6L20.4 12l-6.4 2.4-2 6-2-6L3.6 12l6.4-2.4z" fill="#fff"/></svg>
                         }
                       }
                     </span>
@@ -370,10 +374,13 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
           <div class="streak-num">{{ bestStreak() }} <span>{{ bestStreak() === 1 ? 'day' : 'days' }}</span></div>
           <div class="week-dots">
             @for (d of weekDots(); track d.label) {
-              <span class="wd">
-                <span class="wd-dot" [class.on]="d.state === 'done'" [class.part]="d.state === 'partial'">
+              <span class="wd" [class.dim]="d.state === 'none' || d.state === 'future'">
+                <span class="wd-dot" [class.on]="d.state === 'done'" [class.part]="d.state === 'partial'"
+                  [class.off]="d.state === 'none'" [class.future]="d.state === 'future'">
                   @if (d.state === 'done') {
                     <svg width="11" height="11" fill="none" stroke="#fff" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                  } @else if (d.state === 'partial') {
+                    <span class="wd-core"></span>
                   }
                 </span>
                 <small>{{ d.label }}</small>
@@ -431,37 +438,40 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
   `,
   styles: [`
     /* ── Layout ─────────────────────────────────────────── */
-    .dash { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 1.1rem; align-items: start; position: relative; }
+    /* Pulled up a little so the greeting sits closer to the header */
+    .dash { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 1.1rem; align-items: start; position: relative; margin-top: -0.9rem; }
     .dash-main { display: flex; flex-direction: column; gap: 1.1rem; min-width: 0; position: relative; z-index: 1; }
     /* Right rail stays pinned while the main column scrolls; capped to the
        viewport with hidden overflow so it never travels with the page */
     .dash-side {
       display: flex; flex-direction: column; gap: .9rem; z-index: 1;
       position: sticky; top: 0; align-self: start;
-      max-height: calc(100dvh - 64px - 2.5rem); overflow-y: auto;
+      max-height: calc(100dvh - 64px - 4rem); overflow-y: auto;
       scrollbar-width: none;
     }
     .dash-side::-webkit-scrollbar { display: none; }
     @media (max-width: 1150px) { .dash { grid-template-columns: 1fr; } .dash-side { position: static; max-height: none; overflow: visible; } }
 
-    /* Aurora curves behind the header */
+    /* Aurora curves pinned to the top of the viewport, behind the
+       transparent header bar (topbar has z-index 2, cards z-index 1) */
     .aurora {
-      position: absolute; top: -2.2rem; left: 10%; right: 0; width: 90%; height: 230px;
+      position: fixed; top: 0; right: 0; width: min(72vw, 1150px); height: 220px;
       pointer-events: none; z-index: 0; opacity: .35;
     }
     [data-theme="dark"] .aurora { opacity: .85; }
+    @media (max-width: 768px) { .aurora { display: none; } }
 
     .card {
       background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px;
-      box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+      box-shadow: var(--shadow-sm);
       padding: 1.1rem 1.25rem;
     }
-    /* Dark cards: glossy navy-blue border + faint indigo sheen from the top,
-       like the reference — not plain white hairlines */
+    /* Dark cards: navy-blue border + soft indigo surface tint — no white
+       hairline highlight on the top edge */
     [data-theme="dark"] .card {
       border-color: rgba(100, 112, 190, 0.30);
-      background: linear-gradient(180deg, rgba(100, 112, 190, 0.10), rgba(100, 112, 190, 0.02) 46%), var(--bg-card);
-      box-shadow: inset 0 1px 0 rgba(150, 165, 255, 0.16), 0 14px 34px -18px rgba(0, 0, 0, 0.85);
+      background: linear-gradient(168deg, rgba(104, 118, 196, 0.085), rgba(104, 118, 196, 0.015) 55%), var(--bg-card);
+      box-shadow: 0 14px 34px -18px rgba(0, 0, 0, 0.85);
     }
     .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .9rem; }
     .card-head.slim { margin-bottom: .6rem; }
@@ -472,7 +482,7 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
     .muted-note { color: var(--text-muted); font-size: .88rem; padding: .4rem 0; }
 
     /* ── Hero ───────────────────────────────────────────── */
-    .hero { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .3rem .1rem 0; }
+    .hero { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0 .1rem; }
     .hero h1 { font-size: 1.65rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text-primary); }
     .hero p { color: var(--text-secondary); font-size: .92rem; margin-top: 2px; }
     .wave { display: inline-block; animation: wave 2.2s ease .4s 1; transform-origin: 70% 70%; }
@@ -495,8 +505,8 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
     .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--hue-border); }
     [data-theme="dark"] .stat-card {
       border-color: rgba(100, 112, 190, 0.30);
-      background: linear-gradient(180deg, rgba(100, 112, 190, 0.10), rgba(100, 112, 190, 0.02) 52%), var(--bg-card);
-      box-shadow: inset 0 1px 0 rgba(150, 165, 255, 0.14), 0 12px 30px -18px rgba(0, 0, 0, 0.8);
+      background: linear-gradient(168deg, rgba(104, 118, 196, 0.085), rgba(104, 118, 196, 0.015) 58%), var(--bg-card);
+      box-shadow: 0 12px 30px -18px rgba(0, 0, 0, 0.8);
     }
     .hue-green  { --hue-soft: rgba(16,185,129,.12);  --hue-border: rgba(16,185,129,.45);  --hue-g1: #34d399; --hue-g2: #059669; --hue-sh: rgba(16,185,129,.5); }
     .hue-violet { --hue-soft: rgba(139,92,246,.12);  --hue-border: rgba(139,92,246,.45);  --hue-g1: #a78bfa; --hue-g2: #7c3aed; --hue-sh: rgba(139,92,246,.5); }
@@ -569,9 +579,9 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
       display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .15s;
     }
     .chk-box.on { background: linear-gradient(140deg, var(--accent), var(--accent-hover)); border-color: transparent; }
+    /* Gradient + glow come inline per category via tileBg()/tileShadow() */
     .chk-ico {
-      width: 29px; height: 29px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 3px 8px rgba(0,0,0,.22);
+      width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
     .chk-title { font-size: .88rem; font-weight: 600; color: var(--text-primary); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .chk-row.done .chk-title { text-decoration: line-through; color: var(--text-muted); font-weight: 500; }
@@ -618,22 +628,30 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
     .mc-cell.today { background: linear-gradient(140deg, var(--accent), var(--accent-hover)); color: #fff; font-weight: 800; box-shadow: 0 3px 9px var(--accent-glow); }
 
     /* ── Streak card ────────────────────────────────────── */
-    .streak-num { font-size: 1.9rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.03em; margin: .1rem 0 .8rem; }
+    .streak-num { font-size: 1.9rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.03em; margin: .1rem 0 .65rem; }
     .streak-num span { font-size: 1rem; font-weight: 600; color: var(--text-secondary); }
     .delta-chip {
       font-size: .7rem; font-weight: 800; padding: 3px 9px; border-radius: 8px;
       background: var(--accent-subtle); color: var(--accent);
     }
     .delta-chip.down { background: rgba(239,68,68,.12); color: #ef4444; }
+    /* Week dots: four clearly distinct states —
+       done = filled gradient + check · partial = accent ring with core dot ·
+       missed = dim filled disc · future = faint dashed outline */
     .week-dots { display: flex; justify-content: space-between; }
     .wd { display: flex; flex-direction: column; align-items: center; gap: 5px; }
     .wd-dot {
       width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border);
       display: flex; align-items: center; justify-content: center; transition: all .15s;
     }
-    .wd-dot.on { background: linear-gradient(140deg, var(--accent), var(--accent-hover)); border-color: transparent; box-shadow: 0 2px 7px var(--accent-glow); }
-    .wd-dot.part { border-color: var(--accent); }
-    .wd small { font-size: .6rem; font-weight: 700; color: var(--text-muted); }
+    .wd-dot.on { background: linear-gradient(140deg, var(--accent), var(--accent-hover)); border-color: transparent; box-shadow: 0 2px 8px var(--accent-glow); }
+    .wd-dot.part { border-color: var(--accent); background: var(--accent-subtle); }
+    .wd-core { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+    .wd-dot.off { background: var(--bg-hover); border-color: transparent; }
+    .wd-dot.future { border-style: dashed; opacity: .5; }
+    .wd small { font-size: .6rem; font-weight: 700; color: var(--text-secondary); }
+    .wd.dim small { color: var(--text-muted); opacity: .65; }
+    .wd.dim .wd-dot { transform: scale(.92); }
 
     /* ── Insights ───────────────────────────────────────── */
     .ins-body { display: flex; align-items: center; gap: 1.1rem; }
@@ -858,6 +876,26 @@ export class DashboardComponent implements OnInit {
   habitTimeLabel(h: Habit): string {
     if (h.startTime && h.endTime) return `${h.startTime} – ${h.endTime}`;
     return h.startTime ?? h.endTime ?? '';
+  }
+
+  // Each glyph category gets its own gradient tile + glow so the checklist
+  // reads as a colorful icon set, independent of the habit's stored color.
+  private static readonly TILES: Record<string, { bg: string; glow: string }> = {
+    sun:    { bg: 'linear-gradient(140deg, #fde047, #f59e0b)', glow: 'rgba(245, 158, 11, .45)' },
+    bed:    { bg: 'linear-gradient(140deg, #a78bfa, #6d28d9)', glow: 'rgba(139, 92, 246, .45)' },
+    run:    { bg: 'linear-gradient(140deg, #4ade80, #059669)', glow: 'rgba(16, 185, 129, .45)' },
+    book:   { bg: 'linear-gradient(140deg, #60a5fa, #2563eb)', glow: 'rgba(59, 130, 246, .45)' },
+    pencil: { bg: 'linear-gradient(140deg, #f9a8d4, #db2777)', glow: 'rgba(236, 72, 153, .45)' },
+    laptop: { bg: 'linear-gradient(140deg, #fb923c, #ea580c)', glow: 'rgba(249, 115, 22, .45)' },
+    meal:   { bg: 'linear-gradient(140deg, #2dd4bf, #0d9488)', glow: 'rgba(20, 184, 166, .45)' },
+    spark:  { bg: 'linear-gradient(140deg, #94a3b8, #475569)', glow: 'rgba(100, 116, 139, .45)' },
+  };
+  tileBg(h: Habit): string {
+    return DashboardComponent.TILES[this.habitGlyph(h)].bg;
+  }
+  tileShadow(h: Habit): string {
+    const t = DashboardComponent.TILES[this.habitGlyph(h)];
+    return `inset 0 1.5px 0 rgba(255,255,255,.4), 0 4px 12px ${t.glow}`;
   }
 
   // Pick a custom checklist glyph from the habit's name (order matters:

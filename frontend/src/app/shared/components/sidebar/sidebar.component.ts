@@ -141,20 +141,22 @@ import { SidebarPrefsService } from '../../../core/services/sidebar-prefs.servic
     .logo-icon { width: 30px; height: 30px; background: linear-gradient(135deg, var(--accent), var(--accent-hover)); border-radius: 9px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px var(--accent-glow); flex-shrink: 0; }
     .logo-text { color: var(--sidebar-logo-text); font-weight: 700; font-size: 0.82rem; letter-spacing: -0.01em; white-space: nowrap; }
 
-    /* Scrollable nav */
-    .sidebar-nav-area { flex: 1; overflow-y: auto; padding: 0.25rem 0.75rem 1rem; }
+    /* Nav area: compact enough to fit every item without scrolling on normal
+       desktop heights; if a short window ever overflows, it scrolls invisibly */
+    .sidebar-nav-area { flex: 1; overflow-y: auto; padding: 0.2rem 0.75rem 0.6rem; scrollbar-width: none; }
+    .sidebar-nav-area::-webkit-scrollbar { display: none; }
     .sidebar-nav { display: flex; flex-direction: column; }
 
     .nav-section {
       display: block; color: var(--sidebar-text-dim);
       font-size: 0.58rem; font-weight: 700; letter-spacing: 0.14em;
-      text-transform: uppercase; padding: 12px 14px 4px;
+      text-transform: uppercase; padding: 9px 14px 3px;
     }
-    .sidebar-nav > .nav-section:first-child { padding-top: 10px; }
+    .sidebar-nav > .nav-section:first-child { padding-top: 8px; }
 
     .nav-link {
       display: flex; align-items: center; gap: 10px;
-      padding: 9px 11px; margin-bottom: 3px;
+      padding: 7.5px 11px; margin-bottom: 2px;
       border: 1px solid transparent; border-radius: 10px;
       color: var(--sidebar-text); font-size: 0.82rem; font-weight: 500;
       text-decoration: none; transition: all 0.15s; cursor: pointer;
