@@ -92,12 +92,12 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
             @for (plan of pagedTasks; track plan.id) {
               <!-- Each plan row: type icon, title/metadata, priority badge, status dropdown, actions -->
               <div class="plan-row" [class.done]="plan.status === 'DONE'">
-                <div class="plan-header-side">
+                <div class="plan-header-side" [class.has-loc]="!!plan.location">
                   <!-- Plan type icon: white custom glyph on a glowing gradient tile -->
                   <div class="plan-type-icon" [style.background]="tileBg(plan.type)" [style.box-shadow]="tileShadow(plan.type)">
                     <app-plan-icon [type]="plan.type" [size]="19" />
                   </div>
-                  <!-- Main content: title (links to detail page) + metadata (date, time, category) -->
+                  <!-- Main content: title (links to detail page) + location -->
                   <div class="plan-main">
                     <div class="plan-title-wrap">
                       <a [routerLink]="['/tasks', toSlug(plan.title)]" class="plan-title" [title]="plan.title">{{ plan.title }}</a>
@@ -111,23 +111,23 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
                         <span class="loc-text">{{ plan.location }}</span>
                       </div>
                     }
-                    <div class="plan-meta">
-                      @if (plan.dueDate) {
-                        <span class="meta-item">
-                          <svg class="meta-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                          {{ plan.dueDate | date:'MMM d' }}{{ plan.endDate ? ' → ' + (plan.endDate | date:'MMM d') : '' }}
-                        </span>
-                      }
-                      @if (plan.departureTime) { <span class="meta-item">🕐 {{ plan.departureTime }}{{ plan.endTime ? ' → ' + plan.endTime : '' }}</span> }
-                      @if (plan.startTime) { <span class="meta-item">🕐 {{ plan.startTime }}{{ plan.endTime ? ' - ' + plan.endTime : '' }}</span> }
-                      @if (plan.category) { <span class="meta-category" [style.color]="plan.category.color">● {{ plan.category.name }}</span> }
-                    </div>
                   </div>
                 </div>
 
                 <div class="plan-controls">
-                  <!-- Priority badge: color-coded (HIGH=red, MEDIUM=amber, LOW=green) -->
-                  <span class="badge badge-{{ plan.priority.toLowerCase() }}">{{ plan.priority }}</span>
+                  <!-- Left side: Priority color dot in front of date / time / category -->
+                  <div class="plan-meta-left">
+                    <span class="prio-dot prio-{{ plan.priority.toLowerCase() }}" [title]="'Priority: ' + plan.priority"></span>
+                    @if (plan.dueDate) {
+                      <span class="meta-item">
+                        <svg class="meta-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        {{ plan.dueDate | date:'MMM d' }}{{ plan.endDate ? ' → ' + (plan.endDate | date:'MMM d') : '' }}
+                      </span>
+                    }
+                    @if (plan.departureTime) { <span class="meta-item">🕐 {{ plan.departureTime }}{{ plan.endTime ? ' → ' + plan.endTime : '' }}</span> }
+                    @if (plan.startTime) { <span class="meta-item">🕐 {{ plan.startTime }}{{ plan.endTime ? ' - ' + plan.endTime : '' }}</span> }
+                    @if (plan.category) { <span class="meta-category" [style.color]="plan.category.color">● {{ plan.category.name }}</span> }
+                  </div>
 
                   <div class="plan-ctrl-right">
                     <!-- Inline status dropdown: allows quick status changes without opening the detail page -->
@@ -219,6 +219,9 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
       display: flex; align-items: center; gap: 12px;
       flex: 1; min-width: 0;
     }
+    .plan-header-side.has-loc {
+      align-items: stretch;
+    }
 
     /* Plan type icon: white custom glyph on a glowing gradient tile */
     .plan-type-icon {
@@ -226,9 +229,12 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
     }
+    .plan-header-side.has-loc .plan-type-icon {
+      width: 42px; height: auto; align-self: stretch; min-height: 44px; border-radius: 12px;
+    }
 
     /* Main content column */
-    .plan-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+    .plan-main { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 3px; }
     .plan-title-wrap { display: flex; align-items: center; gap: 8px; }
     /* Plan title: clickable link to the detail page */
     .plan-title {
@@ -244,24 +250,30 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
       font-size: 0.74rem; font-weight: 500; color: var(--text-secondary);
       background: var(--bg-hover); padding: 2px 7px; border-radius: 6px;
       border: 1px solid var(--border-light); width: fit-content; max-width: 100%;
+      line-height: 1.25;
     }
     .loc-pin { flex-shrink: 0; color: var(--accent); }
     .loc-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-    /* Metadata row: date, time range, category name */
-    .plan-meta {
-      display: flex; gap: 10px; font-size: 0.72rem; color: var(--text-muted);
-      align-items: center; flex-wrap: wrap;
+    /* Controls: priority dot + date/time on left, status + actions on right */
+    .plan-controls {
+      display: flex; align-items: center; gap: 14px;
+      flex-shrink: 0;
     }
+    .plan-meta-left {
+      display: flex; align-items: center; gap: 8px; font-size: 0.74rem; color: var(--text-muted);
+    }
+    .prio-dot {
+      width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0;
+    }
+    .prio-dot.prio-high { background: var(--red, #ef4444); box-shadow: 0 0 6px rgba(239, 68, 68, 0.55); }
+    .prio-dot.prio-medium { background: var(--orange, #f59e0b); box-shadow: 0 0 6px rgba(245, 158, 11, 0.55); }
+    .prio-dot.prio-low { background: var(--green, #10b981); box-shadow: 0 0 6px rgba(16, 185, 129, 0.55); }
+
     .meta-item { display: inline-flex; align-items: center; gap: 4px; }
     .meta-icon { opacity: 0.75; }
     .meta-category { font-weight: 500; }
 
-    /* Controls: priority badge, status dropdown, actions */
-    .plan-controls {
-      display: flex; align-items: center; gap: 12px;
-      flex-shrink: 0;
-    }
     .plan-ctrl-right { display: flex; align-items: center; gap: 8px; }
     .status-select {
       font-size: 0.78rem; padding: 5px 8px; border-radius: 8px;
@@ -310,18 +322,18 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
       .plans-list {
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 8px;
         padding: 0;
       }
 
       .plan-row {
         flex-direction: column;
         align-items: stretch;
-        gap: 10px;
-        padding: 13px 13px 11px;
+        gap: 8px;
+        padding: 10px 12px 8px;
         background: var(--card-surface);
         border: 1px solid var(--card-border);
-        border-radius: 14px;
+        border-radius: 13px;
         box-shadow: var(--card-shadow);
       }
       .plan-row:last-child { border-bottom: 1px solid var(--card-border); }
@@ -329,21 +341,37 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
 
       .plan-header-side {
         display: flex;
-        align-items: flex-start;
-        gap: 12px;
+        align-items: center;
+        gap: 10px;
         width: 100%;
       }
+
+      /* Only if right side in 2 lines [title, location in each line]:
+         the left side icon height should match right side [title, location] height */
+      .plan-header-side.has-loc {
+        align-items: stretch;
+      }
+
       .plan-type-icon {
-        width: 38px;
-        height: 38px;
-        border-radius: 12px;
-        margin-top: 1px;
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        margin-top: 0;
+      }
+
+      .plan-header-side.has-loc .plan-type-icon {
+        width: 42px;
+        height: auto;
+        align-self: stretch;
+        min-height: 44px;
+        border-radius: 11px;
       }
 
       .plan-main {
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        justify-content: center;
+        gap: 3px;
         min-width: 0;
         flex: 1;
       }
@@ -355,9 +383,9 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
       /* Complete plan title: multi-line wrap, full readability */
       .plan-title {
         display: block;
-        font-size: 0.95rem;
+        font-size: 0.92rem;
         font-weight: 600;
-        line-height: 1.35;
+        line-height: 1.3;
         color: var(--text-primary);
         white-space: normal;
         overflow: visible;
@@ -368,18 +396,18 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
       .plan-loc {
         display: inline-flex;
         align-items: center;
-        gap: 5px;
-        font-size: 0.78rem;
+        gap: 4px;
+        font-size: 0.74rem;
         font-weight: 500;
         color: var(--text-secondary);
         background: var(--bg-hover);
-        padding: 3px 8px;
+        padding: 2px 7px;
         border-radius: 6px;
         border: 1px solid var(--border-light);
-        margin-top: 2px;
+        margin-top: 1px;
         width: fit-content;
         max-width: 100%;
-        line-height: 1.3;
+        line-height: 1.25;
       }
       .loc-text {
         white-space: normal;
@@ -387,41 +415,51 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
         word-break: break-word;
       }
 
-      .plan-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px 10px;
-        font-size: 0.72rem;
-        color: var(--text-muted);
-        margin-top: 2px;
-      }
-
-      /* Bottom controls footer: priority on left, status + actions on right */
+      /* Bottom controls footer: priority dot + date/time on left, status + actions on right */
       .plan-controls {
         display: flex;
         align-items: center;
         justify-content: space-between;
         width: 100%;
-        padding-top: 9px;
-        margin-top: 2px;
+        padding-top: 7px;
+        margin-top: 0;
         border-top: 1px solid var(--border-light);
         gap: 8px;
+      }
+      .plan-meta-left {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        min-width: 0;
+        flex: 1;
+      }
+      .prio-dot {
+        width: 7.5px;
+        height: 7.5px;
       }
       .plan-ctrl-right {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
+        flex-shrink: 0;
       }
       .status-select {
-        height: 30px;
-        font-size: 0.76rem;
-        padding: 0 8px;
-        border-radius: 8px;
+        height: 28px;
+        font-size: 0.74rem;
+        padding: 0 6px;
+        border-radius: 7px;
+      }
+      .plan-actions {
+        display: flex;
+        gap: 2px;
       }
       .plan-actions .icon-btn {
-        width: 30px;
-        height: 30px;
-        border-radius: 8px;
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
       }
 
       .pager {
