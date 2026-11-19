@@ -1,6 +1,4 @@
-/* Import the Inter font family from Google Fonts — used as the app's primary typeface.
-   Weights 300-800 are loaded to support various text hierarchies (labels, body, headings). */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+/* Inter font family is loaded via index.html with preconnect for optimal performance */
 
 /* ═══════════════════════════════════════════════════════════════════
    LIGHT THEME — Default color scheme using CSS custom properties.
