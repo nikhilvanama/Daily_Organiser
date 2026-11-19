@@ -1,9 +1,10 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { TaskService } from '../task.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { Task, PLAN_TYPES } from '../../../core/models/task.model';
+import { Task, PLAN_TYPES, Subtask } from '../../../core/models/task.model';
 import { ModalComponent } from '../../../shared/components/modal/modal.component';
 import { TaskFormComponent } from '../task-form/task-form.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -11,7 +12,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
 @Component({
   selector: 'app-task-detail',
   standalone: true,
-  imports: [RouterLink, DatePipe, ModalComponent, TaskFormComponent, ConfirmDialogComponent],
+  imports: [RouterLink, DatePipe, FormsModule, ModalComponent, TaskFormComponent, ConfirmDialogComponent],
   template: `
     <div class="page animate-in">
       <a routerLink="/tasks" class="back-link">← Back to My Plans</a>
@@ -49,6 +50,59 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
           @if (task()!.description) {
             <p class="desc">{{ task()!.description }}</p>
           }
+
+          <!-- Subtasks / Checklist -->
+          <div class="checklist-card">
+            <div class="checklist-header">
+              <div class="checklist-title-group">
+                <span class="checklist-title">Checklist</span>
+                @if (subtasks().length > 0) {
+                  <span class="checklist-counter">{{ completedSubtasksCount() }}/{{ subtasks().length }} completed</span>
+                }
+              </div>
+              @if (subtasks().length > 0) {
+                <span class="checklist-pct">{{ subtaskProgressPct() }}%</span>
+              }
+            </div>
+
+            @if (subtasks().length > 0) {
+              <div class="checklist-progress-track">
+                <div class="checklist-progress-fill" [style.width.%]="subtaskProgressPct()"></div>
+              </div>
+
+              <div class="checklist-items">
+                @for (st of subtasks(); track st.id) {
+                  <div class="checklist-row" [class.is-done]="st.completed">
+                    <label class="checklist-check-label">
+                      <input
+                        type="checkbox"
+                        class="checklist-checkbox"
+                        [checked]="st.completed"
+                        (change)="toggleSubtask(st)"
+                      />
+                      <span class="checklist-text">{{ st.title }}</span>
+                    </label>
+                    <button class="checklist-del-btn" (click)="deleteSubtask(st.id)" title="Delete subtask">
+                      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+
+            <div class="checklist-add-row">
+              <input
+                type="text"
+                class="input checklist-input"
+                [(ngModel)]="newSubtaskTitle"
+                placeholder="Add an item to the checklist..."
+                (keydown.enter)="$event.preventDefault(); addSubtask()"
+              />
+              <button class="btn-primary sm-btn" (click)="addSubtask()" [disabled]="!newSubtaskTitle.trim()">
+                + Add
+              </button>
+            </div>
+          </div>
 
           <!-- Info Grid -->
           <div class="info-grid">
@@ -180,6 +234,134 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
     h1.done { text-decoration: line-through; color: var(--text-muted); }
     .desc { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; margin: 0; }
 
+    /* Checklist Section */
+    .checklist-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .checklist-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .checklist-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .checklist-title {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .checklist-counter {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      background: var(--bg-card);
+      padding: 2px 8px;
+      border-radius: 12px;
+      border: 1px solid var(--border-light);
+    }
+    .checklist-pct {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .checklist-progress-track {
+      width: 100%;
+      height: 6px;
+      background: var(--bg-hover);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .checklist-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #10b981);
+      border-radius: 999px;
+      transition: width 0.3s ease;
+    }
+    .checklist-items {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .checklist-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      transition: background 0.15s;
+    }
+    .checklist-row:hover {
+      background: var(--bg-hover);
+    }
+    .checklist-check-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      cursor: pointer;
+      user-select: none;
+      min-width: 0;
+    }
+    .checklist-checkbox {
+      width: 17px;
+      height: 17px;
+      cursor: pointer;
+      accent-color: var(--accent);
+      flex-shrink: 0;
+    }
+    .checklist-text {
+      font-size: 0.86rem;
+      color: var(--text-primary);
+      word-break: break-word;
+      transition: color 0.15s;
+    }
+    .checklist-row.is-done .checklist-text {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+    .checklist-del-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .checklist-del-btn:hover {
+      background: rgba(239, 68, 68, 0.12);
+      color: #ef4444;
+    }
+    .checklist-add-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 2px;
+    }
+    .checklist-input {
+      flex: 1;
+      font-size: 0.84rem;
+      padding: 8px 12px;
+    }
+    .sm-btn {
+      padding: 8px 16px;
+      font-size: 0.82rem;
+      white-space: nowrap;
+    }
+
     .info-grid { display: flex; flex-direction: column; gap: 2px; background: var(--bg-secondary); border-radius: 12px; padding: 4px; }
     .info-item {
       display: flex; align-items: center; gap: 12px;
@@ -234,6 +416,67 @@ export class TaskDetailComponent implements OnInit {
   planTypes = PLAN_TYPES;
   showEdit = false;
   showDeleteConfirm = false;
+  newSubtaskTitle = '';
+
+  subtasks(): Subtask[] {
+    return this.task()?.subtasks || [];
+  }
+
+  completedSubtasksCount(): number {
+    return this.subtasks().filter(s => s.completed).length;
+  }
+
+  subtaskProgressPct(): number {
+    const list = this.subtasks();
+    if (list.length === 0) return 0;
+    return Math.round((this.completedSubtasksCount() / list.length) * 100);
+  }
+
+  toggleSubtask(subtask: Subtask) {
+    const current = this.task();
+    if (!current) return;
+    const updatedSubtasks = (current.subtasks || []).map(s =>
+      s.id === subtask.id ? { ...s, completed: !s.completed } : s
+    );
+    this.updateSubtasksOnServer(current.id, updatedSubtasks);
+  }
+
+  addSubtask() {
+    const title = this.newSubtaskTitle.trim();
+    if (!title) return;
+    const current = this.task();
+    if (!current) return;
+    const newItem: Subtask = {
+      id: 'st_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      title,
+      completed: false,
+    };
+    const updatedSubtasks = [...(current.subtasks || []), newItem];
+    this.newSubtaskTitle = '';
+    this.updateSubtasksOnServer(current.id, updatedSubtasks);
+  }
+
+  deleteSubtask(subtaskId: string) {
+    const current = this.task();
+    if (!current) return;
+    const updatedSubtasks = (current.subtasks || []).filter(s => s.id !== subtaskId);
+    this.updateSubtasksOnServer(current.id, updatedSubtasks);
+  }
+
+  private updateSubtasksOnServer(taskId: string, subtasks: Subtask[]) {
+    const current = this.task();
+    if (current) {
+      this.task.set({ ...current, subtasks });
+    }
+    this.taskService.update(taskId, { subtasks }).subscribe({
+      next: (updated) => {
+        if (updated) this.task.set(updated);
+      },
+      error: () => {
+        this.toast.error('Failed to update checklist');
+      }
+    });
+  }
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id')!;

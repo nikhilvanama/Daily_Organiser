@@ -4,9 +4,9 @@ import { Component, inject, OnInit } from '@angular/core';
 // RouterLink creates navigable links to individual task detail pages
 import { RouterLink } from '@angular/router';
 // DatePipe formats due dates
-import { DatePipe } from '@angular/common';
+import { DatePipe, TitleCasePipe } from '@angular/common';
 // FormBuilder creates the filter form; ReactiveFormsModule enables [formGroup] in the template
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 // TaskService provides the tasks$ observable and CRUD methods
 import { TaskService } from '../task.service';
 import { slugify } from '../../../core/utils/slugify';
@@ -17,10 +17,11 @@ import { TaskFormComponent } from '../task-form/task-form.component';
 // ToastService shows success/error feedback after task operations
 import { ToastService } from '../../../core/services/toast.service';
 // Task model and PLAN_TYPES for type-specific icons and colors
-import { Task, PLAN_TYPES } from '../../../core/models/task.model';
+import { Task, PLAN_TYPES, TaskStatus, PlanType } from '../../../core/models/task.model';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 // Custom duotone category glyphs (replaces the emoji icons)
 import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-icon.component';
+import { parseNaturalLanguagePlan, ParsedSmartPlan } from '../../../core/utils/smart-capture.util';
 
 // TaskListComponent ("My Plans" page) displays all the user's tasks/plans with filtering
 // by plan type (chips), status, and priority. Each plan row shows type icon, title, metadata,
@@ -28,22 +29,82 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
 @Component({
   selector: 'app-task-list', // Loaded by the router at /tasks
   standalone: true, // Angular 19 standalone component
-  imports: [RouterLink, DatePipe, ReactiveFormsModule, ModalComponent, TaskFormComponent, ConfirmDialogComponent, PlanIconComponent, PageArtComponent],
+  imports: [RouterLink, DatePipe, TitleCasePipe, FormsModule, ReactiveFormsModule, ModalComponent, TaskFormComponent, ConfirmDialogComponent, PlanIconComponent, PageArtComponent],
   template: `
     <!-- Page container with fade-in animation -->
     <div class="page animate-in">
-      <!-- Page header: title + "Add Plan" button -->
+      <!-- Page header: title + view toggle + "Add Plan" button -->
       <div class="page-header">
         <app-page-art scene="plans" />
         <div>
           <h2>My Plans</h2>
           <p>All your tasks, trips, meetings & reminders</p>
         </div>
-        <!-- Opens the modal with an empty TaskFormComponent for creating a new plan -->
-        <button class="btn-primary" (click)="showForm = true">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Add Plan
-        </button>
+        <div class="header-actions">
+          <div class="view-toggle">
+            <button class="view-btn" [class.active]="viewMode === 'list'" (click)="setViewMode('list')" title="List View">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              <span>List</span>
+            </button>
+            <button class="view-btn" [class.active]="viewMode === 'kanban'" (click)="setViewMode('kanban')" title="Kanban Board View">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="15" rx="1"/></svg>
+              <span>Board</span>
+            </button>
+          </div>
+          <!-- Opens the modal for creating a new plan -->
+          <button class="btn-primary" (click)="openCreateModal()">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Plan
+          </button>
+        </div>
+      </div>
+
+      <!-- Natural Language Quick Add ("Smart Capture") -->
+      <div class="card smart-capture-card">
+        <div class="smart-input-row">
+          <div class="smart-icon" title="Smart Capture active">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="url(#smartGrad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <defs>
+                <linearGradient id="smartGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#10b981"/>
+                  <stop offset="100%" stop-color="#06b6d4"/>
+                </linearGradient>
+              </defs>
+              <path d="M12 2l2.4 5.6 5.6 2.4-5.6 2.4-2.4 5.6-2.4-5.6-5.6-2.4 5.6-2.4z"/>
+            </svg>
+          </div>
+          <input
+            type="text"
+            class="smart-input"
+            [(ngModel)]="smartInput"
+            (input)="onSmartInputChange()"
+            (keydown.enter)="$event.preventDefault(); submitSmartCapture()"
+            placeholder="Smart Capture: e.g. 'Flight to Mumbai tomorrow at 6:30am #trip !high' or 'Dinner at Starbucks on Saturday 8pm'..."
+          />
+          <button class="btn-primary sm-btn" (click)="submitSmartCapture()" [disabled]="!smartInput.trim() || isSubmittingSmart">
+            {{ isSubmittingSmart ? 'Adding...' : '+ Quick Add' }}
+          </button>
+        </div>
+
+        @if (parsedSmartPlan; as p) {
+          <div class="smart-preview-chips">
+            <span class="preview-label">Parsed preview:</span>
+            <span class="preview-chip type-chip" [style.background]="getPlanTypeColor(p.type) + '22'" [style.color]="getPlanTypeColor(p.type)">
+              {{ getPlanTypeIcon(p.type) }} {{ p.type | titlecase }}
+            </span>
+            @if (p.dueDate) {
+              <span class="preview-chip date-chip">📅 {{ p.dueDate | date:'MMM d, y' }}</span>
+            }
+            @if (p.startTime) {
+              <span class="preview-chip time-chip">⏰ {{ p.startTime }}</span>
+            }
+            @if (p.location) {
+              <span class="preview-chip loc-chip">📍 {{ p.location }}</span>
+            }
+            <span class="preview-chip prio-chip prio-{{ p.priority.toLowerCase() }}">⚡ {{ p.priority }}</span>
+            <span class="preview-title" [title]="p.title">"{{ p.title }}"</span>
+          </div>
+        }
       </div>
 
       <!-- Plan type filter chips: "All" + one chip per plan type (task, trip, meeting, etc.) -->
@@ -79,90 +140,315 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
         <button class="btn-ghost sm" (click)="resetFilters()">Reset</button>
       </div>
 
-      <!-- Plans list card -->
-      <div class="card plans-wrap">
-        <!-- Empty state when no plans match the current filters -->
-        @if (sortedTasks.length === 0) {
-          <div class="empty">
-            <p>No plans found. Create your first plan!</p>
-          </div>
-        } @else {
-          <div class="plans-list">
-            <!-- Iterate over the paginated, sorted tasks (DONE rows pushed to the bottom) -->
-            @for (plan of pagedTasks; track plan.id) {
-              <!-- Each plan row: type icon, title/metadata, priority badge, status dropdown, actions -->
-              <div class="plan-row" [class.done]="plan.status === 'DONE'">
-                <div class="plan-header-side" [class.has-loc]="!!plan.location">
-                  <!-- Plan type icon: white custom glyph on a glowing gradient tile -->
-                  <div class="plan-type-icon" [style.background]="tileBg(plan.type)" [style.box-shadow]="tileShadow(plan.type)">
-                    <app-plan-icon [type]="plan.type" [size]="19" />
-                  </div>
-                  <!-- Main content: title (links to detail page) + location -->
-                  <div class="plan-main">
-                    <div class="plan-title-wrap">
-                      <a [routerLink]="['/tasks', toSlug(plan.title)]" class="plan-title" [title]="plan.title">{{ plan.title }}</a>
+      @if (viewMode === 'list') {
+        <!-- Plans list card -->
+        <div class="card plans-wrap">
+          <!-- Empty state when no plans match the current filters -->
+          @if (sortedTasks.length === 0) {
+            <div class="empty">
+              <p>No plans found. Create your first plan!</p>
+            </div>
+          } @else {
+            <div class="plans-list">
+              <!-- Iterate over the paginated, sorted tasks (DONE rows pushed to the bottom) -->
+              @for (plan of pagedTasks; track plan.id) {
+                <!-- Each plan row: type icon, title/metadata, priority badge, status dropdown, actions -->
+                <div class="plan-row" [class.done]="plan.status === 'DONE'">
+                  <div class="plan-header-side" [class.has-loc]="!!plan.location">
+                    <!-- Plan type icon: white custom glyph on a glowing gradient tile -->
+                    <div class="plan-type-icon" [style.background]="tileBg(plan.type)" [style.box-shadow]="tileShadow(plan.type)">
+                      <app-plan-icon [type]="plan.type" [size]="19" />
                     </div>
-                    @if (plan.location) {
-                      <div class="plan-loc" [title]="plan.location">
-                        <svg class="loc-pin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-                          <circle cx="12" cy="10" r="3"/>
-                        </svg>
-                        <span class="loc-text">{{ plan.location }}</span>
+                    <!-- Main content: title (links to detail page) + location -->
+                    <div class="plan-main">
+                      <div class="plan-title-wrap">
+                        <a [routerLink]="['/tasks', toSlug(plan.title)]" class="plan-title" [title]="plan.title">{{ plan.title }}</a>
                       </div>
-                    }
-                  </div>
-                </div>
-
-                <div class="plan-controls">
-                  <!-- Left side: Priority color dot in front of date / time / category -->
-                  <div class="plan-meta-left">
-                    <span class="prio-dot prio-{{ plan.priority.toLowerCase() }}" [title]="'Priority: ' + plan.priority"></span>
-                    @if (plan.dueDate) {
-                      <span class="meta-item">
-                        <svg class="meta-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                        {{ plan.dueDate | date:'MMM d' }}{{ plan.endDate ? ' → ' + (plan.endDate | date:'MMM d') : '' }}
-                      </span>
-                    }
-                    @if (plan.departureTime) { <span class="meta-item">🕐 {{ plan.departureTime }}{{ plan.endTime ? ' → ' + plan.endTime : '' }}</span> }
-                    @if (plan.startTime) { <span class="meta-item">🕐 {{ plan.startTime }}{{ plan.endTime ? ' - ' + plan.endTime : '' }}</span> }
-                    @if (plan.category) { <span class="meta-category" [style.color]="plan.category.color">● {{ plan.category.name }}</span> }
+                      @if (plan.location) {
+                        <div class="plan-loc" [title]="plan.location">
+                          <svg class="loc-pin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                          </svg>
+                          <span class="loc-text">{{ plan.location }}</span>
+                        </div>
+                      }
+                    </div>
                   </div>
 
-                  <div class="plan-ctrl-right">
-                    <!-- Inline status dropdown: allows quick status changes without opening the detail page -->
-                    <select class="status-select" [value]="plan.status" (change)="updateStatus(plan, $any($event.target).value)" aria-label="Change status">
-                      <option value="TODO">To Do</option>
-                      <option value="IN_PROGRESS">In Progress</option>
-                      <option value="DONE">Done</option>
-                      <option value="CANCELLED">Cancelled</option>
-                    </select>
-                    <!-- Action buttons: edit and delete -->
-                    <div class="plan-actions">
-                      <!-- Edit button: opens the modal with the task pre-filled -->
-                      <button class="icon-btn" (click)="editPlan(plan)" title="Edit plan" aria-label="Edit plan">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                      </button>
-                      <!-- Delete button: asks for confirmation, then removes the task -->
-                      <button class="icon-btn danger" (click)="deletePlan(plan)" title="Delete plan" aria-label="Delete plan">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                      </button>
+                  <div class="plan-controls">
+                    <!-- Left side: Priority color dot in front of date / time / category -->
+                    <div class="plan-meta-left">
+                      <span class="prio-dot prio-{{ plan.priority.toLowerCase() }}" [title]="'Priority: ' + plan.priority"></span>
+                      @if (plan.dueDate) {
+                        <span class="meta-item">
+                          <svg class="meta-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                          {{ plan.dueDate | date:'MMM d' }}{{ plan.endDate ? ' → ' + (plan.endDate | date:'MMM d') : '' }}
+                        </span>
+                      }
+                      @if (plan.departureTime) { <span class="meta-item">🕐 {{ plan.departureTime }}{{ plan.endTime ? ' → ' + plan.endTime : '' }}</span> }
+                      @if (plan.startTime) { <span class="meta-item">🕐 {{ plan.startTime }}{{ plan.endTime ? ' - ' + plan.endTime : '' }}</span> }
+                      @if (plan.category) { <span class="meta-category" [style.color]="plan.category.color">● {{ plan.category.name }}</span> }
+                      @if (subtaskInfo(plan); as st) {
+                        <span class="meta-subtask-badge" [class.complete]="st.done === st.total" [title]="st.done + ' of ' + st.total + ' checklist items completed'">
+                          ☑ {{ st.done }}/{{ st.total }}
+                        </span>
+                      }
+                    </div>
+
+                    <div class="plan-ctrl-right">
+                      <!-- Inline status dropdown: allows quick status changes without opening the detail page -->
+                      <select class="status-select" [value]="plan.status" (change)="updateStatus(plan, $any($event.target).value)" aria-label="Change status">
+                        <option value="TODO">To Do</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="DONE">Done</option>
+                        <option value="CANCELLED">Cancelled</option>
+                      </select>
+                      <!-- Action buttons: edit and delete -->
+                      <div class="plan-actions">
+                        <!-- Edit button: opens the modal with the task pre-filled -->
+                        <button class="icon-btn" (click)="editPlan(plan)" title="Edit plan" aria-label="Edit plan">
+                          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
+                        <!-- Delete button: asks for confirmation, then removes the task -->
+                        <button class="icon-btn danger" (click)="deletePlan(plan)" title="Delete plan" aria-label="Delete plan">
+                          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
+              }
+            </div>
+
+            @if (totalPages > 1) {
+              <div class="pager">
+                <button class="btn-ghost sm" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">Prev</button>
+                <span class="pager-info">Page {{ currentPage }} of {{ totalPages }} · {{ sortedTasks.length }} plans</span>
+                <button class="btn-ghost sm" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">Next</button>
               </div>
             }
-          </div>
-
-          @if (totalPages > 1) {
-            <div class="pager">
-              <button class="btn-ghost sm" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">Prev</button>
-              <span class="pager-info">Page {{ currentPage }} of {{ totalPages }} · {{ sortedTasks.length }} plans</span>
-              <button class="btn-ghost sm" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">Next</button>
-            </div>
           }
-        }
-      </div>
+        </div>
+      } @else {
+        <!-- Kanban Board View -->
+        <div class="kanban-wrap">
+          <div class="kanban-grid">
+            <!-- Column 1: To Do -->
+            <div class="kanban-column todo-col">
+              <div class="kanban-col-header">
+                <div class="kanban-col-title">
+                  <span class="status-indicator todo-ind"></span>
+                  <span class="col-name">To Do</span>
+                  <span class="col-pill">{{ todoTasks.length }}</span>
+                </div>
+                <button class="kanban-quick-add" (click)="openCreateModal('TODO')" title="Add to To Do">+</button>
+              </div>
+
+              <div class="kanban-cards">
+                @if (todoTasks.length === 0) {
+                  <div class="kanban-empty">No to-do plans</div>
+                } @else {
+                  @for (plan of todoTasks; track plan.id) {
+                    <div class="kanban-card">
+                      <div class="k-card-top">
+                        <div class="k-type-icon" [style.background]="tileBg(plan.type)" [style.box-shadow]="tileShadow(plan.type)">
+                          <app-plan-icon [type]="plan.type" [size]="15" />
+                        </div>
+                        <span class="prio-dot prio-{{ plan.priority.toLowerCase() }}" [title]="'Priority: ' + plan.priority"></span>
+                        <div class="k-spacer"></div>
+                        <div class="k-actions">
+                          <button class="k-icon-btn" (click)="editPlan(plan)" title="Edit plan">
+                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                          </button>
+                          <button class="k-icon-btn danger" (click)="deletePlan(plan)" title="Delete plan">
+                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                          </button>
+                        </div>
+                      </div>
+
+                      <a [routerLink]="['/tasks', toSlug(plan.title)]" class="k-title">{{ plan.title }}</a>
+
+                      @if (plan.location) {
+                        <div class="k-loc">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                          <span>{{ plan.location }}</span>
+                        </div>
+                      }
+
+                      <div class="k-meta-row">
+                        @if (plan.dueDate) {
+                          <span class="k-meta-item">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            {{ plan.dueDate | date:'MMM d' }}
+                          </span>
+                        }
+                        @if (plan.startTime) {
+                          <span class="k-meta-item">🕐 {{ plan.startTime }}</span>
+                        }
+                        @if (subtaskInfo(plan); as st) {
+                          <span class="k-subtask-badge" [class.complete]="st.done === st.total" [title]="st.done + '/' + st.total + ' completed'">
+                            ☑ {{ st.done }}/{{ st.total }}
+                          </span>
+                        }
+                      </div>
+
+                      <div class="k-bottom-actions">
+                        <button class="k-move-btn" (click)="moveStatus(plan, 'IN_PROGRESS')">
+                          Start →
+                        </button>
+                        <button class="k-move-btn done" (click)="moveStatus(plan, 'DONE')">
+                          ✓ Done
+                        </button>
+                      </div>
+                    </div>
+                  }
+                }
+              </div>
+            </div>
+
+            <!-- Column 2: In Progress -->
+            <div class="kanban-column in-prog-col">
+              <div class="kanban-col-header">
+                <div class="kanban-col-title">
+                  <span class="status-indicator in-prog-ind"></span>
+                  <span class="col-name">In Progress</span>
+                  <span class="col-pill">{{ inProgressTasks.length }}</span>
+                </div>
+                <button class="kanban-quick-add" (click)="openCreateModal('IN_PROGRESS')" title="Add to In Progress">+</button>
+              </div>
+
+              <div class="kanban-cards">
+                @if (inProgressTasks.length === 0) {
+                  <div class="kanban-empty">No active plans</div>
+                } @else {
+                  @for (plan of inProgressTasks; track plan.id) {
+                    <div class="kanban-card in-prog">
+                      <div class="k-card-top">
+                        <div class="k-type-icon" [style.background]="tileBg(plan.type)" [style.box-shadow]="tileShadow(plan.type)">
+                          <app-plan-icon [type]="plan.type" [size]="15" />
+                        </div>
+                        <span class="prio-dot prio-{{ plan.priority.toLowerCase() }}" [title]="'Priority: ' + plan.priority"></span>
+                        <div class="k-spacer"></div>
+                        <div class="k-actions">
+                          <button class="k-icon-btn" (click)="editPlan(plan)" title="Edit plan">
+                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                          </button>
+                          <button class="k-icon-btn danger" (click)="deletePlan(plan)" title="Delete plan">
+                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                          </button>
+                        </div>
+                      </div>
+
+                      <a [routerLink]="['/tasks', toSlug(plan.title)]" class="k-title">{{ plan.title }}</a>
+
+                      @if (plan.location) {
+                        <div class="k-loc">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                          <span>{{ plan.location }}</span>
+                        </div>
+                      }
+
+                      <div class="k-meta-row">
+                        @if (plan.dueDate) {
+                          <span class="k-meta-item">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            {{ plan.dueDate | date:'MMM d' }}
+                          </span>
+                        }
+                        @if (plan.startTime) {
+                          <span class="k-meta-item">🕐 {{ plan.startTime }}</span>
+                        }
+                        @if (subtaskInfo(plan); as st) {
+                          <span class="k-subtask-badge" [class.complete]="st.done === st.total">
+                            ☑ {{ st.done }}/{{ st.total }}
+                          </span>
+                        }
+                      </div>
+
+                      <div class="k-bottom-actions">
+                        <button class="k-move-btn" (click)="moveStatus(plan, 'TODO')">
+                          ← To Do
+                        </button>
+                        <button class="k-move-btn done" (click)="moveStatus(plan, 'DONE')">
+                          ✓ Done
+                        </button>
+                      </div>
+                    </div>
+                  }
+                }
+              </div>
+            </div>
+
+            <!-- Column 3: Done -->
+            <div class="kanban-column done-col">
+              <div class="kanban-col-header">
+                <div class="kanban-col-title">
+                  <span class="status-indicator done-ind"></span>
+                  <span class="col-name">Done</span>
+                  <span class="col-pill">{{ doneTasks.length }}</span>
+                </div>
+                <button class="kanban-quick-add" (click)="openCreateModal('DONE')" title="Add to Done">+</button>
+              </div>
+
+              <div class="kanban-cards">
+                @if (doneTasks.length === 0) {
+                  <div class="kanban-empty">No completed plans</div>
+                } @else {
+                  @for (plan of doneTasks; track plan.id) {
+                    <div class="kanban-card is-done">
+                      <div class="k-card-top">
+                        <div class="k-type-icon" [style.background]="tileBg(plan.type)" [style.box-shadow]="tileShadow(plan.type)">
+                          <app-plan-icon [type]="plan.type" [size]="15" />
+                        </div>
+                        <span class="prio-dot prio-{{ plan.priority.toLowerCase() }}" [title]="'Priority: ' + plan.priority"></span>
+                        <div class="k-spacer"></div>
+                        <div class="k-actions">
+                          <button class="k-icon-btn" (click)="editPlan(plan)" title="Edit plan">
+                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                          </button>
+                          <button class="k-icon-btn danger" (click)="deletePlan(plan)" title="Delete plan">
+                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                          </button>
+                        </div>
+                      </div>
+
+                      <a [routerLink]="['/tasks', toSlug(plan.title)]" class="k-title strike">{{ plan.title }}</a>
+
+                      @if (plan.location) {
+                        <div class="k-loc">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                          <span>{{ plan.location }}</span>
+                        </div>
+                      }
+
+                      <div class="k-meta-row">
+                        @if (plan.dueDate) {
+                          <span class="k-meta-item">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            {{ plan.dueDate | date:'MMM d' }}
+                          </span>
+                        }
+                        @if (subtaskInfo(plan); as st) {
+                          <span class="k-subtask-badge" [class.complete]="st.done === st.total">
+                            ☑ {{ st.done }}/{{ st.total }}
+                          </span>
+                        }
+                      </div>
+
+                      <div class="k-bottom-actions">
+                        <button class="k-move-btn reopen" (click)="moveStatus(plan, 'TODO')">
+                          ↩ Reopen
+                        </button>
+                      </div>
+                    </div>
+                  }
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      }
     </div>
 
     <!-- Modal for creating or editing a plan -->
@@ -192,6 +478,151 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
     .chip:hover { border-color: var(--text-muted); }
     /* Active chip: filled with accent color */
     .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    /* Header Actions & View Toggle */
+    .header-actions { display: flex; align-items: center; gap: 10px; }
+    .view-toggle {
+      display: inline-flex; background: var(--bg-secondary); padding: 3px; border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .view-btn {
+      display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; font-size: 0.8rem;
+      font-weight: 500; border: none; background: transparent; color: var(--text-muted);
+      cursor: pointer; border-radius: 7px; transition: all 0.15s; font-family: inherit;
+    }
+    .view-btn.active {
+      background: var(--card-surface, var(--bg-card)); color: var(--text-primary);
+      font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+
+    /* Smart Quick Add Bar */
+    .smart-capture-card {
+      padding: 10px 14px; background: var(--card-surface, var(--bg-card));
+      border: 1px solid var(--card-border, var(--border)); border-radius: 14px;
+      display: flex; flex-direction: column; gap: 8px; margin-bottom: 2px;
+    }
+    .smart-input-row { display: flex; align-items: center; gap: 10px; }
+    .smart-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .smart-input {
+      flex: 1; border: none; background: transparent; font-size: 0.88rem; color: var(--text-primary);
+      outline: none; font-family: inherit;
+    }
+    .smart-input::placeholder { color: var(--text-muted); font-size: 0.82rem; }
+    .smart-preview-chips {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding-top: 6px;
+      border-top: 1px dashed var(--border-light); font-size: 0.74rem;
+    }
+    .preview-label { color: var(--text-muted); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+    .preview-chip {
+      display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px;
+      font-size: 0.72rem; font-weight: 500; background: var(--bg-secondary);
+      border: 1px solid var(--border-light); color: var(--text-secondary);
+    }
+    .preview-chip.prio-high { color: #ef4444; background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); }
+    .preview-chip.prio-medium { color: #f59e0b; background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); }
+    .preview-chip.prio-low { color: #10b981; background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); }
+    .preview-title {
+      color: var(--text-primary); font-weight: 600; font-style: italic; max-width: 250px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    /* Subtask Badge in List */
+    .meta-subtask-badge {
+      display: inline-flex; align-items: center; gap: 3px; font-size: 0.72rem; color: var(--text-muted);
+      padding: 1px 6px; background: var(--bg-hover); border-radius: 4px; font-weight: 500;
+    }
+    .meta-subtask-badge.complete { color: #10b981; background: rgba(16, 185, 129, 0.12); }
+
+    /* Kanban Board Styles */
+    .kanban-wrap { width: 100%; margin-top: 4px; }
+    .kanban-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start;
+    }
+    .kanban-column {
+      background: var(--card-surface, var(--bg-card)); border: 1px solid var(--card-border, var(--border));
+      border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 12px; min-height: 240px;
+    }
+    .kanban-col-header {
+      display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .kanban-col-title {
+      display: flex; align-items: center; gap: 8px; font-size: 0.88rem; font-weight: 600;
+      color: var(--text-primary);
+    }
+    .status-indicator { width: 8px; height: 8px; border-radius: 50%; }
+    .todo-ind { background: #3b82f6; box-shadow: 0 0 6px rgba(59, 130, 246, 0.6); }
+    .in-prog-ind { background: #f59e0b; box-shadow: 0 0 6px rgba(245, 158, 11, 0.6); }
+    .done-ind { background: #10b981; box-shadow: 0 0 6px rgba(16, 185, 129, 0.6); }
+    .col-pill {
+      font-size: 0.72rem; padding: 1px 7px; border-radius: 10px; background: var(--bg-secondary);
+      color: var(--text-muted); font-weight: 600;
+    }
+    .kanban-quick-add {
+      width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border);
+      background: transparent; color: var(--text-muted); cursor: pointer; display: flex;
+      align-items: center; justify-content: center; font-size: 1rem; line-height: 1; transition: all 0.15s;
+    }
+    .kanban-quick-add:hover {
+      border-color: var(--accent); color: var(--accent); background: var(--accent-subtle);
+    }
+    .kanban-cards { display: flex; flex-direction: column; gap: 10px; }
+    .kanban-empty {
+      text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); font-size: 0.82rem; font-style: italic;
+    }
+    .kanban-card {
+      background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 10px;
+      padding: 12px; display: flex; flex-direction: column; gap: 8px;
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s; position: relative;
+    }
+    .kanban-card:hover {
+      transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); border-color: var(--border);
+    }
+    .kanban-card.in-prog { border-left: 3px solid #f59e0b; }
+    .kanban-card.is-done { border-left: 3px solid #10b981; opacity: 0.75; }
+    .k-card-top { display: flex; align-items: center; gap: 8px; }
+    .k-type-icon {
+      width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center;
+      justify-content: center; color: #fff;
+    }
+    .k-spacer { flex: 1; }
+    .k-actions { display: flex; gap: 2px; }
+    .k-icon-btn {
+      width: 24px; height: 24px; border-radius: 6px; border: none; background: transparent;
+      color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .k-icon-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .k-icon-btn.danger:hover { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+    .k-title {
+      font-size: 0.88rem; font-weight: 600; color: var(--text-primary); text-decoration: none;
+      word-break: break-word; line-height: 1.3;
+    }
+    .k-title:hover { color: var(--accent); }
+    .k-title.strike { text-decoration: line-through; color: var(--text-muted); }
+    .k-loc {
+      display: flex; align-items: center; gap: 4px; font-size: 0.74rem; color: var(--text-muted);
+    }
+    .k-meta-row {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.72rem; color: var(--text-muted);
+    }
+    .k-meta-item { display: inline-flex; align-items: center; gap: 3px; }
+    .k-subtask-badge {
+      display: inline-flex; align-items: center; gap: 3px; font-size: 0.7rem; font-weight: 600;
+      color: var(--text-secondary); background: var(--bg-card); padding: 1px 6px;
+      border-radius: 4px; border: 1px solid var(--border-light);
+    }
+    .k-subtask-badge.complete { color: #10b981; border-color: rgba(16, 185, 129, 0.3); }
+    .k-bottom-actions {
+      display: flex; gap: 6px; padding-top: 6px; border-top: 1px solid var(--border-light); margin-top: 2px;
+    }
+    .k-move-btn {
+      flex: 1; padding: 5px 8px; font-size: 0.72rem; font-weight: 500; border-radius: 6px;
+      border: 1px solid var(--border-light); background: var(--bg-card); color: var(--text-secondary);
+      cursor: pointer; text-align: center; transition: all 0.15s; font-family: inherit;
+    }
+    .k-move-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border); }
+    .k-move-btn.done:hover { background: rgba(16, 185, 129, 0.12); color: #10b981; border-color: rgba(16, 185, 129, 0.4); }
+    .k-move-btn.reopen:hover { background: rgba(59, 130, 246, 0.12); color: #3b82f6; border-color: rgba(59, 130, 246, 0.4); }
 
     /* Filter bar: horizontal flex with dropdown selects and reset button */
     .filter-bar { display: flex; gap: 10px; padding: 10px 14px; align-items: center; flex-wrap: wrap; }
@@ -461,6 +892,41 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
         border-radius: 12px;
         margin-top: 4px;
       }
+
+      .header-actions {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .view-toggle {
+        flex: 1;
+      }
+      .view-btn {
+        flex: 1;
+        justify-content: center;
+      }
+      .kanban-grid {
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        gap: 12px;
+        padding-bottom: 10px;
+        scrollbar-width: thin;
+      }
+      .kanban-column {
+        flex: 0 0 85%;
+        min-width: 85%;
+        scroll-snap-align: center;
+      }
+      .smart-capture-card {
+        padding: 8px 12px;
+      }
+      .smart-input-row {
+        flex-wrap: wrap;
+      }
+      .smart-input-row .btn-primary {
+        width: 100%;
+      }
     }
 
     @media (max-width: 380px) {
@@ -494,6 +960,97 @@ export class TaskListComponent implements OnInit {
   private fb = inject(FormBuilder);
   // Reference to PLAN_TYPES for icons and colors
   planTypes = PLAN_TYPES;
+
+  // View mode: 'list' or 'kanban'
+  viewMode: 'list' | 'kanban' = (localStorage.getItem('do_plans_view') as any) || 'list';
+
+  setViewMode(mode: 'list' | 'kanban') {
+    this.viewMode = mode;
+    localStorage.setItem('do_plans_view', mode);
+  }
+
+  // Smart Capture state
+  smartInput = '';
+  parsedSmartPlan: ParsedSmartPlan | null = null;
+  isSubmittingSmart = false;
+
+  onSmartInputChange() {
+    this.parsedSmartPlan = parseNaturalLanguagePlan(this.smartInput);
+  }
+
+  submitSmartCapture() {
+    const parsed = this.parsedSmartPlan || parseNaturalLanguagePlan(this.smartInput);
+    if (!parsed || !parsed.title.trim()) return;
+
+    this.isSubmittingSmart = true;
+    this.taskService.create({
+      title: parsed.title,
+      type: parsed.type,
+      priority: parsed.priority,
+      dueDate: parsed.dueDate,
+      startTime: parsed.startTime,
+      location: parsed.location,
+      status: 'TODO',
+    }).subscribe({
+      next: () => {
+        this.isSubmittingSmart = false;
+        this.smartInput = '';
+        this.parsedSmartPlan = null;
+        this.toast.success('Plan captured with Smart Quick Add!');
+        this.loadTasks();
+      },
+      error: () => {
+        this.isSubmittingSmart = false;
+        this.toast.error('Failed to capture plan');
+      }
+    });
+  }
+
+  getPlanTypeColor(type: PlanType): string {
+    return this.planTypes.find(t => t.value === type)?.color ?? '#3b82f6';
+  }
+
+  getPlanTypeIcon(type: PlanType): string {
+    return this.planTypes.find(t => t.value === type)?.icon ?? '✓';
+  }
+
+  subtaskInfo(plan: Task): { done: number; total: number; pct: number } | null {
+    if (!plan.subtasks || plan.subtasks.length === 0) return null;
+    const done = plan.subtasks.filter(s => s.completed).length;
+    const total = plan.subtasks.length;
+    const pct = Math.round((done / total) * 100);
+    return { done, total, pct };
+  }
+
+  get todoTasks(): Task[] {
+    return this.sortedTasks.filter(t => t.status === 'TODO');
+  }
+
+  get inProgressTasks(): Task[] {
+    return this.sortedTasks.filter(t => t.status === 'IN_PROGRESS');
+  }
+
+  get doneTasks(): Task[] {
+    return this.sortedTasks.filter(t => t.status === 'DONE');
+  }
+
+  moveStatus(plan: Task, status: TaskStatus) {
+    this.taskService.update(plan.id, { status }).subscribe({
+      next: () => {
+        const label = status === 'IN_PROGRESS' ? 'In Progress' : (status === 'DONE' ? 'Done' : 'To Do');
+        this.toast.success(`Moved to ${label}`);
+      }
+    });
+  }
+
+  openCreateModal(status?: TaskStatus) {
+    if (status) {
+      this.editingTask = { status } as any;
+    } else {
+      this.editingTask = null;
+    }
+    this.showForm = true;
+  }
 
   // Controls visibility of the create/edit modal
   showForm = false;

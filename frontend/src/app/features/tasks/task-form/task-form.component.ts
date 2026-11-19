@@ -1,12 +1,12 @@
 import { Component, EventEmitter, inject, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TaskService } from '../task.service';
-import { Task, PLAN_TYPES, PlanType } from '../../../core/models/task.model';
+import { Task, PLAN_TYPES, PlanType, Subtask } from '../../../core/models/task.model';
 
 @Component({
   selector: 'app-task-form',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, FormsModule],
   template: `
     <form [formGroup]="form" (ngSubmit)="submit()" class="plan-form">
       <!-- Plan Type Selector -->
@@ -251,10 +251,37 @@ import { Task, PLAN_TYPES, PlanType } from '../../../core/models/task.model';
         </div>
       </div>
 
+      <!-- Checklist / Subtasks -->
+      <div class="checklist-section">
+        <label class="label">Checklist / Subtasks ({{ subtasks.length }})</label>
+        @if (subtasks.length > 0) {
+          <div class="subtask-list">
+            @for (st of subtasks; track st.id; let i = $index) {
+              <div class="subtask-item">
+                <input type="checkbox" [checked]="st.completed" (change)="toggleSubtask(i)" class="subtask-cb" />
+                <span class="subtask-title" [class.done]="st.completed">{{ st.title }}</span>
+                <button type="button" class="subtask-del" (click)="removeSubtask(i)" title="Remove item">×</button>
+              </div>
+            }
+          </div>
+        }
+        <div class="subtask-add-row">
+          <input
+            type="text"
+            class="input subtask-input"
+            [(ngModel)]="newSubtaskTitle"
+            [ngModelOptions]="{standalone: true}"
+            placeholder="Add subtask or checklist item..."
+            (keydown.enter)="$event.preventDefault(); addSubtask()"
+          />
+          <button type="button" class="btn-ghost sm" (click)="addSubtask()" [disabled]="!newSubtaskTitle.trim()">+ Add</button>
+        </div>
+      </div>
+
       <div class="form-actions">
         <button type="button" class="btn-ghost" (click)="cancelled.emit()">Cancel</button>
         <button type="submit" class="btn-primary" [disabled]="form.invalid || loading">
-          {{ loading ? 'Saving...' : (task ? 'Update Plan' : 'Add Plan') }}
+          {{ loading ? 'Saving...' : (task?.id ? 'Update Plan' : 'Add Plan') }}
         </button>
       </div>
     </form>
@@ -275,6 +302,22 @@ import { Task, PLAN_TYPES, PlanType } from '../../../core/models/task.model';
     .form-group { display: flex; flex-direction: column; }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     textarea.input { resize: vertical; min-height: 60px; }
+    .checklist-section { display: flex; flex-direction: column; gap: 6px; }
+    .subtask-list { display: flex; flex-direction: column; gap: 5px; max-height: 160px; overflow-y: auto; }
+    .subtask-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 10px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-light);
+    }
+    .subtask-cb { cursor: pointer; accent-color: var(--accent); width: 15px; height: 15px; }
+    .subtask-title { flex: 1; font-size: 0.82rem; color: var(--text-primary); word-break: break-word; }
+    .subtask-title.done { text-decoration: line-through; color: var(--text-muted); }
+    .subtask-del {
+      background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem;
+      padding: 0 4px; line-height: 1; border-radius: 4px;
+    }
+    .subtask-del:hover { color: #ef4444; }
+    .subtask-add-row { display: flex; gap: 8px; }
+    .subtask-input { flex: 1; font-size: 0.82rem; padding: 6px 10px; }
     .form-actions { display: flex; gap: 10px; justify-content: flex-end; padding-top: 4px; }
   `],
 })
@@ -289,6 +332,8 @@ export class TaskFormComponent implements OnInit, OnChanges {
 
   loading = false;
   selectedType: PlanType = 'task';
+  subtasks: Subtask[] = [];
+  newSubtaskTitle = '';
 
   form = this.fb.group({
     title: ['', Validators.required],
@@ -363,9 +408,32 @@ export class TaskFormComponent implements OnInit, OnChanges {
     if (changes['task']) this.fillForm();
   }
 
+  addSubtask() {
+    const title = this.newSubtaskTitle.trim();
+    if (!title) return;
+    this.subtasks.push({
+      id: 'st_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      title,
+      completed: false,
+    });
+    this.newSubtaskTitle = '';
+  }
+
+  toggleSubtask(index: number) {
+    if (this.subtasks[index]) {
+      this.subtasks[index].completed = !this.subtasks[index].completed;
+    }
+  }
+
+  removeSubtask(index: number) {
+    this.subtasks.splice(index, 1);
+  }
+
   private fillForm() {
     if (this.task) {
       this.selectedType = (this.task.type as PlanType) || 'task';
+      this.subtasks = (this.task.subtasks || []).map(s => ({ ...s }));
+      this.newSubtaskTitle = '';
       this.form.patchValue({
         title: this.task.title,
         description: this.task.description ?? '',
@@ -386,6 +454,8 @@ export class TaskFormComponent implements OnInit, OnChanges {
       });
     } else {
       this.selectedType = 'task';
+      this.subtasks = [];
+      this.newSubtaskTitle = '';
       this.form.reset({
         title: '', description: '', type: 'task', priority: 'MEDIUM',
         status: 'TODO', dueDate: '', endDate: '', startTime: '', endTime: '',
@@ -416,14 +486,17 @@ export class TaskFormComponent implements OnInit, OnChanges {
       departureTime: v.departureTime || undefined,
       meetingLink: v.meetingLink || undefined,
       categoryId: v.categoryId || undefined,
+      subtasks: this.subtasks,
     };
 
-    const req = this.task ? this.taskService.update(this.task.id, dto) : this.taskService.create(dto);
+    const req = this.task?.id ? this.taskService.update(this.task.id, dto) : this.taskService.create(dto);
     req.subscribe({
       next: () => {
         this.loading = false;
         // Reset form after save so reopening shows a clean form
         this.selectedType = 'task';
+        this.subtasks = [];
+        this.newSubtaskTitle = '';
         this.form.reset({
           title: '', description: '', type: 'task', priority: 'MEDIUM',
           status: 'TODO', dueDate: '', endDate: '', startTime: '', endTime: '',

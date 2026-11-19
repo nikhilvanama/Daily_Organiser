@@ -12,6 +12,13 @@ export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED';
 // Each type gets its own icon and color in the UI (see PLAN_TYPES constant below).
 export type PlanType = 'task' | 'trip' | 'train' | 'dinner' | 'meeting' | 'event' | 'reminder' | 'outing' | 'health' | 'celebration';
 
+// Subtask item for plan checklists
+export interface Subtask {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
 // Main Task interface — mirrors the Task entity from the NestJS/Prisma backend.
 // This is the core data structure for the "My Plans" and "Today's Schedule" features.
 export interface Task {
@@ -40,6 +47,7 @@ export interface Task {
   categoryId: string | null; // Optional foreign key to a user-defined category
   category: Category | null; // Populated category object (included via backend JOIN)
   googleEventId: string | null; // Google Calendar event ID (present when synced)
+  subtasks?: Subtask[]; // Subtasks / checklist items
   createdAt: string; // ISO timestamp of task creation
   updatedAt: string; // ISO timestamp of last modification
 }
@@ -64,6 +72,7 @@ export interface CreateTaskDto {
   meetingLink?: string;
   estimatedMins?: number; // Optional time estimate
   categoryId?: string; // Optional category assignment
+  subtasks?: Subtask[]; // Optional subtask checklist
 }
 
 // DTO for updating an existing task — all fields are optional (PATCH semantics)

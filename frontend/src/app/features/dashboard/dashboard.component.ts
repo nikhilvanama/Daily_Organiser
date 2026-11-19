@@ -55,6 +55,115 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
           </button>
         </div>
 
+        <!-- Morning Daily Briefing (Daily Digest) -->
+        @if (showBriefing()) {
+          <div class="card briefing-card animate-in">
+            <div class="briefing-glow"></div>
+            <div class="briefing-header">
+              <div class="briefing-title-group">
+                <span class="briefing-badge">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="5"/>
+                    <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                    <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                  </svg>
+                  {{ briefingPeriodLabel }}
+                </span>
+                <span class="briefing-date">{{ today | date:'EEE, MMM d' }}</span>
+              </div>
+              <div class="briefing-actions">
+                <button class="briefing-icon-btn" (click)="toggleBriefingCollapse()" [title]="isBriefingCollapsed() ? 'Expand briefing' : 'Collapse briefing'">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" [style.transform]="isBriefingCollapsed() ? 'rotate(180deg)' : 'none'" style="transition: transform 0.2s">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </button>
+                <button class="briefing-icon-btn" (click)="dismissBriefingToday()" title="Dismiss for today">
+                  ×
+                </button>
+              </div>
+            </div>
+
+            @if (!isBriefingCollapsed()) {
+              <div class="briefing-content">
+                <p class="briefing-lead">{{ briefingGreetingMessage() }}</p>
+
+                <div class="briefing-grid">
+                  <!-- Today's Schedule Digest -->
+                  <div class="briefing-col">
+                    <div class="b-col-head">
+                      <span class="b-col-icon plans-icon">📅</span>
+                      <strong>Today's Plans ({{ todayPlans().length }})</strong>
+                    </div>
+                    @if (todayPlans().length === 0) {
+                      <span class="b-col-detail">No plans scheduled for today yet.</span>
+                    } @else {
+                      <div class="b-col-items">
+                        @for (p of todayPlans().slice(0, 3); track p.id) {
+                          <div class="b-plan-item">
+                            <span class="b-dot" [class.high]="p.priority === 'HIGH'"></span>
+                            <span class="b-plan-title">{{ p.title }}</span>
+                            @if (p.startTime) { <span class="b-plan-time">{{ p.startTime }}</span> }
+                          </div>
+                        }
+                        @if (todayPlans().length > 3) {
+                          <span class="b-more">+{{ todayPlans().length - 3 }} more plans</span>
+                        }
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Habit Routine Status -->
+                  <div class="briefing-col">
+                    <div class="b-col-head">
+                      <span class="b-col-icon routine-icon">⚡</span>
+                      <strong>Routine Habits ({{ doneToday() }}/{{ scheduledToday() }})</strong>
+                    </div>
+                    <div class="b-progress-wrap">
+                      <div class="b-progress-bar">
+                        <div class="b-progress-fill" [style.width.%]="todayPct()"></div>
+                      </div>
+                      <span class="b-progress-pct">{{ todayPct() | number:'1.0-0' }}%</span>
+                    </div>
+                    <span class="b-col-detail">
+                      @if (doneToday() === scheduledToday() && scheduledToday() > 0) {
+                        🌟 All daily routines completed today!
+                      } @else if (scheduledToday() > 0) {
+                        {{ scheduledToday() - doneToday() }} routine(s) left for today.
+                      } @else {
+                        No habits scheduled for today.
+                      }
+                    </span>
+                  </div>
+
+                  <!-- Focus & Mindset Tip -->
+                  <div class="briefing-col tip-col">
+                    <div class="b-col-head">
+                      <span class="b-col-icon tip-icon">💡</span>
+                      <strong>Daily Focus Tip</strong>
+                    </div>
+                    <p class="b-tip-text">"{{ dailyFocusTip() }}"</p>
+                  </div>
+                </div>
+
+                <div class="briefing-footer">
+                  <a routerLink="/tasks" class="b-link">Open My Plans →</a>
+                  <a routerLink="/habits" class="b-link">Track Habits →</a>
+                  <a routerLink="/calendar" class="b-link">Calendar →</a>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <!-- Re-open Briefing button if dismissed -->
+          <div class="briefing-reopen-row">
+            <button class="briefing-reopen-btn" (click)="reopenBriefing()">
+              ☀️ Daily Digest
+            </button>
+          </div>
+        }
+
         <!-- Stat cards with custom gradient icons + sparklines -->
         <div class="stats-row">
           <a routerLink="/tasks" class="stat-card hue-green">
@@ -641,6 +750,227 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     .loading-hint { font-size: .76rem; color: var(--text-muted); }
+
+    /* ── Morning Daily Briefing ────────────────────────── */
+    .briefing-card {
+      position: relative;
+      overflow: hidden;
+      padding: 1.1rem 1.25rem;
+      border-radius: 16px;
+      background: var(--card-surface);
+      border: 1px solid var(--card-border);
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+    .briefing-glow {
+      position: absolute;
+      top: -50px;
+      left: 20%;
+      width: 280px;
+      height: 120px;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.08), transparent 70%);
+      pointer-events: none;
+      filter: blur(20px);
+    }
+    .briefing-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .briefing-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .briefing-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #10b981;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      padding: 4px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.02em;
+    }
+    .briefing-date {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .briefing-actions {
+      display: flex;
+      gap: 4px;
+    }
+    .briefing-icon-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      transition: all 0.15s;
+    }
+    .briefing-icon-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+    .briefing-lead {
+      font-size: 0.92rem;
+      color: var(--text-primary);
+      margin: 0;
+      line-height: 1.45;
+      font-weight: 500;
+    }
+    .briefing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 4px;
+    }
+    @media (max-width: 820px) {
+      .briefing-grid { grid-template-columns: 1fr; }
+    }
+    .briefing-col {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .b-col-head {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: var(--text-primary);
+    }
+    .b-col-icon { font-size: 0.85rem; }
+    .b-col-items {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .b-plan-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.76rem;
+      color: var(--text-secondary);
+    }
+    .b-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+    .b-dot.high {
+      background: #ef4444;
+      box-shadow: 0 0 6px rgba(239,68,68,0.6);
+    }
+    .b-plan-title {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .b-plan-time {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .b-more {
+      font-size: 0.7rem;
+      color: var(--accent);
+      font-weight: 500;
+    }
+    .b-col-detail {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+    }
+    .b-progress-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .b-progress-bar {
+      flex: 1;
+      height: 6px;
+      background: var(--bg-hover);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .b-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #06b6d4);
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
+    .b-progress-pct {
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: #10b981;
+    }
+    .tip-col {
+      background: radial-gradient(180px 80px at 90% 10%, rgba(245, 158, 11, 0.08), transparent 70%), var(--bg-secondary);
+    }
+    .b-tip-text {
+      font-size: 0.76rem;
+      color: var(--text-secondary);
+      font-style: italic;
+      line-height: 1.4;
+      margin: 0;
+    }
+    .briefing-footer {
+      display: flex;
+      gap: 14px;
+      padding-top: 6px;
+      border-top: 1px solid var(--border-light);
+    }
+    .b-link {
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .b-link:hover { text-decoration: underline; }
+    .briefing-reopen-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: -4px;
+      margin-bottom: 4px;
+    }
+    .briefing-reopen-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--card-surface);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .briefing-reopen-btn:hover {
+      color: var(--text-primary);
+      border-color: var(--accent);
+    }
   `],
 })
 export class DashboardComponent implements OnInit {
@@ -657,6 +987,64 @@ export class DashboardComponent implements OnInit {
   todayPlans = signal<Task[]>([]);
   activeGoals = signal<Goal[]>([]);
   habits = signal<Habit[]>([]);
+
+  // Daily Briefing state
+  private readonly todayStr = new Date().toISOString().split('T')[0];
+  showBriefing = signal<boolean>(localStorage.getItem('do_briefing_dismissed_' + this.todayStr) !== 'true');
+  isBriefingCollapsed = signal<boolean>(localStorage.getItem('do_briefing_collapsed') === 'true');
+
+  get briefingPeriodLabel(): string {
+    const hr = new Date().getHours();
+    if (hr < 12) return 'Morning Briefing';
+    if (hr < 17) return 'Afternoon Briefing';
+    return 'Evening Review';
+  }
+
+  briefingGreetingMessage(): string {
+    const plansCount = this.todayPlans().length;
+    const highPrio = this.todayPlans().filter(p => p.priority === 'HIGH').length;
+    const habitsTotal = this.scheduledToday();
+    const habitsDone = this.doneToday();
+
+    let msg = `Here's your pulse for today: you have ${plansCount} plan${plansCount === 1 ? '' : 's'} scheduled`;
+    if (highPrio > 0) {
+      msg += ` (${highPrio} high priority)`;
+    }
+    const remaining = Math.max(0, habitsTotal - habitsDone);
+    msg += ` and ${remaining} routine habit${remaining === 1 ? '' : 's'} remaining.`;
+    return msg;
+  }
+
+  dailyFocusTip(): string {
+    const tips = [
+      'Reflect & align: review what went well this week and set clear intentions for the days ahead.',
+      'Weekly planning: prioritize your single highest-leverage task first before opening notifications.',
+      'Deep work: protect 90 minutes of focused effort with zero context switching.',
+      'Midweek rhythm: review active goals and celebrate wins from the first half of the week.',
+      'Consistency is compound interest: keep your habit streaks alive one day at a time.',
+      'Clear the deck: wrap up loose ends and set your tomorrow self up for success.',
+      'Rest and recovery: intentional relaxation recharges creative problem-solving.',
+    ];
+    const day = new Date().getDay();
+    return tips[day] || tips[0];
+  }
+
+  toggleBriefingCollapse() {
+    const next = !this.isBriefingCollapsed();
+    this.isBriefingCollapsed.set(next);
+    localStorage.setItem('do_briefing_collapsed', String(next));
+  }
+
+  dismissBriefingToday() {
+    this.showBriefing.set(false);
+    localStorage.setItem('do_briefing_dismissed_' + this.todayStr, 'true');
+    this.toast.info('Briefing dismissed for today');
+  }
+
+  reopenBriefing() {
+    this.showBriefing.set(true);
+    localStorage.removeItem('do_briefing_dismissed_' + this.todayStr);
+  }
 
   // --- Habit widget computeds ---
   todayHabits = computed(() =>

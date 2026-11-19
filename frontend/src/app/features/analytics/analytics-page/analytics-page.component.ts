@@ -1,27 +1,47 @@
 import { PageArtComponent } from '../../../shared/components/page-art/page-art.component';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { AnalyticsService } from '../analytics.service';
 import { AnalyticsRange, AnalyticsSummary } from '../../../core/models/analytics.model';
+import { ToastService } from '../../../core/services/toast.service';
 
 @Component({
   selector: 'app-analytics-page',
   standalone: true,
-  imports: [DecimalPipe, PageArtComponent],
+  imports: [DecimalPipe, PageArtComponent, FormsModule],
   template: `
     <div class="page animate-in">
 
       <!-- Header -->
       <div class="page-header">
         <app-page-art scene="analytics" />
-        <div>
+        <div class="header-left">
+          <div class="view-toggle">
+            <button class="view-btn" [class.active]="viewMode() === 'metrics'" (click)="setViewMode('metrics')">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              Metrics
+            </button>
+            <button class="view-btn" [class.active]="viewMode() === 'retrospective'" (click)="setViewMode('retrospective')">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              Retrospective
+            </button>
+          </div>
           <p class="date-range">{{ dateRangeLabel() }}</p>
         </div>
-        <div class="range-pills">
-          @for (r of ranges; track r) {
-            <button class="range-pill" [class.active]="range() === r" (click)="setRange(r)">{{ rangeLabel(r) }}</button>
-          }
-        </div>
+
+        @if (viewMode() === 'metrics') {
+          <div class="range-pills">
+            @for (r of ranges; track r) {
+              <button class="range-pill" [class.active]="range() === r" (click)="setRange(r)">{{ rangeLabel(r) }}</button>
+            }
+          </div>
+        } @else {
+          <div class="range-pills">
+            <button class="range-pill" [class.active]="range() === '7d'" (click)="setRetroPeriod('7d')">Weekly Review</button>
+            <button class="range-pill" [class.active]="range() === '30d'" (click)="setRetroPeriod('30d')">Monthly Review</button>
+          </div>
+        }
       </div>
 
       @if (loading()) {
@@ -31,8 +51,9 @@ import { AnalyticsRange, AnalyticsSummary } from '../../../core/models/analytics
         </div>
       } @else if (summary()) {
 
-        <!-- 6 KPI Cards -->
-        <div class="kpi-grid">
+        @if (viewMode() === 'metrics') {
+          <!-- 6 KPI Cards -->
+          <div class="kpi-grid">
 
           <div class="kpi-card">
             <div class="kpi-icon tasks-icon">
@@ -280,6 +301,128 @@ import { AnalyticsRange, AnalyticsSummary } from '../../../core/models/analytics
         </div>
 
       } @else {
+        <!-- ═══ RETROSPECTIVE REVIEW MODE ═══ -->
+        <div class="retrospective-wrap animate-in">
+
+          <!-- Retro Banner / Scorecard Bar -->
+          <div class="card retro-banner-card">
+            <div class="retro-banner-top">
+              <div class="retro-hero">
+                <span class="retro-tier-badge" [class.gold]="summary()!.habits.consistencyPct >= 75" [class.silver]="summary()!.habits.consistencyPct >= 50 && summary()!.habits.consistencyPct < 75">
+                  {{ retroTierLabel() }}
+                </span>
+                <h2>{{ range() === '7d' ? 'Weekly' : 'Monthly' }} Retrospective</h2>
+                <span class="retro-sub">{{ dateRangeLabel() }}</span>
+              </div>
+              <button class="btn-ghost retro-copy-btn" (click)="copyRetrospectiveSummary()">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                Copy Summary
+              </button>
+            </div>
+
+            <!-- 4 Pillar Scorecards -->
+            <div class="retro-scorecard-grid">
+              <div class="retro-score-col">
+                <span class="r-col-label">Tasks & Execution</span>
+                <span class="r-col-val">{{ summary()!.tasks.completed }}</span>
+                <span class="r-col-sub">{{ summary()!.tasks.avgPerDay }}/day avg · {{ summary()!.goals.completed }} goals done</span>
+              </div>
+              <div class="retro-score-col">
+                <span class="r-col-label">Habit Consistency</span>
+                <span class="r-col-val">{{ summary()!.habits.consistencyPct | number:'1.0-0' }}%</span>
+                <span class="r-col-sub">Best streak: {{ summary()!.habits.bestStreak }} days</span>
+              </div>
+              <div class="retro-score-col">
+                <span class="r-col-label">Freelance Revenue</span>
+                <span class="r-col-val">{{ formatINR(summary()!.projects.revenue) }}</span>
+                <span class="r-col-sub">{{ summary()!.projects.completed }} project(s) completed</span>
+              </div>
+              <div class="retro-score-col">
+                <span class="r-col-label">Journal Entries</span>
+                <span class="r-col-val">{{ summary()!.journal.entries }}</span>
+                <span class="r-col-sub">{{ (summary()!.journal.ratio * 100) | number:'1.0-0' }}% of period days</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Key Insights & Highlights -->
+          @if (summary()!.insights.length > 0) {
+            <div class="card retro-insights-card">
+              <h3>Observed Highlights & Trends</h3>
+              <div class="retro-insights-list">
+                @for (ins of summary()!.insights; track ins) {
+                  <div class="retro-insight-item">
+                    <span class="retro-bullet">✦</span>
+                    <span>{{ ins }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Structured Reflection Form -->
+          <div class="retro-reflections-grid">
+            <div class="card retro-prompt-card">
+              <div class="prompt-header">
+                <span class="prompt-icon">🏆</span>
+                <div>
+                  <h4>Wins & Accomplishments</h4>
+                  <p>What went exceptionally well during this {{ range() === '7d' ? 'week' : 'month' }}? What are you most proud of?</p>
+                </div>
+              </div>
+              <textarea
+                class="retro-textarea"
+                [(ngModel)]="retroWins"
+                (ngModelChange)="saveRetroNotes()"
+                placeholder="e.g. Completed client presentation ahead of schedule, stayed consistent with morning workouts, learned Angular signals..."
+                rows="4"
+              ></textarea>
+            </div>
+
+            <div class="card retro-prompt-card">
+              <div class="prompt-header">
+                <span class="prompt-icon">💡</span>
+                <div>
+                  <h4>Challenges & Lessons Learned</h4>
+                  <p>Where did friction occur? What unexpected blockers or distractions happened?</p>
+                </div>
+              </div>
+              <textarea
+                class="retro-textarea"
+                [(ngModel)]="retroChallenges"
+                (ngModelChange)="saveRetroNotes()"
+                placeholder="e.g. Afternoon energy dip on Wednesdays, struggled with late-night phone screen time, need to delegate more..."
+                rows="4"
+              ></textarea>
+            </div>
+
+            <div class="card retro-prompt-card">
+              <div class="prompt-header">
+                <span class="prompt-icon">🎯</span>
+                <div>
+                  <h4>Priorities & Focus for Next Period</h4>
+                  <p>What are the top 1–3 non-negotiable goals for the upcoming {{ range() === '7d' ? 'week' : 'month' }}?</p>
+                </div>
+              </div>
+              <textarea
+                class="retro-textarea"
+                [(ngModel)]="retroNextFocus"
+                (ngModelChange)="saveRetroNotes()"
+                placeholder="e.g. 1. Ship client MVP by Thursday, 2. Hit 100% on gym routine, 3. Protect 8 hours of sleep..."
+                rows="4"
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="retro-save-status">
+            <svg width="14" height="14" fill="none" stroke="#10b981" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Reflections automatically saved in your browser storage</span>
+          </div>
+
+        </div>
+      }
+
+    } @else {
         <div class="card empty-card">
           <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="opacity:0.3"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
           <p>No data yet. Complete tasks, check off habits, and write journal entries to see analytics.</p>
@@ -433,6 +576,234 @@ import { AnalyticsRange, AnalyticsSummary } from '../../../core/models/analytics
 
     .empty-card { padding: 4rem; text-align: center; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 12px; font-size: 0.9rem; }
 
+    /* Header Left & View Switch */
+    .header-left { display: flex; flex-direction: column; gap: 6px; }
+    .view-switch-row { display: flex; align-items: center; }
+    .view-toggle {
+      display: inline-flex; background: var(--bg-secondary); padding: 3px; border-radius: 8px; border: 1px solid var(--border);
+    }
+    .view-btn {
+      display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; font-size: 0.8rem;
+      font-weight: 500; border: none; background: transparent; color: var(--text-muted);
+      cursor: pointer; border-radius: 6px; transition: all 0.15s; font-family: inherit;
+    }
+    .view-btn.active {
+      background: var(--bg-card); color: var(--text-primary); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    /* Retrospective Review Styles */
+    .retrospective-wrap {
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .retro-banner-card {
+      padding: 1.4rem 1.6rem;
+      background: var(--card-surface);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .retro-banner-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .retro-hero {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .retro-tier-badge {
+      display: inline-flex;
+      width: fit-content;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 12px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      background: rgba(16, 185, 129, 0.12);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .retro-tier-badge.gold {
+      background: rgba(245, 158, 11, 0.12);
+      color: #f59e0b;
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+    .retro-tier-badge.silver {
+      background: rgba(99, 102, 241, 0.12);
+      color: #818cf8;
+      border-color: rgba(99, 102, 241, 0.35);
+    }
+    .retro-hero h2 {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin: 2px 0 0;
+    }
+    .retro-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .retro-copy-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.82rem;
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .retro-copy-btn:hover {
+      background: var(--bg-hover);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .retro-scorecard-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-light);
+    }
+    @media (max-width: 768px) {
+      .retro-scorecard-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .retro-scorecard-grid { grid-template-columns: 1fr; }
+    }
+    .retro-score-col {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 10px 14px;
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      border: 1px solid var(--border-light);
+    }
+    .r-col-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+    .r-col-val {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      line-height: 1.1;
+    }
+    .r-col-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .retro-insights-card {
+      padding: 1.25rem 1.4rem;
+      border-radius: 14px;
+    }
+    .retro-insights-card h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin: 0 0 10px;
+    }
+    .retro-insights-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .retro-insight-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: var(--text-primary);
+      line-height: 1.45;
+    }
+    .retro-bullet {
+      color: var(--accent);
+      font-size: 0.9rem;
+      flex-shrink: 0;
+    }
+
+    .retro-reflections-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    @media (max-width: 900px) {
+      .retro-reflections-grid { grid-template-columns: 1fr; }
+    }
+    .retro-prompt-card {
+      padding: 1.25rem;
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .prompt-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .prompt-icon {
+      font-size: 1.3rem;
+      line-height: 1;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .prompt-header h4 {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin: 0 0 2px;
+    }
+    .prompt-header p {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      margin: 0;
+      line-height: 1.35;
+    }
+    .retro-textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      padding: 10px 12px;
+      font-family: inherit;
+      font-size: 0.84rem;
+      resize: vertical;
+      min-height: 90px;
+      line-height: 1.5;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .retro-textarea:focus {
+      border-color: var(--accent);
+    }
+    .retro-save-status {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      padding-top: 4px;
+    }
+
     @media (max-width: 1200px) {
       .kpi-grid { grid-template-columns: repeat(3, 1fr); }
     }
@@ -447,11 +818,32 @@ import { AnalyticsRange, AnalyticsSummary } from '../../../core/models/analytics
 })
 export class AnalyticsPageComponent implements OnInit {
   private analyticsService = inject(AnalyticsService);
+  private toast = inject(ToastService);
 
   ranges: AnalyticsRange[] = ['7d', '30d', '90d', '365d'];
   range = signal<AnalyticsRange>('30d');
+  viewMode = signal<'metrics' | 'retrospective'>('metrics');
   summary = signal<AnalyticsSummary | null>(null);
   loading = signal<boolean>(true);
+
+  // Retrospective review state
+  retroWins = '';
+  retroChallenges = '';
+  retroNextFocus = '';
+
+  setViewMode(mode: 'metrics' | 'retrospective') {
+    this.viewMode.set(mode);
+    if (mode === 'retrospective' && this.range() !== '7d' && this.range() !== '30d') {
+      this.range.set('7d');
+      this.load();
+    } else {
+      this.loadRetroNotes();
+    }
+  }
+
+  setRetroPeriod(r: '7d' | '30d') {
+    this.setRange(r);
+  }
 
   daysInRange = computed(() => {
     const r = this.range();
@@ -582,8 +974,86 @@ export class AnalyticsPageComponent implements OnInit {
   private load() {
     this.loading.set(true);
     this.analyticsService.getSummary(this.range()).subscribe({
-      next: (s) => { this.summary.set(s); this.loading.set(false); },
+      next: (s) => {
+        this.summary.set(s);
+        this.loading.set(false);
+        this.loadRetroNotes();
+      },
       error: () => this.loading.set(false),
+    });
+  }
+
+  retroTierLabel(): string {
+    const s = this.summary();
+    if (!s) return 'Weekly Review';
+    const pct = s.habits.consistencyPct;
+    if (pct >= 80) return '🌟 Outstanding Execution';
+    if (pct >= 60) return '⚡ High Momentum';
+    if (pct >= 40) return '📈 Solid Consistency';
+    return '🌱 Building Foundations';
+  }
+
+  private retroStorageKey(): string {
+    return `do_retro_${this.range()}_${this.summary()?.from ?? 'current'}`;
+  }
+
+  loadRetroNotes() {
+    const key = this.retroStorageKey();
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      try {
+        const data = JSON.parse(raw);
+        this.retroWins = data.wins || '';
+        this.retroChallenges = data.challenges || '';
+        this.retroNextFocus = data.nextFocus || '';
+      } catch {
+        this.retroWins = '';
+        this.retroChallenges = '';
+        this.retroNextFocus = '';
+      }
+    } else {
+      this.retroWins = '';
+      this.retroChallenges = '';
+      this.retroNextFocus = '';
+    }
+  }
+
+  saveRetroNotes() {
+    const key = this.retroStorageKey();
+    localStorage.setItem(key, JSON.stringify({
+      wins: this.retroWins,
+      challenges: this.retroChallenges,
+      nextFocus: this.retroNextFocus,
+      updatedAt: new Date().toISOString(),
+    }));
+  }
+
+  copyRetrospectiveSummary() {
+    const s = this.summary();
+    if (!s) return;
+    const period = this.dateRangeLabel();
+    const tier = this.retroTierLabel();
+    const text = `# ${this.range() === '7d' ? 'Weekly' : 'Monthly'} Retrospective Review (${period})
+Rating: ${tier}
+
+## Executive Scorecard
+- Tasks Completed: ${s.tasks.completed} (${s.tasks.avgPerDay}/day avg)
+- Goals Achieved: ${s.goals.completed} of ${s.goals.total}
+- Habit Consistency: ${Math.round(s.habits.consistencyPct)}% (Best streak: ${s.habits.bestStreak} days)
+- Freelance Revenue: ${this.formatINR(s.projects.revenue)} (${s.projects.completed} projects completed)
+- Journal Coverage: ${s.journal.entries} entries (${Math.round(s.journal.ratio * 100)}% of days active)
+
+## Key Wins & Accomplishments
+${this.retroWins.trim() || 'No notes recorded.'}
+
+## Challenges & Lessons Learned
+${this.retroChallenges.trim() || 'No notes recorded.'}
+
+## Priorities & Focus for Next Period
+${this.retroNextFocus.trim() || 'No notes recorded.'}
+`;
+    navigator.clipboard.writeText(text).then(() => {
+      this.toast.success('Retrospective summary copied to clipboard!');
     });
   }
 

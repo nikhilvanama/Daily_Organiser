@@ -252,6 +252,7 @@ export class TasksService {
       departureTime: dto.departureTime ?? null,           // Train: departure time
       meetingLink: dto.meetingLink ?? null,               // Meeting: video call link
       completedAt: null,
+      subtasks: dto.subtasks ?? [],
       estimatedMins: dto.estimatedMins ?? null,
       trackedMins: 0, // Accumulated tracked time in minutes from the built-in timer; starts at 0
       isTimerActive: false, // Whether the task's timer is currently running
@@ -388,6 +389,11 @@ export class TasksService {
 
   // Private helper that attaches the full category object to a single task by looking up the categoryId in Firebase
   private async withCategory(task: any) {
+    // Ensure subtasks is an array
+    task.subtasks = Array.isArray(task.subtasks)
+      ? task.subtasks
+      : (task.subtasks ? Object.values(task.subtasks) : []);
+
     // If the task has a categoryId, fetch the category record from Firebase and attach it
     if (task.categoryId) {
       task.category = await this.firebase.get(`categories/${task.categoryId}`) ?? null;
