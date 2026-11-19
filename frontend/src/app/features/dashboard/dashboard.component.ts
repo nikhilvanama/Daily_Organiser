@@ -559,8 +559,13 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
     .sched-row.done .sched-title { text-decoration: line-through; }
     .sched-time { font-size: .74rem; font-weight: 700; color: var(--text-muted); width: 44px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
     .sched-chip { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: .85rem; flex-shrink: 0; }
-    .sched-title { font-size: .88rem; font-weight: 600; color: var(--text-primary); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sched-title { font-size: .88rem; font-weight: 600; color: var(--text-primary); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
     .sched-loc { font-size: .72rem; color: var(--text-muted); margin-left: auto; flex-shrink: 0; }
+    @media (max-width: 760px) {
+      .sched-row { flex-wrap: wrap; gap: 4px 10px; }
+      .sched-title { white-space: normal; word-break: break-word; }
+      .sched-loc { margin-left: 0; width: 100%; padding-left: 42px; }
+    }
 
     /* ── Mini calendar ──────────────────────────────────── */
     .mini-cal { padding: .9rem 1rem; flex-shrink: 0; }

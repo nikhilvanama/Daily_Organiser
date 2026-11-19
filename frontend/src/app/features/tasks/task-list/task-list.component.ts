@@ -92,46 +92,63 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
             @for (plan of pagedTasks; track plan.id) {
               <!-- Each plan row: type icon, title/metadata, priority badge, status dropdown, actions -->
               <div class="plan-row" [class.done]="plan.status === 'DONE'">
-                <!-- Plan type icon: white custom glyph on a glowing gradient tile -->
-                <div class="plan-type-icon" [style.background]="tileBg(plan.type)" [style.box-shadow]="tileShadow(plan.type)">
-                  <app-plan-icon [type]="plan.type" [size]="19" />
-                </div>
-                <!-- Main content: title (links to detail page) + metadata (date, time, category) -->
-                <div class="plan-main">
-                  <div class="plan-top">
-                    <a [routerLink]="['/tasks', toSlug(plan.title)]" class="plan-title">{{ plan.title }}</a>
+                <div class="plan-header-side">
+                  <!-- Plan type icon: white custom glyph on a glowing gradient tile -->
+                  <div class="plan-type-icon" [style.background]="tileBg(plan.type)" [style.box-shadow]="tileShadow(plan.type)">
+                    <app-plan-icon [type]="plan.type" [size]="19" />
+                  </div>
+                  <!-- Main content: title (links to detail page) + metadata (date, time, category) -->
+                  <div class="plan-main">
+                    <div class="plan-title-wrap">
+                      <a [routerLink]="['/tasks', toSlug(plan.title)]" class="plan-title" [title]="plan.title">{{ plan.title }}</a>
+                    </div>
                     @if (plan.location) {
-                      <span class="plan-loc">{{ plan.location }}</span>
+                      <div class="plan-loc" [title]="plan.location">
+                        <svg class="loc-pin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                          <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        <span class="loc-text">{{ plan.location }}</span>
+                      </div>
                     }
-                  </div>
-                  <div class="plan-meta">
-                    @if (plan.dueDate) {
-                      <span>{{ plan.dueDate | date:'MMM d' }}{{ plan.endDate ? ' → ' + (plan.endDate | date:'MMM d') : '' }}</span>
-                    }
-                    @if (plan.departureTime) { <span>🕐 {{ plan.departureTime }}{{ plan.endTime ? ' → ' + plan.endTime : '' }}</span> }
-                    @if (plan.startTime) { <span>{{ plan.startTime }}{{ plan.endTime ? ' - ' + plan.endTime : '' }}</span> }
-                    @if (plan.category) { <span [style.color]="plan.category.color">{{ plan.category.name }}</span> }
+                    <div class="plan-meta">
+                      @if (plan.dueDate) {
+                        <span class="meta-item">
+                          <svg class="meta-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                          {{ plan.dueDate | date:'MMM d' }}{{ plan.endDate ? ' → ' + (plan.endDate | date:'MMM d') : '' }}
+                        </span>
+                      }
+                      @if (plan.departureTime) { <span class="meta-item">🕐 {{ plan.departureTime }}{{ plan.endTime ? ' → ' + plan.endTime : '' }}</span> }
+                      @if (plan.startTime) { <span class="meta-item">🕐 {{ plan.startTime }}{{ plan.endTime ? ' - ' + plan.endTime : '' }}</span> }
+                      @if (plan.category) { <span class="meta-category" [style.color]="plan.category.color">● {{ plan.category.name }}</span> }
+                    </div>
                   </div>
                 </div>
-                <!-- Priority badge: color-coded (HIGH=red, MEDIUM=amber, LOW=green) -->
-                <span class="badge badge-{{ plan.priority.toLowerCase() }}">{{ plan.priority }}</span>
-                <!-- Inline status dropdown: allows quick status changes without opening the detail page -->
-                <select class="status-select" [value]="plan.status" (change)="updateStatus(plan, $any($event.target).value)">
-                  <option value="TODO">To Do</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="DONE">Done</option>
-                  <option value="CANCELLED">Cancelled</option>
-                </select>
-                <!-- Action buttons: edit and delete -->
-                <div class="plan-actions">
-                  <!-- Edit button: opens the modal with the task pre-filled -->
-                  <button class="icon-btn" (click)="editPlan(plan)">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                  </button>
-                  <!-- Delete button: asks for confirmation, then removes the task -->
-                  <button class="icon-btn danger" (click)="deletePlan(plan)">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                  </button>
+
+                <div class="plan-controls">
+                  <!-- Priority badge: color-coded (HIGH=red, MEDIUM=amber, LOW=green) -->
+                  <span class="badge badge-{{ plan.priority.toLowerCase() }}">{{ plan.priority }}</span>
+
+                  <div class="plan-ctrl-right">
+                    <!-- Inline status dropdown: allows quick status changes without opening the detail page -->
+                    <select class="status-select" [value]="plan.status" (change)="updateStatus(plan, $any($event.target).value)" aria-label="Change status">
+                      <option value="TODO">To Do</option>
+                      <option value="IN_PROGRESS">In Progress</option>
+                      <option value="DONE">Done</option>
+                      <option value="CANCELLED">Cancelled</option>
+                    </select>
+                    <!-- Action buttons: edit and delete -->
+                    <div class="plan-actions">
+                      <!-- Edit button: opens the modal with the task pre-filled -->
+                      <button class="icon-btn" (click)="editPlan(plan)" title="Edit plan" aria-label="Edit plan">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
+                      <!-- Delete button: asks for confirmation, then removes the task -->
+                      <button class="icon-btn danger" (click)="deletePlan(plan)" title="Delete plan" aria-label="Delete plan">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             }
@@ -184,10 +201,11 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
     /* Plans list card */
     .plans-wrap { overflow: hidden; }
     .plans-list { padding: 0.25rem; }
-    /* Each plan row: horizontal flex with border-bottom separator */
+
+    /* Each plan row: desktop row with clean separation */
     .plan-row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 12px 14px; border-radius: 8px; transition: background 0.1s;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      padding: 12px 14px; border-radius: 8px; transition: background 0.15s ease;
       border-bottom: 1px solid var(--border);
     }
     .plan-row:last-child { border-bottom: none; }
@@ -196,35 +214,232 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
     .plan-row.done { opacity: 0.55; }
     .plan-row.done .plan-title { text-decoration: line-through; }
 
-    /* Plan type icon: white custom glyph on a glowing gradient tile
-       (background + box-shadow come inline from tileBg()/tileShadow()) */
+    /* Left header side on desktop: icon + main content */
+    .plan-header-side {
+      display: flex; align-items: center; gap: 12px;
+      flex: 1; min-width: 0;
+    }
+
+    /* Plan type icon: white custom glyph on a glowing gradient tile */
     .plan-type-icon {
       width: 36px; height: 36px; border-radius: 11px; color: #fff;
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
     }
-    /* Main content column: grows to fill available space */
-    .plan-main { flex: 1; min-width: 0; }
-    .plan-top { display: flex; align-items: center; gap: 8px; }
-    /* Plan title: clickable link to the detail page */
-    .plan-title { font-size: 0.9rem; font-weight: 500; color: var(--text-primary); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .plan-title:hover { color: var(--accent); }
-    .plan-loc { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; }
-    /* Metadata row: date, time range, category name */
-    .plan-meta { display: flex; gap: 8px; font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
-    /* Action buttons container */
-    .plan-actions { display: flex; gap: 2px; }
 
+    /* Main content column */
+    .plan-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+    .plan-title-wrap { display: flex; align-items: center; gap: 8px; }
+    /* Plan title: clickable link to the detail page */
+    .plan-title {
+      font-size: 0.9rem; font-weight: 500; color: var(--text-primary);
+      text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      transition: color 0.15s;
+    }
+    .plan-title:hover { color: var(--accent); }
+
+    /* Plan location chip */
+    .plan-loc {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 0.74rem; font-weight: 500; color: var(--text-secondary);
+      background: var(--bg-hover); padding: 2px 7px; border-radius: 6px;
+      border: 1px solid var(--border-light); width: fit-content; max-width: 100%;
+    }
+    .loc-pin { flex-shrink: 0; color: var(--accent); }
+    .loc-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Metadata row: date, time range, category name */
+    .plan-meta {
+      display: flex; gap: 10px; font-size: 0.72rem; color: var(--text-muted);
+      align-items: center; flex-wrap: wrap;
+    }
+    .meta-item { display: inline-flex; align-items: center; gap: 4px; }
+    .meta-icon { opacity: 0.75; }
+    .meta-category { font-weight: 500; }
+
+    /* Controls: priority badge, status dropdown, actions */
+    .plan-controls {
+      display: flex; align-items: center; gap: 12px;
+      flex-shrink: 0;
+    }
+    .plan-ctrl-right { display: flex; align-items: center; gap: 8px; }
+    .status-select {
+      font-size: 0.78rem; padding: 5px 8px; border-radius: 8px;
+      background: var(--bg-input); border: 1px solid var(--border);
+      color: var(--text-primary); cursor: pointer;
+    }
+    .plan-actions { display: flex; gap: 4px; }
+
+    /* ═══════════════════════════════════════════════════════
+       MOBILE REDESIGN (max-width: 768px)
+       ═══════════════════════════════════════════════════════ */
     @media (max-width: 768px) {
-      .type-filters { gap: 4px; }
-      .chip { padding: 5px 10px; font-size: 0.72rem; }
-      .plan-row { flex-wrap: wrap; gap: 8px; padding: 10px; }
-      .plan-type-icon { width: 30px; height: 30px; font-size: 0.85rem; }
-      .plan-title { font-size: 0.82rem; }
-      .plan-meta { font-size: 0.68rem; }
-      .status-select { font-size: 0.72rem; padding: 3px 6px; }
-      .filter-bar { flex-direction: column; }
-      .filter-input { width: 100%; min-width: auto; }
+      app-page-art { display: none; }
+
+      /* Category filter chips: smooth horizontal scrolling pill row */
+      .type-filters {
+        display: flex;
+        gap: 6px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 2px 2px 6px;
+        scrollbar-width: none;
+      }
+      .type-filters::-webkit-scrollbar { display: none; }
+      .chip { padding: 6px 12px; font-size: 0.76rem; flex-shrink: 0; }
+
+      /* Compact responsive filter bar */
+      .filter-bar {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 8px;
+        padding: 8px 10px;
+        align-items: center;
+      }
+      .filter-input { width: 100%; min-width: 0; padding: 7px 10px; font-size: 0.78rem; }
+      .filter-bar .btn-ghost { padding: 7px 12px; font-size: 0.78rem; }
+
+      /* Mobile Card layout for plans list */
+      .plans-wrap {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        padding: 0;
+      }
+      .plans-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 0;
+      }
+
+      .plan-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 13px 13px 11px;
+        background: var(--card-surface);
+        border: 1px solid var(--card-border);
+        border-radius: 14px;
+        box-shadow: var(--card-shadow);
+      }
+      .plan-row:last-child { border-bottom: 1px solid var(--card-border); }
+      .plan-row:hover { background: var(--card-surface); }
+
+      .plan-header-side {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        width: 100%;
+      }
+      .plan-type-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        margin-top: 1px;
+      }
+
+      .plan-main {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .plan-title-wrap {
+        display: block;
+        width: 100%;
+      }
+      /* Complete plan title: multi-line wrap, full readability */
+      .plan-title {
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 600;
+        line-height: 1.35;
+        color: var(--text-primary);
+        white-space: normal;
+        overflow: visible;
+        word-break: break-word;
+      }
+
+      /* Complete plan location: prominent chip on its own line */
+      .plan-loc {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        background: var(--bg-hover);
+        padding: 3px 8px;
+        border-radius: 6px;
+        border: 1px solid var(--border-light);
+        margin-top: 2px;
+        width: fit-content;
+        max-width: 100%;
+        line-height: 1.3;
+      }
+      .loc-text {
+        white-space: normal;
+        overflow: visible;
+        word-break: break-word;
+      }
+
+      .plan-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 10px;
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+
+      /* Bottom controls footer: priority on left, status + actions on right */
+      .plan-controls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding-top: 9px;
+        margin-top: 2px;
+        border-top: 1px solid var(--border-light);
+        gap: 8px;
+      }
+      .plan-ctrl-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .status-select {
+        height: 30px;
+        font-size: 0.76rem;
+        padding: 0 8px;
+        border-radius: 8px;
+      }
+      .plan-actions .icon-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+      }
+
+      .pager {
+        background: var(--card-surface);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        margin-top: 4px;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .filter-bar {
+        grid-template-columns: 1fr 1fr;
+      }
+      .filter-bar .btn-ghost {
+        grid-column: span 2;
+        text-align: center;
+      }
     }
 
     /* Empty state centered message */

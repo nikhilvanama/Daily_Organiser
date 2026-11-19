@@ -214,6 +214,14 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
     .btn-del:hover { background: rgba(239,68,68,0.1); color: #ef4444; border-color: rgba(239,68,68,0.3); }
 
     .loading { text-align: center; padding: 3rem; color: var(--text-muted); }
+
+    @media (max-width: 768px) {
+      .detail { padding: 1.25rem; }
+      .title-row { flex-direction: column; gap: 0.75rem; }
+      .title-row h1 { font-size: 1.3rem; word-break: break-word; }
+      .detail-actions { width: 100%; }
+      .detail-actions .action-btn, .detail-actions .btn-del { flex: 1; }
+    }
   `],
 })
 export class TaskDetailComponent implements OnInit {

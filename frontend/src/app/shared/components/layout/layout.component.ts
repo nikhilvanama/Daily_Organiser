@@ -127,17 +127,16 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
         </svg>
         <span>Calendar</span>
       </a>
-      <button class="tab" (click)="sidebarOpen.set(true)">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round">
-          <rect x="4" y="4" width="7" height="7" rx="2.2" fill="currentColor" opacity=".25" stroke="none"/>
-          <rect x="4" y="4" width="7" height="7" rx="2.2"/>
-          <rect x="13" y="4" width="7" height="7" rx="2.2"/>
-          <rect x="4" y="13" width="7" height="7" rx="2.2"/>
-          <rect x="13" y="13" width="7" height="7" rx="2.2" fill="currentColor" opacity=".25" stroke="none"/>
-          <rect x="13" y="13" width="7" height="7" rx="2.2"/>
+      <a routerLink="/habits" routerLinkActive="active" class="tab" title="Daily Routine">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+          <circle cx="12" cy="12" r="8.6"/>
+          <path d="M12 12 12 7.2" />
+          <path d="m12 12 3.4 2.2"/>
+          <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+          <path d="M12 3.4v1M20.6 12h-1M12 20.6v-1M3.4 12h1" opacity=".55"/>
         </svg>
-        <span>More</span>
-      </button>
+        <span>Daily Routine</span>
+      </a>
     </nav>
 
     <app-toast-container />
@@ -204,7 +203,13 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
         text-decoration: none; cursor: pointer; border-radius: 12px; padding: 0;
         font-family: inherit;
       }
-      .tab span { font-size: 0.6rem; font-weight: 600; letter-spacing: 0.02em; line-height: 1; }
+      .tab span {
+        font-size: 0.58rem; font-weight: 600; letter-spacing: 0.01em; line-height: 1.1;
+        white-space: nowrap; text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+      }
+      @media (max-width: 360px) {
+        .tab span { font-size: 0.52rem; }
+      }
       .tab svg { transition: transform 0.15s; }
       .tab.active { color: var(--accent); }
       .tab.active svg { transform: translateY(-1px); }
