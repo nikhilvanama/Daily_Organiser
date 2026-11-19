@@ -244,12 +244,11 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
     }
     .plan-title:hover { color: var(--accent); }
 
-    /* Plan location chip */
+    /* Plan location (clean text with map pin, no pill background) */
     .plan-loc {
       display: inline-flex; align-items: center; gap: 4px;
-      font-size: 0.74rem; font-weight: 500; color: var(--text-secondary);
-      background: var(--bg-hover); padding: 2px 7px; border-radius: 6px;
-      border: 1px solid var(--border-light); width: fit-content; max-width: 100%;
+      font-size: 0.74rem; font-weight: 500; color: var(--text-muted);
+      width: fit-content; max-width: 100%;
       line-height: 1.25;
     }
     .loc-pin { flex-shrink: 0; color: var(--accent); }
@@ -261,7 +260,7 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
       flex-shrink: 0;
     }
     .plan-meta-left {
-      display: flex; align-items: center; gap: 8px; font-size: 0.74rem; color: var(--text-muted);
+      display: flex; align-items: center; gap: 10px; font-size: 0.74rem; color: var(--text-muted);
     }
     .prio-dot {
       width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0;
@@ -286,8 +285,6 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
        MOBILE REDESIGN (max-width: 768px)
        ═══════════════════════════════════════════════════════ */
     @media (max-width: 768px) {
-      app-page-art { display: none; }
-
       /* Category filter chips: smooth horizontal scrolling pill row */
       .type-filters {
         display: flex;
@@ -392,18 +389,14 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
         word-break: break-word;
       }
 
-      /* Complete plan location: prominent chip on its own line */
+      /* Complete plan location: clean text without pill background */
       .plan-loc {
         display: inline-flex;
         align-items: center;
         gap: 4px;
         font-size: 0.74rem;
         font-weight: 500;
-        color: var(--text-secondary);
-        background: var(--bg-hover);
-        padding: 2px 7px;
-        border-radius: 6px;
-        border: 1px solid var(--border-light);
+        color: var(--text-muted);
         margin-top: 1px;
         width: fit-content;
         max-width: 100%;
@@ -429,7 +422,7 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
       .plan-meta-left {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 9px;
         flex-wrap: wrap;
         font-size: 0.72rem;
         color: var(--text-muted);
