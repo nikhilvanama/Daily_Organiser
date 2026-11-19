@@ -4,9 +4,9 @@ import { Component, inject, OnInit } from '@angular/core';
 // RouterLink creates navigable links to individual task detail pages
 import { RouterLink } from '@angular/router';
 // DatePipe formats due dates
-import { DatePipe, TitleCasePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 // FormBuilder creates the filter form; ReactiveFormsModule enables [formGroup] in the template
-import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 // TaskService provides the tasks$ observable and CRUD methods
 import { TaskService } from '../task.service';
 import { slugify } from '../../../core/utils/slugify';
@@ -17,11 +17,10 @@ import { TaskFormComponent } from '../task-form/task-form.component';
 // ToastService shows success/error feedback after task operations
 import { ToastService } from '../../../core/services/toast.service';
 // Task model and PLAN_TYPES for type-specific icons and colors
-import { Task, PLAN_TYPES, TaskStatus, PlanType } from '../../../core/models/task.model';
+import { Task, PLAN_TYPES, TaskStatus } from '../../../core/models/task.model';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 // Custom duotone category glyphs (replaces the emoji icons)
 import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-icon.component';
-import { parseNaturalLanguagePlan, ParsedSmartPlan } from '../../../core/utils/smart-capture.util';
 
 // TaskListComponent ("My Plans" page) displays all the user's tasks/plans with filtering
 // by plan type (chips), status, and priority. Each plan row shows type icon, title, metadata,
@@ -29,82 +28,22 @@ import { parseNaturalLanguagePlan, ParsedSmartPlan } from '../../../core/utils/s
 @Component({
   selector: 'app-task-list', // Loaded by the router at /tasks
   standalone: true, // Angular 19 standalone component
-  imports: [RouterLink, DatePipe, TitleCasePipe, FormsModule, ReactiveFormsModule, ModalComponent, TaskFormComponent, ConfirmDialogComponent, PlanIconComponent, PageArtComponent],
+  imports: [RouterLink, DatePipe, ReactiveFormsModule, ModalComponent, TaskFormComponent, ConfirmDialogComponent, PlanIconComponent, PageArtComponent],
   template: `
     <!-- Page container with fade-in animation -->
     <div class="page animate-in">
-      <!-- Page header: title + view toggle + "Add Plan" button -->
+      <!-- Page header: title + "Add Plan" button -->
       <div class="page-header">
         <app-page-art scene="plans" />
         <div>
           <h2>My Plans</h2>
           <p>All your tasks, trips, meetings & reminders</p>
         </div>
-        <div class="header-actions">
-          <div class="view-toggle">
-            <button class="view-btn" [class.active]="viewMode === 'list'" (click)="setViewMode('list')" title="List View">
-              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-              <span>List</span>
-            </button>
-            <button class="view-btn" [class.active]="viewMode === 'kanban'" (click)="setViewMode('kanban')" title="Kanban Board View">
-              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="15" rx="1"/></svg>
-              <span>Board</span>
-            </button>
-          </div>
-          <!-- Opens the modal for creating a new plan -->
-          <button class="btn-primary" (click)="openCreateModal()">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add Plan
-          </button>
-        </div>
-      </div>
-
-      <!-- Natural Language Quick Add ("Smart Capture") -->
-      <div class="card smart-capture-card">
-        <div class="smart-input-row">
-          <div class="smart-icon" title="Smart Capture active">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="url(#smartGrad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <defs>
-                <linearGradient id="smartGrad" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stop-color="#10b981"/>
-                  <stop offset="100%" stop-color="#06b6d4"/>
-                </linearGradient>
-              </defs>
-              <path d="M12 2l2.4 5.6 5.6 2.4-5.6 2.4-2.4 5.6-2.4-5.6-5.6-2.4 5.6-2.4z"/>
-            </svg>
-          </div>
-          <input
-            type="text"
-            class="smart-input"
-            [(ngModel)]="smartInput"
-            (input)="onSmartInputChange()"
-            (keydown.enter)="$event.preventDefault(); submitSmartCapture()"
-            placeholder="Smart Capture: e.g. 'Flight to Mumbai tomorrow at 6:30am #trip !high' or 'Dinner at Starbucks on Saturday 8pm'..."
-          />
-          <button class="btn-primary sm-btn" (click)="submitSmartCapture()" [disabled]="!smartInput.trim() || isSubmittingSmart">
-            {{ isSubmittingSmart ? 'Adding...' : '+ Quick Add' }}
-          </button>
-        </div>
-
-        @if (parsedSmartPlan; as p) {
-          <div class="smart-preview-chips">
-            <span class="preview-label">Parsed preview:</span>
-            <span class="preview-chip type-chip" [style.background]="getPlanTypeColor(p.type) + '22'" [style.color]="getPlanTypeColor(p.type)">
-              {{ getPlanTypeIcon(p.type) }} {{ p.type | titlecase }}
-            </span>
-            @if (p.dueDate) {
-              <span class="preview-chip date-chip">📅 {{ p.dueDate | date:'MMM d, y' }}</span>
-            }
-            @if (p.startTime) {
-              <span class="preview-chip time-chip">⏰ {{ p.startTime }}</span>
-            }
-            @if (p.location) {
-              <span class="preview-chip loc-chip">📍 {{ p.location }}</span>
-            }
-            <span class="preview-chip prio-chip prio-{{ p.priority.toLowerCase() }}">⚡ {{ p.priority }}</span>
-            <span class="preview-title" [title]="p.title">"{{ p.title }}"</span>
-          </div>
-        }
+        <!-- Opens the modal for creating a new plan -->
+        <button class="btn-primary" (click)="openCreateModal()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Plan
+        </button>
       </div>
 
       <!-- Plan type filter chips: "All" + one chip per plan type (task, trip, meeting, etc.) -->
@@ -122,7 +61,7 @@ import { parseNaturalLanguagePlan, ParsedSmartPlan } from '../../../core/utils/s
         }
       </div>
 
-      <!-- Status and priority filter dropdowns -->
+      <!-- Status and priority filter dropdowns + View mode toggle at right end -->
       <div class="card filter-bar" [formGroup]="filterForm">
         <select class="input filter-input" formControlName="status">
           <option value="">All statuses</option>
@@ -138,6 +77,20 @@ import { parseNaturalLanguagePlan, ParsedSmartPlan } from '../../../core/utils/s
         </select>
         <!-- Reset button clears all filters and reloads the unfiltered list -->
         <button class="btn-ghost sm" (click)="resetFilters()">Reset</button>
+
+        <div class="filter-spacer"></div>
+
+        <!-- View mode toggle at right end of filters row -->
+        <div class="view-toggle">
+          <button class="view-btn" [class.active]="viewMode === 'list'" (click)="setViewMode('list')" title="List View" aria-label="List View">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            <span class="view-btn-text">List</span>
+          </button>
+          <button class="view-btn" [class.active]="viewMode === 'kanban'" (click)="setViewMode('kanban')" title="Kanban Board View" aria-label="Kanban Board View">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="15" rx="1"/></svg>
+            <span class="view-btn-text">Board</span>
+          </button>
+        </div>
       </div>
 
       @if (viewMode === 'list') {
@@ -479,11 +432,14 @@ import { parseNaturalLanguagePlan, ParsedSmartPlan } from '../../../core/utils/s
     /* Active chip: filled with accent color */
     .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-    /* Header Actions & View Toggle */
-    .header-actions { display: flex; align-items: center; gap: 10px; }
+    /* Filter bar & View mode toggle */
+    .filter-bar { display: flex; gap: 10px; padding: 10px 14px; align-items: center; flex-wrap: wrap; }
+    .filter-input { width: auto; min-width: 130px; padding: 7px 12px; font-size: 0.82rem; }
+    .sm { font-size: 0.78rem; padding: 7px 12px; }
+    .filter-spacer { flex: 1; min-width: 8px; }
     .view-toggle {
       display: inline-flex; background: var(--bg-secondary); padding: 3px; border-radius: 10px;
-      border: 1px solid var(--border);
+      border: 1px solid var(--border); margin-left: auto;
     }
     .view-btn {
       display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; font-size: 0.8rem;
@@ -494,37 +450,7 @@ import { parseNaturalLanguagePlan, ParsedSmartPlan } from '../../../core/utils/s
       background: var(--card-surface, var(--bg-card)); color: var(--text-primary);
       font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.15);
     }
-
-    /* Smart Quick Add Bar */
-    .smart-capture-card {
-      padding: 10px 14px; background: var(--card-surface, var(--bg-card));
-      border: 1px solid var(--card-border, var(--border)); border-radius: 14px;
-      display: flex; flex-direction: column; gap: 8px; margin-bottom: 2px;
-    }
-    .smart-input-row { display: flex; align-items: center; gap: 10px; }
-    .smart-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .smart-input {
-      flex: 1; border: none; background: transparent; font-size: 0.88rem; color: var(--text-primary);
-      outline: none; font-family: inherit;
-    }
-    .smart-input::placeholder { color: var(--text-muted); font-size: 0.82rem; }
-    .smart-preview-chips {
-      display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding-top: 6px;
-      border-top: 1px dashed var(--border-light); font-size: 0.74rem;
-    }
-    .preview-label { color: var(--text-muted); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
-    .preview-chip {
-      display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px;
-      font-size: 0.72rem; font-weight: 500; background: var(--bg-secondary);
-      border: 1px solid var(--border-light); color: var(--text-secondary);
-    }
-    .preview-chip.prio-high { color: #ef4444; background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); }
-    .preview-chip.prio-medium { color: #f59e0b; background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); }
-    .preview-chip.prio-low { color: #10b981; background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); }
-    .preview-title {
-      color: var(--text-primary); font-weight: 600; font-style: italic; max-width: 250px;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
+    .view-btn-text { display: inline; }
 
     /* Subtask Badge in List */
     .meta-subtask-badge {
@@ -623,11 +549,6 @@ import { parseNaturalLanguagePlan, ParsedSmartPlan } from '../../../core/utils/s
     .k-move-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border); }
     .k-move-btn.done:hover { background: rgba(16, 185, 129, 0.12); color: #10b981; border-color: rgba(16, 185, 129, 0.4); }
     .k-move-btn.reopen:hover { background: rgba(59, 130, 246, 0.12); color: #3b82f6; border-color: rgba(59, 130, 246, 0.4); }
-
-    /* Filter bar: horizontal flex with dropdown selects and reset button */
-    .filter-bar { display: flex; gap: 10px; padding: 10px 14px; align-items: center; flex-wrap: wrap; }
-    .filter-input { width: auto; min-width: 130px; padding: 7px 12px; font-size: 0.82rem; }
-    .sm { font-size: 0.78rem; padding: 7px 12px; }
 
     /* Plans list card */
     .plans-wrap { overflow: hidden; }
@@ -729,16 +650,36 @@ import { parseNaturalLanguagePlan, ParsedSmartPlan } from '../../../core/utils/s
       .type-filters::-webkit-scrollbar { display: none; }
       .chip { padding: 6px 12px; font-size: 0.76rem; flex-shrink: 0; }
 
-      /* Compact responsive filter bar */
+      /* Compact responsive filter bar with view toggle on the right */
       .filter-bar {
-        display: grid;
-        grid-template-columns: 1fr 1fr auto;
+        display: flex;
+        align-items: center;
         gap: 8px;
         padding: 8px 10px;
-        align-items: center;
+        flex-wrap: wrap;
       }
-      .filter-input { width: 100%; min-width: 0; padding: 7px 10px; font-size: 0.78rem; }
-      .filter-bar .btn-ghost { padding: 7px 12px; font-size: 0.78rem; }
+      .filter-input {
+        flex: 1 1 calc(50% - 4px);
+        min-width: 110px;
+        padding: 7px 10px;
+        font-size: 0.78rem;
+      }
+      .filter-bar .btn-ghost {
+        padding: 6px 12px;
+        font-size: 0.78rem;
+      }
+      .filter-spacer {
+        display: none;
+      }
+      .view-toggle {
+        margin-left: auto;
+      }
+      .view-btn {
+        padding: 5px 8px;
+      }
+      .view-btn-text {
+        display: none;
+      }
 
       /* Mobile Card layout for plans list */
       .plans-wrap {
@@ -893,17 +834,6 @@ import { parseNaturalLanguagePlan, ParsedSmartPlan } from '../../../core/utils/s
         margin-top: 4px;
       }
 
-      .header-actions {
-        width: 100%;
-        justify-content: space-between;
-      }
-      .view-toggle {
-        flex: 1;
-      }
-      .view-btn {
-        flex: 1;
-        justify-content: center;
-      }
       .kanban-grid {
         display: flex;
         overflow-x: auto;
@@ -917,25 +847,6 @@ import { parseNaturalLanguagePlan, ParsedSmartPlan } from '../../../core/utils/s
         flex: 0 0 85%;
         min-width: 85%;
         scroll-snap-align: center;
-      }
-      .smart-capture-card {
-        padding: 8px 12px;
-      }
-      .smart-input-row {
-        flex-wrap: wrap;
-      }
-      .smart-input-row .btn-primary {
-        width: 100%;
-      }
-    }
-
-    @media (max-width: 380px) {
-      .filter-bar {
-        grid-template-columns: 1fr 1fr;
-      }
-      .filter-bar .btn-ghost {
-        grid-column: span 2;
-        text-align: center;
       }
     }
 
@@ -967,51 +878,6 @@ export class TaskListComponent implements OnInit {
   setViewMode(mode: 'list' | 'kanban') {
     this.viewMode = mode;
     localStorage.setItem('do_plans_view', mode);
-  }
-
-  // Smart Capture state
-  smartInput = '';
-  parsedSmartPlan: ParsedSmartPlan | null = null;
-  isSubmittingSmart = false;
-
-  onSmartInputChange() {
-    this.parsedSmartPlan = parseNaturalLanguagePlan(this.smartInput);
-  }
-
-  submitSmartCapture() {
-    const parsed = this.parsedSmartPlan || parseNaturalLanguagePlan(this.smartInput);
-    if (!parsed || !parsed.title.trim()) return;
-
-    this.isSubmittingSmart = true;
-    this.taskService.create({
-      title: parsed.title,
-      type: parsed.type,
-      priority: parsed.priority,
-      dueDate: parsed.dueDate,
-      startTime: parsed.startTime,
-      location: parsed.location,
-      status: 'TODO',
-    }).subscribe({
-      next: () => {
-        this.isSubmittingSmart = false;
-        this.smartInput = '';
-        this.parsedSmartPlan = null;
-        this.toast.success('Plan captured with Smart Quick Add!');
-        this.loadTasks();
-      },
-      error: () => {
-        this.isSubmittingSmart = false;
-        this.toast.error('Failed to capture plan');
-      }
-    });
-  }
-
-  getPlanTypeColor(type: PlanType): string {
-    return this.planTypes.find(t => t.value === type)?.color ?? '#3b82f6';
-  }
-
-  getPlanTypeIcon(type: PlanType): string {
-    return this.planTypes.find(t => t.value === type)?.icon ?? '✓';
   }
 
   subtaskInfo(plan: Task): { done: number; total: number; pct: number } | null {
