@@ -33,7 +33,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
   styles: [`
     /* Backdrop: fixed overlay that dims the background and centers the modal panel */
     .modal-backdrop {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000;
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1100;
       display: flex; align-items: center; justify-content: center; padding: 1rem;
     }
     /* Modal panel: card-styled container with theme-aware colors and a subtle shadow */

@@ -459,20 +459,25 @@ interface CalendarDay {
 
     /* Day Detail Side Panel */
     /* Overlay: semi-transparent backdrop behind the panel */
-    .day-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 900; }
+    .day-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+      z-index: 1040;
+    }
     /* Panel: fixed on the right side of the viewport */
     .day-panel {
-      position: fixed; top: 0; right: 0; bottom: 0; width: 400px;
+      position: fixed; top: 0; right: 0; bottom: 0; width: 420px;
       background: var(--bg-card); border-left: 1px solid var(--border);
-      z-index: 901; display: flex; flex-direction: column;
-      box-shadow: -8px 0 30px rgba(0,0,0,0.15); overflow-y: auto;
+      z-index: 1045; display: flex; flex-direction: column;
+      box-shadow: -8px 0 32px rgba(0,0,0,0.25); overflow-y: auto;
     }
     /* Panel header */
     .day-panel-header {
-      display: flex; justify-content: space-between; align-items: flex-start;
-      padding: 1.5rem; border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; background: var(--bg-card); z-index: 10;
     }
-    .day-panel-header h3 { font-size: 1.125rem; font-weight: 700; margin: 0 0 2px; color: var(--text-primary); }
+    .day-panel-header h3 { font-size: 1.15rem; font-weight: 700; margin: 0 0 2px; color: var(--text-primary); }
     .day-panel-header p { font-size: 0.82rem; color: var(--text-secondary); margin: 0; }
 
     /* Tasks section within the day panel */
@@ -502,7 +507,12 @@ interface CalendarDay {
     .note-input { font-size: 0.85rem; min-height: 60px; }
 
     /* Icon button for the close button */
-    .icon-btn { background: transparent; border: none; padding: 6px; border-radius: 6px; cursor: pointer; color: var(--text-muted); display: flex; }
+    .icon-btn {
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      width: 34px; height: 34px; border-radius: 9px; cursor: pointer;
+      color: var(--text-secondary); display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
     .icon-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
 
     @media (max-width: 768px) {
@@ -517,7 +527,19 @@ interface CalendarDay {
       }
       .cal-grid { min-width: 730px; }
       .cal-cell { min-height: 104px; }
-      .day-panel { width: 100%; }
+      .day-overlay { z-index: 1040; }
+      .day-panel {
+        width: 100%; z-index: 1045;
+        top: 0; bottom: 0; left: 0; right: 0;
+        border-left: none;
+      }
+      .day-panel-header {
+        padding: 1rem 1.25rem;
+        padding-top: max(1rem, env(safe-area-inset-top));
+      }
+      .day-notes {
+        padding-bottom: max(1.5rem, calc(1rem + env(safe-area-inset-bottom)));
+      }
     }
   `],
 })

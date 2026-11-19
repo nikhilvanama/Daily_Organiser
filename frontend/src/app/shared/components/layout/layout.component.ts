@@ -23,7 +23,17 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
     <div class="layout">
       <!-- Mobile top bar -->
       <div class="mobile-topbar">
-        <span class="mobile-title">Daily Organizer</span>
+        <a routerLink="/dashboard" class="mobile-brand" title="Daily Organizer">
+          <div class="mobile-logo-icon">
+            <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2.4" viewBox="0 0 24 24">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <span class="mobile-title">Daily Organizer</span>
+        </a>
 
         <div class="mobile-actions">
           <!-- Search button -->
@@ -397,8 +407,19 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
       .ai-orb svg { width: 28px; height: 28px; }
       .tab-ai:active .ai-orb { transform: scale(0.92); }
 
+      .mobile-brand {
+        display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;
+        text-decoration: none;
+      }
+      .mobile-logo-icon {
+        width: 32px; height: 32px; border-radius: 9px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 2px 8px var(--accent-glow);
+        flex-shrink: 0;
+      }
       .mobile-title {
-        flex: 1; font-size: 1.05rem; font-weight: 700; color: var(--text-primary);
+        font-size: 1.02rem; font-weight: 700; color: var(--text-primary);
         letter-spacing: -0.015em;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
       }
