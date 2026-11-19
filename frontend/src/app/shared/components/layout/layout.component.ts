@@ -11,6 +11,7 @@ import { GlobalSearchComponent, GlobalSearchService } from '../global-search/glo
 import { AiChatComponent } from '../ai-chat/ai-chat.component';
 import { GoogleCalendarService } from '../../../core/services/google-calendar.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
 
@@ -22,29 +23,74 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
     <div class="layout">
       <!-- Mobile top bar -->
       <div class="mobile-topbar">
-        <button class="hamburger" (click)="sidebarOpen.set(true)">
+        <button class="hamburger" (click)="sidebarOpen.set(true)" title="Menu" aria-label="Menu">
           <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
           </svg>
         </button>
         <span class="mobile-title">Daily Organizer</span>
-        <button class="mobile-gcal" [class.gcal-on]="gcal.connected()" (click)="handleGcal()"
-          [title]="gcal.connected() ? (gcalSyncing ? 'Syncing…' : 'Sync to Google Calendar') : 'Connect Google Calendar'">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-          </svg>
-          @if (gcal.connected()) { <span class="mobile-gcal-dot"></span> }
-        </button>
-        <button class="mobile-theme" (click)="themeService.toggle()">
-          @if (themeService.theme() === 'light') {
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-          } @else {
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>
-          }
-        </button>
+
+        <div class="mobile-actions">
+          <!-- Search button -->
+          <button class="mobile-icon-btn" (click)="globalSearch.open()" title="Search (Ctrl+K)" aria-label="Search">
+            <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </button>
+
+          <!-- Google Calendar sync -->
+          <button class="mobile-gcal" [class.gcal-on]="gcal.connected()" (click)="handleGcal()"
+            [title]="gcal.connected() ? (gcalSyncing ? 'Syncing…' : 'Sync to Google Calendar') : 'Connect Google Calendar'" aria-label="Google Calendar">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            @if (gcal.connected()) { <span class="mobile-gcal-dot"></span> }
+          </button>
+
+          <!-- Theme toggle -->
+          <button class="mobile-theme" (click)="themeService.toggle()" title="Toggle theme" aria-label="Toggle theme">
+            @if (themeService.theme() === 'light') {
+              <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+            } @else {
+              <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>
+            }
+          </button>
+
+          <!-- Profile circle avatar with dropdown -->
+          <div class="mobile-profile-wrap">
+            <button class="mobile-avatar-btn" (click)="toggleProfileMenu($event)" title="Profile menu" aria-label="Open profile menu">
+              <span class="mobile-avatar">{{ getUserInitial() }}</span>
+            </button>
+
+            @if (profileMenuOpen()) {
+              <div class="mobile-dropdown-backdrop" (click)="profileMenuOpen.set(false)"></div>
+              <div class="mobile-profile-dropdown" (click)="$event.stopPropagation()">
+                <div class="mp-header">
+                  <span class="mp-avatar">{{ getUserInitial() }}</span>
+                  <div class="mp-user">
+                    <strong class="mp-name">{{ getUserName() }}</strong>
+                    <span class="mp-email">{{ getUserEmail() }}</span>
+                  </div>
+                </div>
+
+                <div class="mp-divider"></div>
+
+                <a routerLink="/profile" class="mp-item" (click)="profileMenuOpen.set(false)">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  <span>Profile Page</span>
+                </a>
+
+                <button class="mp-item mp-logout" (click)="handleLogout()">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                  <span>Quick Logout</span>
+                </button>
+              </div>
+            }
+          </div>
+        </div>
       </div>
 
       <!-- Sidebar overlay for mobile -->
@@ -230,28 +276,106 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
       .tab-ai:active .ai-orb { transform: scale(0.92); }
       .hamburger {
         display: flex; align-items: center; justify-content: center;
-        width: 36px; height: 36px; border-radius: 8px;
+        width: 34px; height: 34px; border-radius: 8px;
         background: transparent; border: none; cursor: pointer;
-        color: var(--text-primary);
+        color: var(--text-primary); flex-shrink: 0;
       }
       .hamburger:hover { background: var(--bg-hover); }
-      .mobile-title { flex: 1; font-size: 0.95rem; font-weight: 700; color: var(--text-primary); }
-      .mobile-theme {
+      .mobile-title {
+        flex: 1; font-size: 0.92rem; font-weight: 700; color: var(--text-primary);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+      }
+      .mobile-actions {
+        display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+      }
+      .mobile-icon-btn, .mobile-theme, .mobile-gcal {
         display: flex; align-items: center; justify-content: center;
-        width: 36px; height: 36px; border-radius: 8px;
-        background: transparent; border: 1px solid var(--border); cursor: pointer;
-        color: var(--text-secondary);
+        width: 32px; height: 32px; border-radius: 8px;
+        background: var(--bg-secondary); border: 1px solid var(--border); cursor: pointer;
+        color: var(--text-secondary); transition: all 0.15s; padding: 0; flex-shrink: 0;
       }
-      .mobile-theme:hover { background: var(--bg-hover); }
-      .mobile-gcal {
-        position: relative; display: flex; align-items: center; justify-content: center;
-        width: 36px; height: 36px; border-radius: 8px;
-        background: transparent; border: 1px solid var(--border); cursor: pointer;
+      .mobile-icon-btn:hover, .mobile-theme:hover, .mobile-gcal:hover {
+        background: var(--bg-hover); color: var(--text-primary);
       }
+      .mobile-gcal { position: relative; }
       .mobile-gcal.gcal-on { border-color: rgba(16, 185, 129, 0.45); background: rgba(16, 185, 129, 0.06); }
       .mobile-gcal-dot {
-        position: absolute; top: 5px; right: 5px; width: 7px; height: 7px;
+        position: absolute; top: 4px; right: 4px; width: 6px; height: 6px;
         background: #10b981; border-radius: 50%; border: 1.5px solid var(--bg-card);
+      }
+
+      .mobile-profile-wrap {
+        position: relative; display: flex; align-items: center;
+      }
+      .mobile-avatar-btn {
+        background: transparent; border: none; padding: 0; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 50%; outline: none;
+      }
+      .mobile-avatar {
+        width: 30px; height: 30px; border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+        color: #fff; font-weight: 700; font-size: 0.78rem;
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 2px 8px var(--accent-glow);
+        border: 1.5px solid var(--border); text-transform: uppercase;
+      }
+      .mobile-dropdown-backdrop {
+        position: fixed; inset: 0; z-index: 1009; background: transparent;
+      }
+      .mobile-profile-dropdown {
+        position: absolute; top: calc(100% + 10px); right: 0; z-index: 1010;
+        min-width: 210px; max-width: 270px;
+        background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+        padding: 6px; display: flex; flex-direction: column; gap: 3px;
+        animation: dropdownIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      @keyframes dropdownIn {
+        from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      .mp-header {
+        display: flex; align-items: center; gap: 9px;
+        padding: 8px 10px;
+      }
+      .mp-avatar {
+        width: 32px; height: 32px; border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+        color: #fff; font-weight: 700; font-size: 0.82rem;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; box-shadow: 0 2px 8px var(--accent-glow);
+        text-transform: uppercase;
+      }
+      .mp-user {
+        display: flex; flex-direction: column; overflow: hidden;
+      }
+      .mp-name {
+        font-size: 0.84rem; font-weight: 600; color: var(--text-primary);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .mp-email {
+        font-size: 0.72rem; color: var(--text-secondary);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .mp-divider {
+        height: 1px; background: var(--border); margin: 3px 6px;
+      }
+      .mp-item {
+        display: flex; align-items: center; gap: 9px;
+        width: 100%; padding: 8px 10px; border: none; background: transparent;
+        border-radius: 8px; font-family: inherit; font-size: 0.82rem;
+        font-weight: 500; color: var(--text-primary); text-decoration: none;
+        cursor: pointer; transition: background 0.12s; box-sizing: border-box;
+      }
+      .mp-item:hover, .mp-item:active {
+        background: var(--bg-hover);
+      }
+      .mp-logout {
+        color: #ef4444;
+      }
+      .mp-logout:hover, .mp-logout:active {
+        background: rgba(239, 68, 68, 0.1);
       }
 
       .sidebar-wrap {
@@ -269,14 +393,17 @@ const BOARD_ROUTES = new Set(['/trips', '/buy-list']);
   `],
 })
 export class LayoutComponent implements OnInit, OnDestroy {
+  auth = inject(AuthService);
   themeService = inject(ThemeService);
   private idle = inject(IdleService);
   private router = inject(Router);
-  private globalSearch = inject(GlobalSearchService);
+  globalSearch = inject(GlobalSearchService);
   gcal = inject(GoogleCalendarService);
   private toast = inject(ToastService);
   sidebarOpen = signal(false);
+  profileMenuOpen = signal(false);
   gcalSyncing = false;
+  private routerSub?: any;
 
   // Center tab of the mobile tab bar opens the AI assistant panel
   @ViewChild(AiChatComponent) private aiChat?: AiChatComponent;
@@ -287,6 +414,31 @@ export class LayoutComponent implements OnInit, OnDestroy {
   contentScrolled = signal(false);
   onContentScroll(e: Event) {
     this.contentScrolled.set((e.target as HTMLElement).scrollTop > 24);
+  }
+
+  toggleProfileMenu(e?: Event) {
+    e?.stopPropagation();
+    this.profileMenuOpen.update(v => !v);
+  }
+
+  handleLogout() {
+    this.profileMenuOpen.set(false);
+    this.auth.logout();
+  }
+
+  getUserInitial(): string {
+    const u = this.auth.currentUser();
+    return (u?.displayName ?? u?.username ?? 'U')[0].toUpperCase();
+  }
+
+  getUserName(): string {
+    const u = this.auth.currentUser();
+    return u?.displayName ?? u?.username ?? 'User';
+  }
+
+  getUserEmail(): string {
+    const u = this.auth.currentUser();
+    return u?.email ?? '';
   }
 
   // Same behavior as the desktop topbar button (hidden on phones):
@@ -327,19 +479,31 @@ export class LayoutComponent implements OnInit, OnDestroy {
   );
 
   ngOnInit() {
+    if (this.auth.isLoggedIn() && !this.auth.currentUser()) {
+      this.auth.loadCurrentUser().subscribe();
+    }
     // The layout is only mounted for authenticated users (route is behind authGuard),
     // so this is the right place to start the idle-timeout watcher.
     this.idle.start();
+
+    this.routerSub = this.router.events.subscribe((e) => {
+      if (e instanceof NavigationEnd) {
+        this.profileMenuOpen.set(false);
+        this.sidebarOpen.set(false);
+      }
+    });
   }
 
   ngOnDestroy() {
     this.idle.stop();
+    this.routerSub?.unsubscribe();
   }
 
   closeSidebarOnNav(event: Event) {
     const target = event.target as HTMLElement;
     if (target.closest('a[routerLink]')) {
       this.sidebarOpen.set(false);
+      this.profileMenuOpen.set(false);
     }
   }
 }
