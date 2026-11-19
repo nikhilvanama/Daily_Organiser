@@ -176,16 +176,16 @@ import { ThemeService } from '../../../core/services/theme.service';
 
     :host-context([data-theme="dark"]) .auth-card,
     .dark-theme-card {
-      background: rgba(13, 22, 42, 0.65) !important;
+      background: linear-gradient(165deg, rgba(14, 22, 44, 0.93) 0%, rgba(7, 12, 25, 0.96) 100%) !important;
       backdrop-filter: blur(28px) saturate(190%) !important;
       -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
-      border: 1px solid rgba(147, 197, 253, 0.18) !important;
+      border: 1px solid rgba(147, 197, 253, 0.22) !important;
       border-radius: 24px !important;
       box-shadow: 
-        0 30px 65px -15px rgba(2, 6, 23, 0.85),
+        0 30px 70px -15px rgba(2, 6, 23, 0.92),
         0 0 0 1px rgba(255, 255, 255, 0.08),
-        0 0 45px -5px rgba(56, 189, 248, 0.12),
-        inset 0 1px 1px 0 rgba(255, 255, 255, 0.25) !important;
+        0 0 40px -5px rgba(56, 189, 248, 0.1),
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.2) !important;
       position: relative;
       overflow: hidden;
     }
@@ -195,8 +195,8 @@ import { ThemeService } from '../../../core/services/theme.service';
       content: '';
       position: absolute;
       top: 0; left: 0; right: 0;
-      height: 130px;
-      background: radial-gradient(ellipse at 50% -10%, rgba(56, 189, 248, 0.2), transparent 70%);
+      height: 120px;
+      background: radial-gradient(ellipse at 50% -10%, rgba(56, 189, 248, 0.16), transparent 70%);
       pointer-events: none;
     }
 
@@ -237,7 +237,7 @@ import { ThemeService } from '../../../core/services/theme.service';
 
     :host-context([data-theme="dark"]) .input,
     .dark-theme-card .input {
-      background: rgba(11, 18, 33, 0.62) !important;
+      background: rgba(5, 9, 20, 0.72) !important;
       border: 1.5px solid rgba(148, 163, 184, 0.22) !important;
       border-radius: 12px !important;
       color: #ffffff !important;
@@ -245,7 +245,7 @@ import { ThemeService } from '../../../core/services/theme.service';
       font-size: 0.92rem !important;
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
       transition: all 0.2s ease !important;
     }
 
@@ -256,7 +256,7 @@ import { ThemeService } from '../../../core/services/theme.service';
 
     :host-context([data-theme="dark"]) .input:focus,
     .dark-theme-card .input:focus {
-      background: rgba(11, 18, 33, 0.85) !important;
+      background: rgba(5, 9, 20, 0.92) !important;
       border-color: #10b981 !important;
       box-shadow: 
         0 0 0 3px rgba(16, 185, 129, 0.25),
