@@ -41,7 +41,7 @@ import { ToastService } from '../../../core/services/toast.service';
           </span>
           <div class="stat-txt"><span class="stat-num">{{ countByStatus('IN_PROGRESS') }}</span><span class="stat-label">In progress</span></div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card stat-clickable" [class.stat-active]="paymentPendingOnly()" (click)="togglePaymentPending()" title="Click to filter by Payment Pending">
           <span class="stat-ico ico-amber">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.6" stroke="#fff" stroke-width="2.2"/><path d="M9.2 8.6h5.6M9.2 11.4h5.6M10 8.6c2.6 0 3.8 1.6 3.4 3.4-.3 1.5-1.6 2.4-3.2 2.4l3.4 3.2" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>
           </span>
@@ -61,14 +61,18 @@ import { ToastService } from '../../../core/services/toast.service';
         </div>
       </div>
 
-      <!-- Status filter chips (LEAD intentionally hidden to keep the bar focused) + search -->
+      <!-- Status filter chips + Payment Pending filter + search -->
       <div class="chip-row">
-        <button class="chip" [class.active]="!filterStatus()" (click)="filterStatus.set(null)">All</button>
+        <button class="chip" [class.active]="!filterStatus() && !paymentPendingOnly()" (click)="clearFilters()">All</button>
         @for (s of filterableStatuses; track s.value) {
-          <button class="chip" [class.active]="filterStatus() === s.value" [style.--chip-color]="s.color" (click)="filterStatus.set(s.value)">
+          <button class="chip" [class.active]="filterStatus() === s.value" [style.--chip-color]="s.color" (click)="setStatus(s.value)">
             {{ s.label }} <span class="chip-count">{{ countByStatus(s.value) }}</span>
           </button>
         }
+        <button class="chip chip-pending" [class.active]="paymentPendingOnly()" (click)="togglePaymentPending()" title="Filter by pending payments">
+          <span class="pending-dot"></span>
+          Payment Pending <span class="chip-count">{{ paymentPendingCount() }}</span>
+        </button>
         <div class="search-box">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input class="search-input" type="text" placeholder="Search projects…"
@@ -87,6 +91,8 @@ import { ToastService } from '../../../core/services/toast.service';
             <p>No projects yet. Create your first one!</p>
           } @else if (searchQuery()) {
             <p>No projects match "{{ searchQuery() }}".</p>
+          } @else if (paymentPendingOnly()) {
+            <p>No projects with pending payments match this filter.</p>
           } @else {
             <p>No projects match this filter.</p>
           }
@@ -200,6 +206,44 @@ import { ToastService } from '../../../core/services/toast.service';
     .chip.active { background: var(--chip-color, var(--accent)); color: #fff; border-color: transparent; }
     .chip-count { font-size: 0.7rem; opacity: 0.8; }
 
+    .chip-pending {
+      border-color: rgba(245, 158, 11, 0.4);
+      color: #f59e0b;
+      background: rgba(245, 158, 11, 0.07);
+    }
+    .chip-pending:hover {
+      border-color: #f59e0b;
+      background: rgba(245, 158, 11, 0.14);
+      color: #f59e0b;
+    }
+    .chip-pending.active {
+      background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+      color: #fff !important;
+      border-color: transparent !important;
+      box-shadow: 0 2px 10px rgba(245, 158, 11, 0.35);
+    }
+    .pending-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #f59e0b; flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .chip-pending.active .pending-dot {
+      background: #fff;
+    }
+    .stat-clickable {
+      cursor: pointer; transition: all 0.15s;
+    }
+    .stat-clickable:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+      border-color: #f59e0b;
+    }
+    .stat-clickable.stat-active {
+      border-color: #f59e0b;
+      background: rgba(245, 158, 11, 0.08);
+      box-shadow: 0 0 0 1px #f59e0b;
+    }
+
     .project-list { display: flex; flex-direction: column; gap: 8px; }
     .project-row {
       display: flex; align-items: center; gap: 14px; padding: 14px 16px;
@@ -255,13 +299,32 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   // Filter bar omits LEAD by design — leads sit at the top by default and clutter the chips row.
   filterableStatuses = PROJECT_STATUSES.filter((s) => s.value !== 'LEAD');
   filterStatus = signal<ProjectStatus | null>(null);
+  paymentPendingOnly = signal(false);
   searchQuery = signal('');
   showForm = false;
 
+  isPaymentPending(p: Project): boolean {
+    if (p.isSelf || p.status === 'LOST' || p.paymentStatus === 'PAID' || p.paymentStatus === 'NOT_APPLICABLE') {
+      return false;
+    }
+    return p.paymentStatus === 'PENDING' || p.paymentStatus === 'PARTIAL' || (p.balance > 0);
+  }
+
+  paymentPendingCount = computed(() =>
+    this.projects().filter((p) => this.isPaymentPending(p)).length
+  );
+
   filtered = computed(() => {
     const s = this.filterStatus();
+    const pendingOnly = this.paymentPendingOnly();
     const q = this.searchQuery().trim().toLowerCase();
-    let list = s ? this.projects().filter((p) => p.status === s) : this.projects();
+    let list = this.projects();
+    if (s) {
+      list = list.filter((p) => p.status === s);
+    }
+    if (pendingOnly) {
+      list = list.filter((p) => this.isPaymentPending(p));
+    }
     if (q) {
       list = list.filter((p) =>
         p.title.toLowerCase().includes(q) ||
@@ -296,6 +359,20 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
   countByStatus(s: ProjectStatus): number {
     return this.projects().filter((p) => p.status === s).length;
+  }
+
+  togglePaymentPending() {
+    this.paymentPendingOnly.update((v) => !v);
+  }
+
+  setStatus(s: ProjectStatus) {
+    this.filterStatus.set(this.filterStatus() === s ? null : s);
+  }
+
+  clearFilters() {
+    this.filterStatus.set(null);
+    this.paymentPendingOnly.set(false);
+    this.searchQuery.set('');
   }
 
   ngOnInit() {
