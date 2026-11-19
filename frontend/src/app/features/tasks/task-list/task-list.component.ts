@@ -253,55 +253,58 @@ import { parseNaturalLanguagePlan, ParsedSmartPlan } from '../../../core/utils/s
                 } @else {
                   @for (plan of todoTasks; track plan.id) {
                     <div class="kanban-card">
-                      <div class="k-card-top">
-                        <div class="k-type-icon" [style.background]="tileBg(plan.type)" [style.box-shadow]="tileShadow(plan.type)">
-                          <app-plan-icon [type]="plan.type" [size]="15" />
+                      <div class="k-card-header">
+                        <div class="k-badges">
+                          <span class="k-cat-pill" [style.color]="getPlanTypeColor(plan.type)" [style.background]="getPlanTypeColor(plan.type) + '18'">
+                            <app-plan-icon [type]="plan.type" [size]="11" />
+                            <span>{{ plan.type | titlecase }}</span>
+                          </span>
+                          <span class="k-prio-dot prio-{{ plan.priority.toLowerCase() }}" [title]="'Priority: ' + plan.priority"></span>
                         </div>
-                        <span class="prio-dot prio-{{ plan.priority.toLowerCase() }}" [title]="'Priority: ' + plan.priority"></span>
-                        <div class="k-spacer"></div>
-                        <div class="k-actions">
-                          <button class="k-icon-btn" (click)="editPlan(plan)" title="Edit plan">
+                        <div class="k-tools">
+                          <button class="k-tool-btn" (click)="editPlan(plan)" title="Edit plan" aria-label="Edit">
                             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                           </button>
-                          <button class="k-icon-btn danger" (click)="deletePlan(plan)" title="Delete plan">
+                          <button class="k-tool-btn danger" (click)="deletePlan(plan)" title="Delete plan" aria-label="Delete">
                             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
                           </button>
                         </div>
                       </div>
 
-                      <a [routerLink]="['/tasks', toSlug(plan.title)]" class="k-title">{{ plan.title }}</a>
+                      <a [routerLink]="['/tasks', toSlug(plan.title)]" class="k-title" [title]="plan.title">
+                        {{ plan.title }}
+                      </a>
 
                       @if (plan.location) {
-                        <div class="k-loc">
+                        <div class="k-loc" [title]="plan.location">
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-                          <span>{{ plan.location }}</span>
+                          <span class="k-loc-text">{{ plan.location }}</span>
                         </div>
                       }
 
-                      <div class="k-meta-row">
-                        @if (plan.dueDate) {
-                          <span class="k-meta-item">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                            {{ plan.dueDate | date:'MMM d' }}
-                          </span>
-                        }
-                        @if (plan.startTime) {
-                          <span class="k-meta-item">🕐 {{ plan.startTime }}</span>
-                        }
-                        @if (subtaskInfo(plan); as st) {
-                          <span class="k-subtask-badge" [class.complete]="st.done === st.total" [title]="st.done + '/' + st.total + ' completed'">
-                            ☑ {{ st.done }}/{{ st.total }}
-                          </span>
-                        }
-                      </div>
-
-                      <div class="k-bottom-actions">
-                        <button class="k-move-btn" (click)="moveStatus(plan, 'IN_PROGRESS')">
-                          Start →
-                        </button>
-                        <button class="k-move-btn done" (click)="moveStatus(plan, 'DONE')">
-                          ✓ Done
-                        </button>
+                      <div class="k-card-footer">
+                        <div class="k-meta-group">
+                          @if (plan.dueDate) {
+                            <span class="k-meta-tag">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                              {{ plan.dueDate | date:'MMM d' }}
+                              @if (plan.startTime) { · {{ plan.startTime }} }
+                            </span>
+                          }
+                          @if (subtaskInfo(plan); as st) {
+                            <span class="k-subtask-tag" [class.complete]="st.done === st.total" [title]="st.done + '/' + st.total + ' checklist items completed'">
+                              ☑ {{ st.done }}/{{ st.total }}
+                            </span>
+                          }
+                        </div>
+                        <div class="k-actions-group">
+                          <button class="k-pill-action start" (click)="moveStatus(plan, 'IN_PROGRESS')" title="Move to In Progress">
+                            Start →
+                          </button>
+                          <button class="k-icon-action done" (click)="moveStatus(plan, 'DONE')" title="Mark Done">
+                            ✓
+                          </button>
+                        </div>
                       </div>
                     </div>
                   }
@@ -326,55 +329,58 @@ import { parseNaturalLanguagePlan, ParsedSmartPlan } from '../../../core/utils/s
                 } @else {
                   @for (plan of inProgressTasks; track plan.id) {
                     <div class="kanban-card in-prog">
-                      <div class="k-card-top">
-                        <div class="k-type-icon" [style.background]="tileBg(plan.type)" [style.box-shadow]="tileShadow(plan.type)">
-                          <app-plan-icon [type]="plan.type" [size]="15" />
+                      <div class="k-card-header">
+                        <div class="k-badges">
+                          <span class="k-cat-pill" [style.color]="getPlanTypeColor(plan.type)" [style.background]="getPlanTypeColor(plan.type) + '18'">
+                            <app-plan-icon [type]="plan.type" [size]="11" />
+                            <span>{{ plan.type | titlecase }}</span>
+                          </span>
+                          <span class="k-prio-dot prio-{{ plan.priority.toLowerCase() }}" [title]="'Priority: ' + plan.priority"></span>
                         </div>
-                        <span class="prio-dot prio-{{ plan.priority.toLowerCase() }}" [title]="'Priority: ' + plan.priority"></span>
-                        <div class="k-spacer"></div>
-                        <div class="k-actions">
-                          <button class="k-icon-btn" (click)="editPlan(plan)" title="Edit plan">
+                        <div class="k-tools">
+                          <button class="k-tool-btn" (click)="editPlan(plan)" title="Edit plan" aria-label="Edit">
                             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                           </button>
-                          <button class="k-icon-btn danger" (click)="deletePlan(plan)" title="Delete plan">
+                          <button class="k-tool-btn danger" (click)="deletePlan(plan)" title="Delete plan" aria-label="Delete">
                             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
                           </button>
                         </div>
                       </div>
 
-                      <a [routerLink]="['/tasks', toSlug(plan.title)]" class="k-title">{{ plan.title }}</a>
+                      <a [routerLink]="['/tasks', toSlug(plan.title)]" class="k-title" [title]="plan.title">
+                        {{ plan.title }}
+                      </a>
 
                       @if (plan.location) {
-                        <div class="k-loc">
+                        <div class="k-loc" [title]="plan.location">
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-                          <span>{{ plan.location }}</span>
+                          <span class="k-loc-text">{{ plan.location }}</span>
                         </div>
                       }
 
-                      <div class="k-meta-row">
-                        @if (plan.dueDate) {
-                          <span class="k-meta-item">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                            {{ plan.dueDate | date:'MMM d' }}
-                          </span>
-                        }
-                        @if (plan.startTime) {
-                          <span class="k-meta-item">🕐 {{ plan.startTime }}</span>
-                        }
-                        @if (subtaskInfo(plan); as st) {
-                          <span class="k-subtask-badge" [class.complete]="st.done === st.total">
-                            ☑ {{ st.done }}/{{ st.total }}
-                          </span>
-                        }
-                      </div>
-
-                      <div class="k-bottom-actions">
-                        <button class="k-move-btn" (click)="moveStatus(plan, 'TODO')">
-                          ← To Do
-                        </button>
-                        <button class="k-move-btn done" (click)="moveStatus(plan, 'DONE')">
-                          ✓ Done
-                        </button>
+                      <div class="k-card-footer">
+                        <div class="k-meta-group">
+                          @if (plan.dueDate) {
+                            <span class="k-meta-tag">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                              {{ plan.dueDate | date:'MMM d' }}
+                              @if (plan.startTime) { · {{ plan.startTime }} }
+                            </span>
+                          }
+                          @if (subtaskInfo(plan); as st) {
+                            <span class="k-subtask-tag" [class.complete]="st.done === st.total" [title]="st.done + '/' + st.total + ' checklist items completed'">
+                              ☑ {{ st.done }}/{{ st.total }}
+                            </span>
+                          }
+                        </div>
+                        <div class="k-actions-group">
+                          <button class="k-icon-action back" (click)="moveStatus(plan, 'TODO')" title="Back to To Do">
+                            ←
+                          </button>
+                          <button class="k-pill-action done" (click)="moveStatus(plan, 'DONE')" title="Mark Done">
+                            ✓ Done
+                          </button>
+                        </div>
                       </div>
                     </div>
                   }
@@ -399,49 +405,55 @@ import { parseNaturalLanguagePlan, ParsedSmartPlan } from '../../../core/utils/s
                 } @else {
                   @for (plan of doneTasks; track plan.id) {
                     <div class="kanban-card is-done">
-                      <div class="k-card-top">
-                        <div class="k-type-icon" [style.background]="tileBg(plan.type)" [style.box-shadow]="tileShadow(plan.type)">
-                          <app-plan-icon [type]="plan.type" [size]="15" />
+                      <div class="k-card-header">
+                        <div class="k-badges">
+                          <span class="k-cat-pill" [style.color]="getPlanTypeColor(plan.type)" [style.background]="getPlanTypeColor(plan.type) + '18'">
+                            <app-plan-icon [type]="plan.type" [size]="11" />
+                            <span>{{ plan.type | titlecase }}</span>
+                          </span>
+                          <span class="k-prio-dot prio-{{ plan.priority.toLowerCase() }}" [title]="'Priority: ' + plan.priority"></span>
                         </div>
-                        <span class="prio-dot prio-{{ plan.priority.toLowerCase() }}" [title]="'Priority: ' + plan.priority"></span>
-                        <div class="k-spacer"></div>
-                        <div class="k-actions">
-                          <button class="k-icon-btn" (click)="editPlan(plan)" title="Edit plan">
+                        <div class="k-tools">
+                          <button class="k-tool-btn" (click)="editPlan(plan)" title="Edit plan" aria-label="Edit">
                             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                           </button>
-                          <button class="k-icon-btn danger" (click)="deletePlan(plan)" title="Delete plan">
+                          <button class="k-tool-btn danger" (click)="deletePlan(plan)" title="Delete plan" aria-label="Delete">
                             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
                           </button>
                         </div>
                       </div>
 
-                      <a [routerLink]="['/tasks', toSlug(plan.title)]" class="k-title strike">{{ plan.title }}</a>
+                      <a [routerLink]="['/tasks', toSlug(plan.title)]" class="k-title strike" [title]="plan.title">
+                        {{ plan.title }}
+                      </a>
 
                       @if (plan.location) {
-                        <div class="k-loc">
+                        <div class="k-loc" [title]="plan.location">
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-                          <span>{{ plan.location }}</span>
+                          <span class="k-loc-text">{{ plan.location }}</span>
                         </div>
                       }
 
-                      <div class="k-meta-row">
-                        @if (plan.dueDate) {
-                          <span class="k-meta-item">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                            {{ plan.dueDate | date:'MMM d' }}
-                          </span>
-                        }
-                        @if (subtaskInfo(plan); as st) {
-                          <span class="k-subtask-badge" [class.complete]="st.done === st.total">
-                            ☑ {{ st.done }}/{{ st.total }}
-                          </span>
-                        }
-                      </div>
-
-                      <div class="k-bottom-actions">
-                        <button class="k-move-btn reopen" (click)="moveStatus(plan, 'TODO')">
-                          ↩ Reopen
-                        </button>
+                      <div class="k-card-footer">
+                        <div class="k-meta-group">
+                          @if (plan.dueDate) {
+                            <span class="k-meta-tag">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                              {{ plan.dueDate | date:'MMM d' }}
+                              @if (plan.startTime) { · {{ plan.startTime }} }
+                            </span>
+                          }
+                          @if (subtaskInfo(plan); as st) {
+                            <span class="k-subtask-tag" [class.complete]="st.done === st.total" [title]="st.done + '/' + st.total + ' checklist items completed'">
+                              ☑ {{ st.done }}/{{ st.total }}
+                            </span>
+                          }
+                        </div>
+                        <div class="k-actions-group">
+                          <button class="k-pill-action reopen" (click)="moveStatus(plan, 'TODO')" title="Reopen plan">
+                            ↩ Reopen
+                          </button>
+                        </div>
                       </div>
                     </div>
                   }
@@ -543,18 +555,18 @@ import { parseNaturalLanguagePlan, ParsedSmartPlan } from '../../../core/utils/s
     /* Kanban Board Styles */
     .kanban-wrap { width: 100%; margin-top: 4px; }
     .kanban-grid {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; align-items: start;
     }
     .kanban-column {
       background: var(--card-surface, var(--bg-card)); border: 1px solid var(--card-border, var(--border));
-      border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 12px; min-height: 240px;
+      border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 10px; min-height: 240px;
     }
     .kanban-col-header {
       display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px;
       border-bottom: 1px solid var(--border-light);
     }
     .kanban-col-title {
-      display: flex; align-items: center; gap: 8px; font-size: 0.88rem; font-weight: 600;
+      display: flex; align-items: center; gap: 8px; font-size: 0.86rem; font-weight: 600;
       color: var(--text-primary);
     }
     .status-indicator { width: 8px; height: 8px; border-radius: 50%; }
@@ -573,63 +585,111 @@ import { parseNaturalLanguagePlan, ParsedSmartPlan } from '../../../core/utils/s
     .kanban-quick-add:hover {
       border-color: var(--accent); color: var(--accent); background: var(--accent-subtle);
     }
-    .kanban-cards { display: flex; flex-direction: column; gap: 10px; }
+    .kanban-cards { display: flex; flex-direction: column; gap: 8px; }
     .kanban-empty {
       text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); font-size: 0.82rem; font-style: italic;
     }
+
+    /* Restructured Compact Kanban Card */
     .kanban-card {
       background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 10px;
-      padding: 12px; display: flex; flex-direction: column; gap: 8px;
-      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s; position: relative;
+      padding: 9px 11px; display: flex; flex-direction: column; gap: 6px;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; position: relative;
     }
     .kanban-card:hover {
-      transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); border-color: var(--border);
+      transform: translateY(-1.5px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); border-color: var(--border);
     }
     .kanban-card.in-prog { border-left: 3px solid #f59e0b; }
-    .kanban-card.is-done { border-left: 3px solid #10b981; opacity: 0.75; }
-    .k-card-top { display: flex; align-items: center; gap: 8px; }
-    .k-type-icon {
-      width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center;
-      justify-content: center; color: #fff;
+    .kanban-card.is-done { border-left: 3px solid #10b981; opacity: 0.78; }
+
+    .k-card-header {
+      display: flex; align-items: center; justify-content: space-between; gap: 6px;
     }
-    .k-spacer { flex: 1; }
-    .k-actions { display: flex; gap: 2px; }
-    .k-icon-btn {
-      width: 24px; height: 24px; border-radius: 6px; border: none; background: transparent;
-      color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center;
+    .k-badges {
+      display: flex; align-items: center; gap: 6px; min-width: 0;
     }
-    .k-icon-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
-    .k-icon-btn.danger:hover { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+    .k-cat-pill {
+      display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px;
+      border-radius: 5px; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.01em;
+    }
+    .k-prio-dot {
+      width: 6.5px; height: 6.5px; border-radius: 50%; flex-shrink: 0;
+    }
+    .k-prio-dot.prio-high { background: #ef4444; box-shadow: 0 0 5px rgba(239, 68, 68, 0.6); }
+    .k-prio-dot.prio-medium { background: #f59e0b; box-shadow: 0 0 5px rgba(245, 158, 11, 0.6); }
+    .k-prio-dot.prio-low { background: #10b981; box-shadow: 0 0 5px rgba(16, 185, 129, 0.6); }
+
+    .k-tools {
+      display: flex; align-items: center; gap: 2px; opacity: 0.65; transition: opacity 0.15s;
+    }
+    .kanban-card:hover .k-tools { opacity: 1; }
+    .k-tool-btn {
+      width: 20px; height: 20px; border-radius: 4px; border: none; background: transparent;
+      color: var(--text-muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .k-tool-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .k-tool-btn.danger:hover { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+
     .k-title {
-      font-size: 0.88rem; font-weight: 600; color: var(--text-primary); text-decoration: none;
-      word-break: break-word; line-height: 1.3;
+      font-size: 0.84rem; font-weight: 600; color: var(--text-primary); text-decoration: none;
+      word-break: break-word; line-height: 1.35;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
     .k-title:hover { color: var(--accent); }
     .k-title.strike { text-decoration: line-through; color: var(--text-muted); }
+
     .k-loc {
-      display: flex; align-items: center; gap: 4px; font-size: 0.74rem; color: var(--text-muted);
+      display: flex; align-items: center; gap: 3.5px; font-size: 0.72rem; color: var(--text-muted);
     }
-    .k-meta-row {
-      display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.72rem; color: var(--text-muted);
+    .k-loc-text {
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .k-meta-item { display: inline-flex; align-items: center; gap: 3px; }
-    .k-subtask-badge {
-      display: inline-flex; align-items: center; gap: 3px; font-size: 0.7rem; font-weight: 600;
-      color: var(--text-secondary); background: var(--bg-card); padding: 1px 6px;
-      border-radius: 4px; border: 1px solid var(--border-light);
+
+    .k-card-footer {
+      display: flex; align-items: center; justify-content: space-between; gap: 6px;
+      padding-top: 5px; border-top: 1px solid var(--border-light); margin-top: 2px;
     }
-    .k-subtask-badge.complete { color: #10b981; border-color: rgba(16, 185, 129, 0.3); }
-    .k-bottom-actions {
-      display: flex; gap: 6px; padding-top: 6px; border-top: 1px solid var(--border-light); margin-top: 2px;
+    .k-meta-group {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0;
     }
-    .k-move-btn {
-      flex: 1; padding: 5px 8px; font-size: 0.72rem; font-weight: 500; border-radius: 6px;
+    .k-meta-tag {
+      display: inline-flex; align-items: center; gap: 3px; font-size: 0.7rem; color: var(--text-muted); font-weight: 500;
+    }
+    .k-subtask-tag {
+      font-size: 0.68rem; font-weight: 600; color: var(--text-secondary); background: var(--bg-card);
+      padding: 1px 5px; border-radius: 4px; border: 1px solid var(--border-light);
+    }
+    .k-subtask-tag.complete { color: #10b981; border-color: rgba(16, 185, 129, 0.3); }
+
+    .k-actions-group {
+      display: flex; align-items: center; gap: 4px; flex-shrink: 0; margin-left: auto;
+    }
+    .k-pill-action {
+      padding: 2px 7px; font-size: 0.69rem; font-weight: 600; border-radius: 5px;
       border: 1px solid var(--border-light); background: var(--bg-card); color: var(--text-secondary);
-      cursor: pointer; text-align: center; transition: all 0.15s; font-family: inherit;
+      cursor: pointer; transition: all 0.15s; font-family: inherit;
     }
-    .k-move-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border); }
-    .k-move-btn.done:hover { background: rgba(16, 185, 129, 0.12); color: #10b981; border-color: rgba(16, 185, 129, 0.4); }
-    .k-move-btn.reopen:hover { background: rgba(59, 130, 246, 0.12); color: #3b82f6; border-color: rgba(59, 130, 246, 0.4); }
+    .k-pill-action.start:hover {
+      background: rgba(245, 158, 11, 0.12); color: #f59e0b; border-color: rgba(245, 158, 11, 0.4);
+    }
+    .k-pill-action.done:hover {
+      background: rgba(16, 185, 129, 0.12); color: #10b981; border-color: rgba(16, 185, 129, 0.4);
+    }
+    .k-pill-action.reopen:hover {
+      background: rgba(59, 130, 246, 0.12); color: #3b82f6; border-color: rgba(59, 130, 246, 0.4);
+    }
+    .k-icon-action {
+      width: 21px; height: 21px; border-radius: 5px; border: 1px solid var(--border-light);
+      background: var(--bg-card); color: var(--text-secondary); cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem; transition: all 0.15s;
+    }
+    .k-icon-action.done:hover {
+      background: rgba(16, 185, 129, 0.15); color: #10b981; border-color: rgba(16, 185, 129, 0.4);
+    }
+    .k-icon-action.back:hover {
+      background: var(--bg-hover); color: var(--text-primary);
+    }
 
     /* Plans list card */
     .plans-wrap { overflow: hidden; }

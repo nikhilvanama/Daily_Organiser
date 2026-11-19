@@ -131,3 +131,4 @@ export function parseNaturalLanguagePlan(input: string): ParsedSmartPlan | null 
     location,
   };
 }
+

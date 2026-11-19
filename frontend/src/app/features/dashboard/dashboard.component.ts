@@ -45,14 +45,29 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
 
         <!-- Hero -->
         <div class="hero">
-          <div>
+          <div class="hero-text">
             <h1>Good {{ greeting }}, {{ auth.currentUser()?.displayName ?? 'there' }} <span class="wave">👋</span></h1>
             <p>{{ today | date:'EEEE, MMMM d, y' }}</p>
           </div>
-          <button class="btn-primary add-btn" (click)="showAddPlan = true">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add Plan
-          </button>
+          <div class="hero-actions">
+            <button class="hero-briefing-btn" [class.active]="showBriefing()" (click)="toggleBriefing()" title="Toggle Daily Digest" aria-label="Toggle Daily Digest">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"/>
+                <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+              </svg>
+              <span>Daily Digest</span>
+              @if (todayPlans().length > 0 || (scheduledToday() - doneToday() > 0)) {
+                <span class="briefing-pulse-dot"></span>
+              }
+            </button>
+            <button class="btn-primary add-btn" (click)="showAddPlan = true">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Plan
+            </button>
+          </div>
         </div>
 
         <!-- Morning Daily Briefing (Daily Digest) -->
@@ -62,7 +77,7 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
             <div class="briefing-header">
               <div class="briefing-title-group">
                 <span class="briefing-badge">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="5"/>
                     <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
                     <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
@@ -71,96 +86,97 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
                   </svg>
                   {{ briefingPeriodLabel }}
                 </span>
-                <span class="briefing-date">{{ today | date:'EEE, MMM d' }}</span>
+                <span class="briefing-date">{{ today | date:'EEEE, MMM d' }}</span>
               </div>
-              <div class="briefing-actions">
-                <button class="briefing-icon-btn" (click)="toggleBriefingCollapse()" [title]="isBriefingCollapsed() ? 'Expand briefing' : 'Collapse briefing'">
-                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" [style.transform]="isBriefingCollapsed() ? 'rotate(180deg)' : 'none'" style="transition: transform 0.2s">
-                    <polyline points="6 9 12 15 18 9"/>
-                  </svg>
-                </button>
-                <button class="briefing-icon-btn" (click)="dismissBriefingToday()" title="Dismiss for today">
-                  ×
-                </button>
+              <button class="briefing-icon-btn" (click)="dismissBriefingToday()" title="Close digest" aria-label="Close">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            <div class="briefing-summary-bar">
+              <div class="summary-pill">
+                <span class="pill-dot plans-dot"></span>
+                <span class="pill-text"><strong>{{ todayPlans().length }}</strong> Plan{{ todayPlans().length === 1 ? '' : 's' }}</span>
+              </div>
+              <div class="summary-pill">
+                <span class="pill-dot habits-dot"></span>
+                <span class="pill-text"><strong>{{ doneToday() }}/{{ scheduledToday() }}</strong> Habits ({{ todayPct() | number:'1.0-0' }}%)</span>
+              </div>
+              <div class="summary-pill">
+                <span class="pill-dot done-dot"></span>
+                <span class="pill-text"><strong>{{ stats()?.completedToday ?? 0 }}</strong> Completed Today</span>
               </div>
             </div>
 
-            @if (!isBriefingCollapsed()) {
-              <div class="briefing-content">
-                <p class="briefing-lead">{{ briefingGreetingMessage() }}</p>
-
-                <div class="briefing-grid">
-                  <!-- Today's Schedule Digest -->
-                  <div class="briefing-col">
-                    <div class="b-col-head">
-                      <span class="b-col-icon plans-icon">📅</span>
-                      <strong>Today's Plans ({{ todayPlans().length }})</strong>
-                    </div>
-                    @if (todayPlans().length === 0) {
-                      <span class="b-col-detail">No plans scheduled for today yet.</span>
-                    } @else {
-                      <div class="b-col-items">
-                        @for (p of todayPlans().slice(0, 3); track p.id) {
-                          <div class="b-plan-item">
-                            <span class="b-dot" [class.high]="p.priority === 'HIGH'"></span>
-                            <span class="b-plan-title">{{ p.title }}</span>
-                            @if (p.startTime) { <span class="b-plan-time">{{ p.startTime }}</span> }
-                          </div>
-                        }
-                        @if (todayPlans().length > 3) {
-                          <span class="b-more">+{{ todayPlans().length - 3 }} more plans</span>
-                        }
+            <div class="briefing-grid">
+              <!-- Today's Schedule Digest -->
+              <div class="briefing-col">
+                <div class="b-col-head">
+                  <div class="b-icon-tile plans-tile">📅</div>
+                  <div class="b-head-text">
+                    <strong>Today's Plans</strong>
+                    <span class="b-sub">{{ todayPlans().length }} scheduled</span>
+                  </div>
+                </div>
+                @if (todayPlans().length === 0) {
+                  <p class="b-empty-text">No plans scheduled for today. Take time to focus or recharge!</p>
+                } @else {
+                  <div class="b-col-items">
+                    @for (p of todayPlans().slice(0, 3); track p.id) {
+                      <div class="b-plan-item">
+                        <span class="b-dot" [class.high]="p.priority === 'HIGH'"></span>
+                        <span class="b-plan-title">{{ p.title }}</span>
+                        @if (p.startTime) { <span class="b-plan-time">{{ p.startTime }}</span> }
                       </div>
                     }
+                    @if (todayPlans().length > 3) {
+                      <span class="b-more">+{{ todayPlans().length - 3 }} more</span>
+                    }
                   </div>
-
-                  <!-- Habit Routine Status -->
-                  <div class="briefing-col">
-                    <div class="b-col-head">
-                      <span class="b-col-icon routine-icon">⚡</span>
-                      <strong>Routine Habits ({{ doneToday() }}/{{ scheduledToday() }})</strong>
-                    </div>
-                    <div class="b-progress-wrap">
-                      <div class="b-progress-bar">
-                        <div class="b-progress-fill" [style.width.%]="todayPct()"></div>
-                      </div>
-                      <span class="b-progress-pct">{{ todayPct() | number:'1.0-0' }}%</span>
-                    </div>
-                    <span class="b-col-detail">
-                      @if (doneToday() === scheduledToday() && scheduledToday() > 0) {
-                        🌟 All daily routines completed today!
-                      } @else if (scheduledToday() > 0) {
-                        {{ scheduledToday() - doneToday() }} routine(s) left for today.
-                      } @else {
-                        No habits scheduled for today.
-                      }
-                    </span>
-                  </div>
-
-                  <!-- Focus & Mindset Tip -->
-                  <div class="briefing-col tip-col">
-                    <div class="b-col-head">
-                      <span class="b-col-icon tip-icon">💡</span>
-                      <strong>Daily Focus Tip</strong>
-                    </div>
-                    <p class="b-tip-text">"{{ dailyFocusTip() }}"</p>
-                  </div>
-                </div>
-
-                <div class="briefing-footer">
-                  <a routerLink="/tasks" class="b-link">Open My Plans →</a>
-                  <a routerLink="/habits" class="b-link">Track Habits →</a>
-                  <a routerLink="/calendar" class="b-link">Calendar →</a>
-                </div>
+                }
+                <a routerLink="/tasks" class="b-card-link">View Plans →</a>
               </div>
-            }
-          </div>
-        } @else {
-          <!-- Re-open Briefing button if dismissed -->
-          <div class="briefing-reopen-row">
-            <button class="briefing-reopen-btn" (click)="reopenBriefing()">
-              ☀️ Daily Digest
-            </button>
+
+              <!-- Habit Routine Status -->
+              <div class="briefing-col">
+                <div class="b-col-head">
+                  <div class="b-icon-tile routine-tile">⚡</div>
+                  <div class="b-head-text">
+                    <strong>Routines</strong>
+                    <span class="b-sub">{{ doneToday() }}/{{ scheduledToday() }} completed</span>
+                  </div>
+                </div>
+                <div class="b-progress-wrap">
+                  <div class="b-progress-bar">
+                    <div class="b-progress-fill" [style.width.%]="todayPct()"></div>
+                  </div>
+                  <span class="b-progress-pct">{{ todayPct() | number:'1.0-0' }}%</span>
+                </div>
+                <span class="b-col-detail">
+                  @if (doneToday() === scheduledToday() && scheduledToday() > 0) {
+                    🌟 All habits completed for today!
+                  } @else if (scheduledToday() > 0) {
+                    {{ scheduledToday() - doneToday() }} habit(s) remaining today.
+                  } @else {
+                    No routines set for today.
+                  }
+                </span>
+                <a routerLink="/habits" class="b-card-link">Track Habits →</a>
+              </div>
+
+              <!-- Focus & Mindset Tip -->
+              <div class="briefing-col tip-col">
+                <div class="b-col-head">
+                  <div class="b-icon-tile tip-tile">💡</div>
+                  <div class="b-head-text">
+                    <strong>Daily Mindset</strong>
+                    <span class="b-sub">Focus principle</span>
+                  </div>
+                </div>
+                <p class="b-tip-text">"{{ dailyFocusTip() }}"</p>
+                <a routerLink="/calendar" class="b-card-link">Calendar View →</a>
+              </div>
+            </div>
           </div>
         }
 
@@ -550,11 +566,42 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
 
     /* ── Hero ───────────────────────────────────────────── */
     .hero { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0 .1rem; }
+    .hero-text { min-width: 0; }
     .hero h1 { font-size: 1.65rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text-primary); }
     .hero p { color: var(--text-secondary); font-size: .92rem; margin-top: 2px; }
+    .hero-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .hero-briefing-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 12px; border-radius: 9px; font-size: 0.8rem; font-weight: 600;
+      background: var(--card-surface, var(--bg-card));
+      border: 1px solid var(--card-border, var(--border));
+      color: var(--text-secondary);
+      cursor: pointer; transition: all 0.15s ease;
+      font-family: inherit; position: relative;
+    }
+    .hero-briefing-btn:hover {
+      color: var(--text-primary);
+      border-color: var(--accent);
+      background: var(--bg-hover);
+    }
+    .hero-briefing-btn.active {
+      background: var(--accent-subtle);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .briefing-pulse-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #10b981; box-shadow: 0 0 6px rgba(16, 185, 129, 0.7);
+    }
     .wave { display: inline-block; animation: wave 2.2s ease .4s 1; transform-origin: 70% 70%; }
     @keyframes wave { 0%,100% { transform: rotate(0); } 15% { transform: rotate(16deg); } 30% { transform: rotate(-8deg); } 45% { transform: rotate(14deg); } 60% { transform: rotate(-4deg); } 75% { transform: rotate(8deg); } }
     .add-btn { flex-shrink: 0; }
+    @media (max-width: 640px) {
+      .hero { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .hero-actions { width: 100%; justify-content: flex-start; gap: 8px; }
+      .hero-briefing-btn { flex: 1; justify-content: center; padding: 7px 10px; font-size: 0.76rem; }
+      .add-btn { flex: 1; justify-content: center; }
+    }
 
     /* ── Stat cards ─────────────────────────────────────── */
     .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: .9rem; }
@@ -751,7 +798,7 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
     @keyframes spin { to { transform: rotate(360deg); } }
     .loading-hint { font-size: .76rem; color: var(--text-muted); }
 
-    /* ── Morning Daily Briefing ────────────────────────── */
+    /* ── Daily Briefing (Daily Digest) ─────────────────── */
     .briefing-card {
       position: relative;
       overflow: hidden;
@@ -762,7 +809,7 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
       box-shadow: var(--card-shadow);
       display: flex;
       flex-direction: column;
-      gap: 0.85rem;
+      gap: 0.8rem;
     }
     .briefing-glow {
       position: absolute;
@@ -788,12 +835,12 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 700;
-      color: #10b981;
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.25);
-      padding: 4px 10px;
+      color: var(--accent);
+      background: var(--accent-subtle);
+      border: 1px solid var(--accent);
+      padding: 3px 10px;
       border-radius: 20px;
       letter-spacing: 0.02em;
     }
@@ -801,10 +848,6 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
       font-size: 0.78rem;
       color: var(--text-muted);
       font-weight: 500;
-    }
-    .briefing-actions {
-      display: flex;
-      gap: 4px;
     }
     .briefing-icon-btn {
       width: 26px;
@@ -824,18 +867,36 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
       background: var(--bg-hover);
       color: var(--text-primary);
     }
-    .briefing-lead {
-      font-size: 0.92rem;
-      color: var(--text-primary);
-      margin: 0;
-      line-height: 1.45;
-      font-weight: 500;
+    .briefing-summary-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
     }
+    .summary-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-light);
+      font-size: 0.74rem;
+      color: var(--text-secondary);
+    }
+    .pill-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+    .plans-dot { background: #3b82f6; box-shadow: 0 0 5px rgba(59, 130, 246, 0.5); }
+    .habits-dot { background: #10b981; box-shadow: 0 0 5px rgba(16, 185, 129, 0.5); }
+    .done-dot { background: #8b5cf6; box-shadow: 0 0 5px rgba(139, 92, 246, 0.5); }
+    .pill-icon { font-size: 0.8rem; }
     .briefing-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 12px;
-      margin-top: 4px;
+      margin-top: 2px;
     }
     @media (max-width: 820px) {
       .briefing-grid { grid-template-columns: 1fr; }
@@ -844,19 +905,48 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
       background: var(--bg-secondary);
       border: 1px solid var(--border-light);
       border-radius: 12px;
-      padding: 10px 12px;
+      padding: 11px 13px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
     }
     .b-col-head {
       display: flex;
       align-items: center;
-      gap: 6px;
-      font-size: 0.8rem;
+      gap: 8px;
+    }
+    .b-icon-tile {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+    }
+    .plans-tile { background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.25); }
+    .routine-tile { background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.25); }
+    .tip-tile { background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.25); }
+    .b-head-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+    }
+    .b-head-text strong {
+      font-size: 0.82rem;
       color: var(--text-primary);
     }
-    .b-col-icon { font-size: 0.85rem; }
+    .b-sub {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+    .b-empty-text {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      margin: 0;
+      line-height: 1.4;
+      font-style: italic;
+    }
     .b-col-items {
       display: flex;
       flex-direction: column;
@@ -866,7 +956,7 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
       display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 0.76rem;
+      font-size: 0.74rem;
       color: var(--text-secondary);
     }
     .b-dot {
@@ -878,7 +968,7 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
     }
     .b-dot.high {
       background: #ef4444;
-      box-shadow: 0 0 6px rgba(239,68,68,0.6);
+      box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
     }
     .b-plan-title {
       flex: 1;
@@ -897,8 +987,9 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
       font-weight: 500;
     }
     .b-col-detail {
-      font-size: 0.74rem;
+      font-size: 0.72rem;
       color: var(--text-muted);
+      line-height: 1.35;
     }
     .b-progress-wrap {
       display: flex;
@@ -927,49 +1018,25 @@ interface Stats { totalTasks: number; completedToday: number; activeTasks: numbe
       background: radial-gradient(180px 80px at 90% 10%, rgba(245, 158, 11, 0.08), transparent 70%), var(--bg-secondary);
     }
     .b-tip-text {
-      font-size: 0.76rem;
+      font-size: 0.74rem;
       color: var(--text-secondary);
       font-style: italic;
-      line-height: 1.4;
+      line-height: 1.45;
       margin: 0;
     }
-    .briefing-footer {
-      display: flex;
-      gap: 14px;
+    .b-card-link {
+      margin-top: auto;
       padding-top: 6px;
-      border-top: 1px solid var(--border-light);
-    }
-    .b-link {
-      font-size: 0.76rem;
+      font-size: 0.72rem;
       font-weight: 600;
       color: var(--accent);
       text-decoration: none;
-    }
-    .b-link:hover { text-decoration: underline; }
-    .briefing-reopen-row {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: -4px;
-      margin-bottom: 4px;
-    }
-    .briefing-reopen-btn {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      background: var(--card-surface);
-      border: 1px solid var(--card-border);
-      color: var(--text-muted);
-      border-radius: 20px;
-      padding: 3px 10px;
-      font-size: 0.72rem;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      transition: all 0.15s;
+      gap: 3px;
     }
-    .briefing-reopen-btn:hover {
-      color: var(--text-primary);
-      border-color: var(--accent);
+    .b-card-link:hover {
+      text-decoration: underline;
     }
   `],
 })
@@ -1027,6 +1094,16 @@ export class DashboardComponent implements OnInit {
     ];
     const day = new Date().getDay();
     return tips[day] || tips[0];
+  }
+
+  toggleBriefing() {
+    const next = !this.showBriefing();
+    this.showBriefing.set(next);
+    if (!next) {
+      localStorage.setItem('do_briefing_dismissed_' + this.todayStr, 'true');
+    } else {
+      localStorage.removeItem('do_briefing_dismissed_' + this.todayStr);
+    }
   }
 
   toggleBriefingCollapse() {
