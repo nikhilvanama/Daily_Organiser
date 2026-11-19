@@ -4,6 +4,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 // AuthService handles login state, token management, and user data for the app
 import { AuthService } from './core/services/auth.service';
+import { ThemeService } from './core/services/theme.service';
 
 // Root component of the Daily Organizer app — acts as the entry point that
 // bootstraps the router; all pages are rendered via the <router-outlet>.
@@ -16,6 +17,8 @@ import { AuthService } from './core/services/auth.service';
 export class AppComponent implements OnInit {
   // Inject AuthService via the inject() function (preferred in standalone components)
   private auth = inject(AuthService);
+  // Inject ThemeService so that theme is eagerly initialized on app boot (sets data-theme on <html>)
+  readonly themeService = inject(ThemeService);
 
   // On app startup, check whether the user already has a stored JWT token.
   // If so, fetch their profile from the backend so the UI can display user info

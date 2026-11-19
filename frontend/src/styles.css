@@ -464,3 +464,31 @@ textarea.input { resize: vertical; min-height: 80px; }
   /* Buttons: slightly smaller */
   .btn-primary, .btn-ghost, .btn-danger { padding: 8px 14px; font-size: 0.82rem; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   AUTH PAGES (Login & Register) THEMED BACKGROUNDS
+   Ensures dark/light desktop and mobile artwork responds directly
+   to the global [data-theme="dark"] attribute on <html>.
+   ═══════════════════════════════════════════════════════════════════ */
+.auth-page {
+  background: url('/login-bg.png') center / cover no-repeat, var(--bg-secondary);
+}
+@media (max-width: 640px) {
+  .auth-page {
+    background: url('/login-mobile-bg.png') center / cover no-repeat, var(--bg-secondary);
+  }
+}
+
+[data-theme="dark"] .auth-page {
+  background: url('/login-darkbg.png') center / cover no-repeat, var(--bg-secondary) !important;
+}
+@media (max-width: 640px) {
+  [data-theme="dark"] .auth-page {
+    background: url('/login-mobile-darkbg.png') center / cover no-repeat, var(--bg-secondary) !important;
+  }
+}
+
+[data-theme="dark"] .auth-page::before {
+  background: rgba(9, 9, 11, 0.45) !important;
+}
+

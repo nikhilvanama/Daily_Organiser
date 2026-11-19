@@ -4,9 +4,9 @@ import { Component, inject, OnInit } from '@angular/core';
 // RouterLink creates navigable links to individual task detail pages
 import { RouterLink } from '@angular/router';
 // DatePipe formats due dates
-import { DatePipe } from '@angular/common';
+import { DatePipe, TitleCasePipe } from '@angular/common';
 // FormBuilder creates the filter form; ReactiveFormsModule enables [formGroup] in the template
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 // TaskService provides the tasks$ observable and CRUD methods
 import { TaskService } from '../task.service';
 import { slugify } from '../../../core/utils/slugify';
@@ -17,10 +17,11 @@ import { TaskFormComponent } from '../task-form/task-form.component';
 // ToastService shows success/error feedback after task operations
 import { ToastService } from '../../../core/services/toast.service';
 // Task model and PLAN_TYPES for type-specific icons and colors
-import { Task, PLAN_TYPES, TaskStatus } from '../../../core/models/task.model';
+import { Task, PLAN_TYPES, TaskStatus, PlanType } from '../../../core/models/task.model';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 // Custom duotone category glyphs (replaces the emoji icons)
 import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-icon.component';
+import { parseNaturalLanguagePlan, ParsedSmartPlan } from '../../../core/utils/smart-capture.util';
 
 // TaskListComponent ("My Plans" page) displays all the user's tasks/plans with filtering
 // by plan type (chips), status, and priority. Each plan row shows type icon, title, metadata,
@@ -28,7 +29,7 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
 @Component({
   selector: 'app-task-list', // Loaded by the router at /tasks
   standalone: true, // Angular 19 standalone component
-  imports: [RouterLink, DatePipe, ReactiveFormsModule, ModalComponent, TaskFormComponent, ConfirmDialogComponent, PlanIconComponent, PageArtComponent],
+  imports: [RouterLink, DatePipe, TitleCasePipe, FormsModule, ReactiveFormsModule, ModalComponent, TaskFormComponent, ConfirmDialogComponent, PlanIconComponent, PageArtComponent],
   template: `
     <!-- Page container with fade-in animation -->
     <div class="page animate-in">
@@ -44,6 +45,54 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Add Plan
         </button>
+      </div>
+
+      <!-- Natural Language Quick Add ("Smart Capture") -->
+      <div class="card smart-capture-card">
+        <div class="smart-input-row">
+          <div class="smart-icon" title="Quick Add active">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="url(#smartGrad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <defs>
+                <linearGradient id="smartGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#10b981"/>
+                  <stop offset="100%" stop-color="#06b6d4"/>
+                </linearGradient>
+              </defs>
+              <path d="M12 2l2.4 5.6 5.6 2.4-5.6 2.4-2.4 5.6-2.4-5.6-5.6-2.4 5.6-2.4z"/>
+            </svg>
+          </div>
+          <input
+            type="text"
+            class="smart-input"
+            [(ngModel)]="smartInput"
+            (input)="onSmartInputChange()"
+            (keydown.enter)="$event.preventDefault(); submitSmartCapture()"
+            placeholder="Quick Add: e.g. 'Flight to Mumbai tomorrow at 6:30am #trip !high' or 'Dinner at Starbucks on Saturday 8pm'..."
+          />
+          <button class="btn-primary sm-btn" (click)="submitSmartCapture()" [disabled]="!smartInput.trim() || isSubmittingSmart">
+            {{ isSubmittingSmart ? 'Adding...' : '+ Quick Add' }}
+          </button>
+        </div>
+
+        @if (parsedSmartPlan; as p) {
+          <div class="smart-preview-chips">
+            <span class="preview-label">Parsed preview:</span>
+            <span class="preview-chip type-chip" [style.background]="getPlanTypeColor(p.type) + '22'" [style.color]="getPlanTypeColor(p.type)">
+              {{ getPlanTypeIcon(p.type) }} {{ p.type | titlecase }}
+            </span>
+            @if (p.dueDate) {
+              <span class="preview-chip date-chip">📅 {{ p.dueDate | date:'MMM d, y' }}</span>
+            }
+            @if (p.startTime) {
+              <span class="preview-chip time-chip">⏰ {{ p.startTime }}</span>
+            }
+            @if (p.location) {
+              <span class="preview-chip loc-chip">📍 {{ p.location }}</span>
+            }
+            <span class="preview-chip prio-chip prio-{{ p.priority.toLowerCase() }}">⚡ {{ p.priority }}</span>
+            <span class="preview-title" [title]="p.title">"{{ p.title }}"</span>
+          </div>
+        }
       </div>
 
       <!-- Plan type filter chips: "All" + one chip per plan type (task, trip, meeting, etc.) -->
@@ -431,6 +480,38 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
     .chip:hover { border-color: var(--text-muted); }
     /* Active chip: filled with accent color */
     .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    /* Natural Language Quick Add ("Smart Capture") Bar */
+    .smart-capture-card {
+      padding: 10px 14px; background: var(--card-surface, var(--bg-card));
+      border: 1px solid var(--card-border, var(--border)); border-radius: 14px;
+      display: flex; flex-direction: column; gap: 8px; margin-bottom: 2px;
+    }
+    .smart-input-row { display: flex; align-items: center; gap: 10px; }
+    .smart-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .smart-input {
+      flex: 1; border: none; background: transparent; font-size: 0.88rem; color: var(--text-primary);
+      outline: none; font-family: inherit;
+    }
+    .smart-input::placeholder { color: var(--text-muted); font-size: 0.82rem; }
+    .sm-btn { padding: 7px 14px; font-size: 0.8rem; }
+    .smart-preview-chips {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding-top: 6px;
+      border-top: 1px dashed var(--border-light); font-size: 0.74rem;
+    }
+    .preview-label { color: var(--text-muted); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+    .preview-chip {
+      display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px;
+      font-size: 0.72rem; font-weight: 500; background: var(--bg-secondary);
+      border: 1px solid var(--border-light); color: var(--text-secondary);
+    }
+    .preview-chip.prio-high { color: #ef4444; background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); }
+    .preview-chip.prio-medium { color: #f59e0b; background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); }
+    .preview-chip.prio-low { color: #10b981; background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); }
+    .preview-title {
+      color: var(--text-primary); font-weight: 600; font-style: italic; max-width: 250px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
 
     /* Filter bar & View mode toggle */
     .filter-bar { display: flex; gap: 10px; padding: 10px 14px; align-items: center; flex-wrap: wrap; }
@@ -848,6 +929,17 @@ import { PlanIconComponent } from '../../../shared/components/plan-icon/plan-ico
         min-width: 85%;
         scroll-snap-align: center;
       }
+      .smart-capture-card {
+        padding: 8px 12px;
+      }
+      .smart-input-row {
+        gap: 8px;
+      }
+      .smart-input-row .sm-btn {
+        padding: 6px 10px;
+        font-size: 0.78rem;
+        white-space: nowrap;
+      }
     }
 
     /* Empty state centered message */
@@ -878,6 +970,51 @@ export class TaskListComponent implements OnInit {
   setViewMode(mode: 'list' | 'kanban') {
     this.viewMode = mode;
     localStorage.setItem('do_plans_view', mode);
+  }
+
+  // Quick Add state
+  smartInput = '';
+  parsedSmartPlan: ParsedSmartPlan | null = null;
+  isSubmittingSmart = false;
+
+  onSmartInputChange() {
+    this.parsedSmartPlan = parseNaturalLanguagePlan(this.smartInput);
+  }
+
+  submitSmartCapture() {
+    const parsed = this.parsedSmartPlan || parseNaturalLanguagePlan(this.smartInput);
+    if (!parsed || !parsed.title.trim()) return;
+
+    this.isSubmittingSmart = true;
+    this.taskService.create({
+      title: parsed.title,
+      type: parsed.type,
+      priority: parsed.priority,
+      dueDate: parsed.dueDate,
+      startTime: parsed.startTime,
+      location: parsed.location,
+      status: 'TODO',
+    }).subscribe({
+      next: () => {
+        this.isSubmittingSmart = false;
+        this.smartInput = '';
+        this.parsedSmartPlan = null;
+        this.toast.success('Plan created with Quick Add!');
+        this.loadTasks();
+      },
+      error: () => {
+        this.isSubmittingSmart = false;
+        this.toast.error('Failed to create plan');
+      }
+    });
+  }
+
+  getPlanTypeColor(type: PlanType): string {
+    return this.planTypes.find(t => t.value === type)?.color ?? '#3b82f6';
+  }
+
+  getPlanTypeIcon(type: PlanType): string {
+    return this.planTypes.find(t => t.value === type)?.icon ?? '✓';
   }
 
   subtaskInfo(plan: Task): { done: number; total: number; pct: number } | null {

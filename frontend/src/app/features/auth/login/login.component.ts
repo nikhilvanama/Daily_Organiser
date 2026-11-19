@@ -8,6 +8,7 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 // ToastService shows error feedback when login fails
 import { ToastService } from '../../../core/services/toast.service';
+import { ThemeService } from '../../../core/services/theme.service';
 
 // LoginComponent is the full-screen sign-in page shown to unauthenticated users.
 // It displays the app logo, email/password form, and a link to the registration page.
@@ -19,6 +20,16 @@ import { ToastService } from '../../../core/services/toast.service';
   template: `
     <!-- Full-screen centered auth page with secondary background -->
     <div class="auth-page">
+      <!-- Theme toggle in top-right corner of auth page -->
+      <button type="button" class="auth-theme-btn" (click)="themeService.toggle()"
+        [title]="themeService.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'" aria-label="Toggle theme">
+        @if (themeService.theme() === 'dark') {
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        } @else {
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+        }
+      </button>
+
       <!-- Auth card: centered container holding the logo, form, and footer -->
       <div class="auth-card card">
         <!-- Header section with app branding and welcome message -->
@@ -77,11 +88,13 @@ import { ToastService } from '../../../core/services/toast.service';
       background: url('/login-bg.png') center / cover no-repeat, var(--bg-secondary);
       padding: 2rem; position: relative;
     }
+    :host-context([data-theme="dark"]) .auth-page,
     [data-theme="dark"] .auth-page {
       background: url('/login-darkbg.png') center / cover no-repeat, var(--bg-secondary);
     }
     @media (max-width: 640px) {
       .auth-page { background: url('/login-mobile-bg.png') center / cover no-repeat, var(--bg-secondary); }
+      :host-context([data-theme="dark"]) .auth-page,
       [data-theme="dark"] .auth-page { background: url('/login-mobile-darkbg.png') center / cover no-repeat, var(--bg-secondary); }
     }
     /* Light veil for card contrast only — both artworks already match their theme,
@@ -92,7 +105,23 @@ import { ToastService } from '../../../core/services/toast.service';
       .auth-page { justify-content: flex-start; padding-left: calc(clamp(3rem, 11vw, 10rem) + 100px); }
     }
     .auth-page::before { content: ''; position: absolute; inset: 0; background: rgba(255, 255, 255, 0.12); }
-    [data-theme="dark"] .auth-page::before { background: rgba(9, 9, 11, 0.35); }
+    :host-context([data-theme="dark"]) .auth-page::before,
+    [data-theme="dark"] .auth-page::before { background: rgba(9, 9, 11, 0.45); }
+    .auth-theme-btn {
+      position: absolute; top: 1.25rem; right: 1.25rem; z-index: 10;
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--card-surface, var(--bg-card));
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+      transition: all 0.2s ease;
+    }
+    .auth-theme-btn:hover {
+      transform: translateY(-1px);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
     .auth-card { width: 100%; max-width: 400px; padding: 2.5rem; position: relative; z-index: 1; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18); }
     /* Mobile: pin the card to the top so the desk illustration at the bottom
        of the portrait artwork stays fully visible under the form */
@@ -140,6 +169,7 @@ import { ToastService } from '../../../core/services/toast.service';
   `],
 })
 export class LoginComponent {
+  readonly themeService = inject(ThemeService);
   // Inject dependencies using the inject() function (preferred in standalone components)
   private fb = inject(FormBuilder); // For creating the reactive form
   private auth = inject(AuthService); // For calling the login API
