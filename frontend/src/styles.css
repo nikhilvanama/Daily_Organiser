@@ -490,3 +490,7 @@ textarea.input { resize: vertical; min-height: 80px; }
   background: rgba(9, 9, 11, 0.45) !important;
 }
 
+[data-theme="dark"] app-login .auth-page::before {
+  background: radial-gradient(circle at 30% 50%, rgba(13, 20, 38, 0.15) 0%, rgba(5, 9, 20, 0.38) 100%) !important;
+}
+

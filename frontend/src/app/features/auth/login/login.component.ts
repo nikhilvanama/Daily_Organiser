@@ -19,7 +19,7 @@ import { ThemeService } from '../../../core/services/theme.service';
   imports: [ReactiveFormsModule, RouterLink], // Enable reactive forms and router links in the template
   template: `
     <!-- Full-screen centered auth page with secondary background -->
-    <div class="auth-page">
+    <div class="auth-page" [class.dark-theme-page]="themeService.theme() === 'dark'">
       <!-- Theme toggle in top-right corner of auth page -->
       <button type="button" class="auth-theme-btn" (click)="themeService.toggle()"
         [title]="themeService.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'" aria-label="Toggle theme">
@@ -31,7 +31,7 @@ import { ThemeService } from '../../../core/services/theme.service';
       </button>
 
       <!-- Auth card: centered container holding the logo, form, and footer -->
-      <div class="auth-card card">
+      <div class="auth-card card" [class.dark-theme-card]="themeService.theme() === 'dark'">
         <!-- Header section with app branding and welcome message -->
         <div class="header">
           <div class="logo">
@@ -126,13 +126,11 @@ import { ThemeService } from '../../../core/services/theme.service';
     /* Mobile: pin the card to the top so the desk illustration at the bottom
        of the portrait artwork stays fully visible under the form */
     @media (max-width: 640px) {
-      /* 12vh from the top: comfortably below the notch, still leaves the
-         desk illustration at the bottom fully visible */
       .auth-page { align-items: flex-start; padding: 12vh 1rem 1rem; }
       .auth-card { padding: 1.5rem; }
     }
     /* Centered header with bottom margin for spacing */
-    .header { text-align: center; margin-bottom: 2rem; }
+    .header { text-align: center; margin-bottom: 2rem; position: relative; z-index: 1; }
     /* Logo row: inline-flex to center the icon + text pair */
     .logo { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; }
     /* Green gradient logo icon with shadow for depth */
@@ -148,14 +146,14 @@ import { ThemeService } from '../../../core/services/theme.service';
     .header h1 { font-size: 1.3rem; font-weight: 700; margin-bottom: 4px; }
     .header p { color: var(--text-secondary); font-size: 0.875rem; }
     /* Form: vertical stack with spacing between fields */
-    form { display: flex; flex-direction: column; gap: 1.125rem; }
+    form { display: flex; flex-direction: column; gap: 1.125rem; position: relative; z-index: 1; }
     /* Full-width submit button with extra padding */
     .submit-btn { width: 100%; padding: 12px; font-size: 0.95rem; margin-top: 4px; }
     /* CSS-only spinning loader for the submit button loading state */
     .spin { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: sp .6s linear infinite; }
     @keyframes sp { to { transform: rotate(360deg); } }
     /* Footer: registration link with accent color */
-    .footer { text-align: center; margin-top: 1.75rem; font-size: 0.875rem; color: var(--text-secondary); }
+    .footer { text-align: center; margin-top: 1.75rem; font-size: 0.875rem; color: var(--text-secondary); position: relative; z-index: 1; }
     .footer a { color: var(--accent); font-weight: 600; margin-left: 4px; }
     .footer a:hover { text-decoration: underline; }
     .password-wrapper { position: relative; }
@@ -166,6 +164,181 @@ import { ThemeService } from '../../../core/services/theme.service';
       padding: 2px; display: flex; align-items: center;
     }
     .toggle-password:hover { color: var(--text-primary); }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       DARK THEME STYLING SPECIFIC TO LOGIN PAGE
+       Frosted glassmorphic card that blends naturally with the dark blue artwork
+       ═══════════════════════════════════════════════════════════════════ */
+    :host-context([data-theme="dark"]) .auth-page::before,
+    .dark-theme-page::before {
+      background: radial-gradient(circle at 30% 50%, rgba(13, 20, 38, 0.15) 0%, rgba(5, 9, 20, 0.4) 100%) !important;
+    }
+
+    :host-context([data-theme="dark"]) .auth-card,
+    .dark-theme-card {
+      background: rgba(13, 22, 42, 0.65) !important;
+      backdrop-filter: blur(28px) saturate(190%) !important;
+      -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+      border: 1px solid rgba(147, 197, 253, 0.18) !important;
+      border-radius: 24px !important;
+      box-shadow: 
+        0 30px 65px -15px rgba(2, 6, 23, 0.85),
+        0 0 0 1px rgba(255, 255, 255, 0.08),
+        0 0 45px -5px rgba(56, 189, 248, 0.12),
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.25) !important;
+      position: relative;
+      overflow: hidden;
+    }
+
+    :host-context([data-theme="dark"]) .auth-card::before,
+    .dark-theme-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 130px;
+      background: radial-gradient(ellipse at 50% -10%, rgba(56, 189, 248, 0.2), transparent 70%);
+      pointer-events: none;
+    }
+
+    :host-context([data-theme="dark"]) .logo-icon,
+    .dark-theme-card .logo-icon {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+      border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    }
+
+    :host-context([data-theme="dark"]) .logo-name,
+    .dark-theme-card .logo-name {
+      color: #ffffff !important;
+      letter-spacing: -0.01em;
+    }
+
+    :host-context([data-theme="dark"]) .header h1,
+    .dark-theme-card .header h1 {
+      color: #f8fafc !important;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    :host-context([data-theme="dark"]) .header p,
+    .dark-theme-card .header p {
+      color: #94a3b8 !important;
+    }
+
+    :host-context([data-theme="dark"]) .form-group .label,
+    .dark-theme-card .form-group .label {
+      color: #cbd5e1 !important;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    :host-context([data-theme="dark"]) .input,
+    .dark-theme-card .input {
+      background: rgba(11, 18, 33, 0.62) !important;
+      border: 1.5px solid rgba(148, 163, 184, 0.22) !important;
+      border-radius: 12px !important;
+      color: #ffffff !important;
+      padding: 12px 14px !important;
+      font-size: 0.92rem !important;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25);
+      transition: all 0.2s ease !important;
+    }
+
+    :host-context([data-theme="dark"]) .input::placeholder,
+    .dark-theme-card .input::placeholder {
+      color: rgba(148, 163, 184, 0.5) !important;
+    }
+
+    :host-context([data-theme="dark"]) .input:focus,
+    .dark-theme-card .input:focus {
+      background: rgba(11, 18, 33, 0.85) !important;
+      border-color: #10b981 !important;
+      box-shadow: 
+        0 0 0 3px rgba(16, 185, 129, 0.25),
+        0 0 20px rgba(16, 185, 129, 0.18),
+        inset 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+    }
+
+    :host-context([data-theme="dark"]) .toggle-password,
+    .dark-theme-card .toggle-password {
+      color: #94a3b8 !important;
+      right: 12px;
+      transition: color 0.15s;
+    }
+
+    :host-context([data-theme="dark"]) .toggle-password:hover,
+    .dark-theme-card .toggle-password:hover {
+      color: #10b981 !important;
+    }
+
+    :host-context([data-theme="dark"]) .submit-btn,
+    .dark-theme-card .submit-btn {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.25) !important;
+      border-radius: 12px !important;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #ffffff !important;
+      box-shadow: 0 8px 24px -4px rgba(16, 185, 129, 0.5) !important;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-top: 6px;
+    }
+
+    :host-context([data-theme="dark"]) .submit-btn:hover:not(:disabled),
+    .dark-theme-card .submit-btn:hover:not(:disabled) {
+      transform: translateY(-1.5px);
+      box-shadow: 0 12px 28px -4px rgba(16, 185, 129, 0.65) !important;
+      background: linear-gradient(135deg, #34d399 0%, #059669 100%) !important;
+    }
+
+    :host-context([data-theme="dark"]) .submit-btn:disabled,
+    .dark-theme-card .submit-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none !important;
+    }
+
+    :host-context([data-theme="dark"]) .footer,
+    .dark-theme-card .footer {
+      color: #94a3b8 !important;
+      font-size: 0.875rem;
+      margin-top: 1.75rem;
+    }
+
+    :host-context([data-theme="dark"]) .footer a,
+    .dark-theme-card .footer a {
+      color: #34d399 !important;
+      font-weight: 600;
+      text-shadow: 0 0 12px rgba(52, 211, 153, 0.35);
+      transition: color 0.15s;
+    }
+
+    :host-context([data-theme="dark"]) .footer a:hover,
+    .dark-theme-card .footer a:hover {
+      color: #6ee7b7 !important;
+    }
+
+    :host-context([data-theme="dark"]) .auth-theme-btn,
+    .dark-theme-page .auth-theme-btn {
+      background: rgba(13, 20, 38, 0.65) !important;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(147, 197, 253, 0.2) !important;
+      color: #e2e8f0 !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    :host-context([data-theme="dark"]) .auth-theme-btn:hover,
+    .dark-theme-page .auth-theme-btn:hover {
+      border-color: #10b981 !important;
+      color: #10b981 !important;
+      transform: translateY(-1px);
+    }
   `],
 })
 export class LoginComponent {
