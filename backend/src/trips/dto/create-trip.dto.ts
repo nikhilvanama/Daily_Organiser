@@ -7,7 +7,6 @@ export interface TripChecklistItem {
   id: string;
   title: string;
   completed: boolean;
-  category?: string;
 }
 
 export class CreateTripDto {

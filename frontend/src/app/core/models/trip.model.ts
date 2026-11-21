@@ -19,7 +19,6 @@ export interface TripChecklistItem {
   id: string;
   title: string;
   completed: boolean;
-  category?: 'tickets' | 'stay' | 'packing' | 'places' | 'general' | string;
 }
 
 export interface Trip {

@@ -74,7 +74,7 @@ If your needs overlap, this is for you. If you need team collaboration, a differ
 | **Daily Routine (Habits)** | Per-weekday recurring habits with time intervals, current streak, 30-day heatmap, schedule filter chips (Every day / Weekdays / Weekends / Mon–Sun), date navigation to backfill missed days, optimistic toggle for instant UI |
 | **Journal** | One reflection entry per day, with mood emoji, title, body, streak of consecutive days journaled, calendar date-picker with entry dots, browse-past-entries list, and a "✨ Draft from my day" button where the AI writes the entry from that day's tasks (or checked habits) for review |
 | **Projects** (freelance) | Project pipeline (LEAD → QUOTED → IN_PROGRESS → DELIVERED → PAID / LOST / ON_HOLD), per-project payments, **Payment Pending filter chip**, interactive outstanding-balance stat card, deadlines, progress %, sample links, live search |
-| **Trips** | Kanban board for travel plans (Bucket List → Planning → Booked → Visited). Drag-and-drop between columns. **Trip Preparation & Packing Checklist** with categories (Tickets 🎫, Stay 🏨, Packing 🎒, Places 📍) and 1-click starter template packs. Trips with dates auto-sync to calendar and trigger habit trip-day exclusion. Past BOOKED trips auto-promote to Visited |
+| **Trips** | Kanban board for travel plans (Bucket List → Planning → Booked → Visited). Drag-and-drop between columns. Integrated **Trip Checklist** (`☑ 3/5`) for preparation, stay, and packing. Trips with dates auto-sync to calendar and trigger habit trip-day exclusion. Past BOOKED trips auto-promote to Visited |
 | **Buy List** | Kanban board for things to remember to buy (Want → Considering → Bought → Skipped). Drag-and-drop between columns. Viewport-height columns with internal card scrolling. Auto-stamps "bought on" date when moved to Bought |
 | **Calendar** | Monthly grid showing plans + Google Calendar events (festivals, holidays, restaurant/movie bookings) plotted by date; weekends/birthdays/holidays/leaves/✈trip overlays; day summary popup with task details. Custom month-picker dropdown lets you jump to any month/year |
 | **Categories** | User-defined color-coded labels for grouping tasks |
@@ -1134,20 +1134,11 @@ Cards within each lane are automatically sorted:
 
 Each dated card shows a **year pill** (e.g. `2026`) instead of a duration — the duration was misleading for open-ended or single-day trips. When checklist items exist, an interactive badge shows `☑ X/Y prep` with a green completion highlight when all prep is complete.
 
-#### Trip Preparation & Packing Checklist
+#### Trip Checklist
 
-Trips feature an integrated preparation checklist system designed to track everything needed before and during travel:
-- **Categorized Items**: Items can be organized under:
-  - 🎫 **Tickets & Logistics** (Flights/Trains, Visas, Cabs)
-  - 🏨 **Stay & Booking** (Hotel/Resort reservations, Address saved)
-  - 🎒 **Packing List** (Clothes, Toiletries, Medications, Chargers)
-  - 📍 **Places & Itinerary** (Must-visit spots, Activity passes, Food to try)
-  - 📝 **General** (Reminders, Cash/Forex)
-- **One-Click Quick Templates**: Instant preset buttons to add standard items without manual typing:
-  - `🎫 Essentials Pack`: Flight/Train tickets, Hotel booking, ID/Passport, Charger & Power bank, Emergency cash.
-  - `🎒 Packing List`: Clothes, Toiletries kit, First-aid meds, Sunscreen & umbrella, Walking shoes.
-  - `📍 Itinerary & Spots`: Top attractions list, Activity passes, Food spots, Offline maps downloaded.
-- **Progress Tracking**: Real-time progress bar and percentage tracker (`X/Y done (%)`).
+Trips feature a clean, lightweight preparation checklist (matching the subtasks pattern in My Plans) to track pre-trip items like tickets, hotel booking, packing, and must-visit spots:
+- **Interactive Checklist**: Easily check off items as you prepare (`☑ 3/5`).
+- **Quick Inline Add**: Type any item and hit **Enter** or tap **`+ Add`**.
 - **Notes & Reference Links**: Reference URLs, reels, blogs, and detailed itineraries live directly inside the **Notes** textarea.
 
 **Schema**:
@@ -1158,8 +1149,8 @@ trips/<id> {
   startDate, endDate,
   companions, budget, currency,
   notes,
-  checklist: [ { id, title, completed, category } ], // prep & packing items
-  taskId: string | null,                             // FK to auto-created task in /tasks/*
+  checklist: [ { id, title, completed } ], // prep & packing items
+  taskId: string | null,                   // FK to auto-created task in /tasks/*
   createdAt, updatedAt
 }
 ```

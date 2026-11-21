@@ -72,7 +72,7 @@ import { ToastService } from '../../../core/services/toast.service';
                       @if (t.budget !== null && t.budget > 0) { <span>{{ formatMoney(t.budget, t.currency) }}</span> }
                       @if (t.checklist && t.checklist.length > 0) {
                         <span class="card-chk-tag" [class.complete]="isChecklistComplete(t)">
-                          ☑ {{ completedCount(t) }}/{{ t.checklist.length }} prep
+                          ☑ {{ completedCount(t) }}/{{ t.checklist.length }}
                         </span>
                       }
                       @if (t.references && t.references.length > 0) { <span>🔗 {{ t.references.length }}</span> }

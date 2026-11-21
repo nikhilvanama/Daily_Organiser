@@ -5,29 +5,6 @@ import { Trip, TripChecklistItem, TripStatus, TRIP_COLUMNS } from '../../../core
 
 const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AUD', 'CAD', 'AED', 'SGD'] as const;
 
-const PRESETS = {
-  essentials: [
-    { title: 'Flight / Train / Bus tickets', category: 'tickets' },
-    { title: 'Hotel / Stay booking confirmation', category: 'stay' },
-    { title: 'Government ID / Passport / Visa', category: 'tickets' },
-    { title: 'Phone charger & Power bank', category: 'packing' },
-    { title: 'Emergency cash & Cards', category: 'general' },
-  ],
-  packing: [
-    { title: 'Clothes & weather-appropriate wear', category: 'packing' },
-    { title: 'Toiletries & personal hygiene kit', category: 'packing' },
-    { title: 'First-aid kit & personal medicines', category: 'packing' },
-    { title: 'Sunscreen, sunglasses & umbrella', category: 'packing' },
-    { title: 'Comfortable walking shoes', category: 'packing' },
-  ],
-  places: [
-    { title: 'Must-visit spots & itinerary mapped', category: 'places' },
-    { title: 'Monument / museum / activity passes booked', category: 'places' },
-    { title: 'Saved restaurants & food spots', category: 'places' },
-    { title: 'Offline maps downloaded on phone', category: 'places' },
-  ],
-};
-
 @Component({
   selector: 'app-trip-form',
   standalone: true,
@@ -87,97 +64,40 @@ const PRESETS = {
       </div>
 
       <div class="form-group">
-        <label class="label">Notes, links & itinerary</label>
+        <label class="label">Notes & itinerary</label>
         <textarea class="input" formControlName="notes" rows="3" placeholder="Places to visit, notes, inspiration links, food recommendations..."></textarea>
       </div>
 
-      <!-- Trip Preparation Checklist -->
-      <div class="checklist-section">
-        <div class="checklist-header">
-          <div class="chk-title-group">
-            <label class="label mb-0">Preparation & Packing Checklist</label>
-            @if (checklist.length > 0) {
-              <span class="chk-badge" [class.complete]="completedCount === checklist.length">
-                {{ completedCount }}/{{ checklist.length }} done ({{ completionPercent }}%)
-              </span>
-            }
-          </div>
-          <span class="chk-subtext">Track tickets, bookings, stay, packing essentials, and places to see</span>
-        </div>
-
+      <!-- Simple Checklist -->
+      <div class="form-group">
+        <label class="label">Checklist ({{ checklist.length }})</label>
         @if (checklist.length > 0) {
-          <div class="chk-progress-bar">
-            <div class="chk-progress-fill" [style.width.%]="completionPercent"></div>
-          </div>
-        }
-
-        <!-- Quick Starter Preset Packs -->
-        <div class="presets-row">
-          <span class="presets-label">Quick templates:</span>
-          <button type="button" class="preset-btn" (click)="applyPreset('essentials')">
-            <span>🎫</span> Essentials Pack
-          </button>
-          <button type="button" class="preset-btn" (click)="applyPreset('packing')">
-            <span>🎒</span> Packing List
-          </button>
-          <button type="button" class="preset-btn" (click)="applyPreset('places')">
-            <span>📍</span> Itinerary & Spots
-          </button>
-        </div>
-
-        <!-- Add Item Row -->
-        <div class="chk-add-row">
-          <select class="input chk-category-select" [(ngModel)]="selectedCategory" [ngModelOptions]="{standalone: true}">
-            <option value="tickets">🎫 Tickets</option>
-            <option value="stay">🏨 Stay</option>
-            <option value="packing">🎒 Packing</option>
-            <option value="places">📍 Places</option>
-            <option value="general">📝 General</option>
-          </select>
-          <input
-            class="input chk-add-input"
-            type="text"
-            [(ngModel)]="newItemTitle"
-            [ngModelOptions]="{standalone: true}"
-            (keydown.enter)="addChecklistItem($event)"
-            placeholder="Add prep item (e.g. Flight tickets, Sunscreen)..."
-          />
-          <button type="button" class="btn-primary sm chk-add-btn" (click)="addChecklistItem()">
-            + Add
-          </button>
-        </div>
-
-        <!-- Checklist Items List -->
-        @if (checklist.length > 0) {
-          <div class="chk-items-list">
-            @for (item of checklist; track item.id) {
-              <div class="chk-item-row" [class.done]="item.completed">
-                <label class="chk-checkbox-label">
-                  <input
-                    type="checkbox"
-                    [checked]="item.completed"
-                    (change)="toggleChecklistItem(item)"
-                    class="chk-checkbox"
-                  />
-                </label>
-
-                <span class="chk-cat-pill" [style.color]="getCategoryMeta(item.category).color" [style.background]="getCategoryMeta(item.category).bg">
-                  {{ getCategoryMeta(item.category).icon }} {{ getCategoryMeta(item.category).label }}
-                </span>
-
-                <span class="chk-item-title" [class.completed]="item.completed">{{ item.title }}</span>
-
-                <button type="button" class="icon-btn danger chk-remove-btn" (click)="removeChecklistItem(item.id)" title="Remove item">
-                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
+          <div class="chk-list">
+            @for (item of checklist; track item.id; let i = $index) {
+              <div class="chk-item">
+                <input
+                  type="checkbox"
+                  [checked]="item.completed"
+                  (change)="toggleItem(i)"
+                  class="chk-cb"
+                />
+                <span class="chk-title" [class.done]="item.completed">{{ item.title }}</span>
+                <button type="button" class="chk-del" (click)="removeItem(i)" title="Remove item">×</button>
               </div>
             }
           </div>
-        } @else {
-          <div class="chk-empty-hint">
-            No prep items yet. Click a quick template above or add your own items to track tickets, stay, and packing.
-          </div>
         }
+        <div class="chk-add-row">
+          <input
+            type="text"
+            class="input chk-input"
+            [(ngModel)]="newItemTitle"
+            [ngModelOptions]="{standalone: true}"
+            placeholder="Add checklist item (tickets, stay, packing...)"
+            (keydown.enter)="$event.preventDefault(); addItem()"
+          />
+          <button type="button" class="btn-ghost sm" (click)="addItem()" [disabled]="!newItemTitle.trim()">+ Add</button>
+        </div>
       </div>
 
       <div class="form-actions">
@@ -207,71 +127,23 @@ const PRESETS = {
     .hint { font-size: 0.78rem; color: var(--text-muted); padding: 6px 10px; border-radius: 6px; background: var(--bg-hover); }
     .hint.warn { color: #d97706; background: rgba(217, 119, 6, 0.1); border: 1px solid rgba(217, 119, 6, 0.25); }
 
-    /* Preparation Checklist Styling */
-    .checklist-section {
-      display: flex; flex-direction: column; gap: 0.55rem;
-      padding: 0.85rem; border-radius: 12px;
-      background: var(--bg-secondary); border: 1px solid var(--border);
+    /* Simple Checklist */
+    .chk-list { display: flex; flex-direction: column; gap: 5px; max-height: 180px; overflow-y: auto; }
+    .chk-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 10px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-light);
     }
-    .checklist-header { display: flex; flex-direction: column; gap: 2px; }
-    .chk-title-group { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .mb-0 { margin-bottom: 0; }
-    .chk-subtext { font-size: 0.72rem; color: var(--text-muted); }
-    .chk-badge {
-      font-size: 0.7rem; font-weight: 600; padding: 2px 7px; border-radius: 5px;
-      background: rgba(245, 158, 11, 0.12); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.25);
+    .chk-cb { cursor: pointer; accent-color: var(--accent); width: 15px; height: 15px; }
+    .chk-title { flex: 1; font-size: 0.82rem; color: var(--text-primary); word-break: break-word; }
+    .chk-title.done { text-decoration: line-through; color: var(--text-muted); }
+    .chk-del {
+      background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem;
+      padding: 0 4px; line-height: 1; transition: color 0.15s;
     }
-    .chk-badge.complete {
-      background: rgba(16, 185, 129, 0.12); color: #10b981; border-color: rgba(16, 185, 129, 0.25);
-    }
-    .chk-progress-bar {
-      width: 100%; height: 5px; border-radius: 99px; background: var(--border); overflow: hidden;
-    }
-    .chk-progress-fill {
-      height: 100%; background: linear-gradient(90deg, #10b981, #34d399);
-      transition: width 0.25s ease;
-    }
-    .presets-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 1px; }
-    .presets-label { font-size: 0.72rem; color: var(--text-muted); font-weight: 500; }
-    .preset-btn {
-      padding: 3px 8px; font-size: 0.72rem; font-weight: 500; border-radius: 6px;
-      background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);
-      cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s; font-family: inherit;
-    }
-    .preset-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--accent); }
-    .chk-add-row { display: flex; gap: 6px; align-items: center; margin-top: 2px; }
-    .chk-category-select { width: 110px; flex-shrink: 0; font-size: 0.78rem; padding: 6px 8px; height: 34px; }
-    .chk-add-input { flex: 1; font-size: 0.82rem; padding: 6px 10px; height: 34px; }
-    .chk-add-btn { flex-shrink: 0; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; height: 34px; }
-    .chk-items-list {
-      display: flex; flex-direction: column; gap: 4px; max-height: 200px; overflow-y: auto; padding-right: 2px;
-    }
-    .chk-item-row {
-      display: flex; align-items: center; gap: 8px; padding: 5px 8px;
-      border-radius: 6px; background: var(--bg-card); border: 1px solid var(--border-light);
-      transition: all 0.15s;
-    }
-    .chk-item-row:hover { border-color: var(--border); }
-    .chk-item-row.done { opacity: 0.65; }
-    .chk-checkbox-label { display: flex; align-items: center; cursor: pointer; margin: 0; }
-    .chk-checkbox { cursor: pointer; width: 15px; height: 15px; accent-color: var(--accent); }
-    .chk-cat-pill {
-      font-size: 0.65rem; font-weight: 600; padding: 1px 6px; border-radius: 4px; flex-shrink: 0;
-      display: inline-flex; align-items: center; gap: 2px;
-    }
-    .chk-item-title {
-      flex: 1; font-size: 0.8rem; color: var(--text-primary); word-break: break-word; line-height: 1.3;
-    }
-    .chk-item-title.completed { text-decoration: line-through; color: var(--text-muted); }
-    .chk-remove-btn { opacity: 0.6; }
-    .chk-remove-btn:hover { opacity: 1; }
-    .chk-empty-hint {
-      font-size: 0.75rem; color: var(--text-muted); text-align: center;
-      padding: 0.75rem 0.5rem; border: 1px dashed var(--border); border-radius: 8px;
-    }
+    .chk-del:hover { color: #ef4444; }
+    .chk-add-row { display: flex; gap: 8px; align-items: center; }
+    .chk-input { flex: 1; font-size: 0.82rem; padding: 6px 10px; }
 
-    .icon-btn { background: transparent; border: none; padding: 0.25rem; border-radius: 0.25rem; cursor: pointer; color: var(--text-muted); display: flex; }
-    .icon-btn.danger:hover { color: #ef4444; background: var(--bg-secondary); }
     .sm { font-size: 0.8rem; padding: 0.375rem 0.75rem; }
     @media (max-width: 520px) { .form-row { grid-template-columns: 1fr; } }
   `],
@@ -292,15 +164,6 @@ export class TripFormComponent implements OnInit, OnChanges {
 
   checklist: TripChecklistItem[] = [];
   newItemTitle = '';
-  selectedCategory = 'tickets';
-
-  readonly categoryMeta: Record<string, { label: string; icon: string; color: string; bg: string }> = {
-    tickets: { label: 'Tickets', icon: '🎫', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.12)' },
-    stay:    { label: 'Stay',    icon: '🏨', color: '#a78bfa', bg: 'rgba(167, 139, 250, 0.12)' },
-    packing: { label: 'Packing', icon: '🎒', color: '#fbbf24', bg: 'rgba(251, 191, 36, 0.12)' },
-    places:  { label: 'Places',  icon: '📍', color: '#f87171', bg: 'rgba(248, 113, 113, 0.12)' },
-    general: { label: 'General', icon: '📝', color: '#94a3b8', bg: 'rgba(148, 163, 184, 0.12)' },
-  };
 
   form = this.fb.group({
     title: ['', Validators.required],
@@ -313,19 +176,6 @@ export class TripFormComponent implements OnInit, OnChanges {
     currency: ['INR'],
     notes: [''],
   });
-
-  get completedCount(): number {
-    return this.checklist.filter((i) => i.completed).length;
-  }
-
-  get completionPercent(): number {
-    if (this.checklist.length === 0) return 0;
-    return Math.round((this.completedCount / this.checklist.length) * 100);
-  }
-
-  getCategoryMeta(cat?: string) {
-    return this.categoryMeta[cat || 'general'] || this.categoryMeta['general'];
-  }
 
   ngOnInit() { this.fillForm(); }
   ngOnChanges(changes: SimpleChanges) {
@@ -358,41 +208,25 @@ export class TripFormComponent implements OnInit, OnChanges {
     });
   }
 
-  addChecklistItem(ev?: Event) {
-    if (ev) ev.preventDefault();
+  addItem() {
     const title = this.newItemTitle.trim();
     if (!title) return;
     this.checklist.push({
       id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       title,
       completed: false,
-      category: this.selectedCategory,
     });
     this.newItemTitle = '';
   }
 
-  toggleChecklistItem(item: TripChecklistItem) {
-    item.completed = !item.completed;
-  }
-
-  removeChecklistItem(id: string) {
-    this.checklist = this.checklist.filter((i) => i.id !== id);
-  }
-
-  applyPreset(type: 'essentials' | 'packing' | 'places') {
-    const list = PRESETS[type];
-    if (!list) return;
-    const toAdd = list.filter(
-      (p) => !this.checklist.some((existing) => existing.title.toLowerCase() === p.title.toLowerCase())
-    );
-    for (const item of toAdd) {
-      this.checklist.push({
-        id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-        title: item.title,
-        completed: false,
-        category: item.category,
-      });
+  toggleItem(index: number) {
+    if (this.checklist[index]) {
+      this.checklist[index].completed = !this.checklist[index].completed;
     }
+  }
+
+  removeItem(index: number) {
+    this.checklist.splice(index, 1);
   }
 
   submit() {
