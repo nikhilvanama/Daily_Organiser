@@ -70,7 +70,12 @@ import { ToastService } from '../../../core/services/toast.service';
                     <div class="card-meta">
                       @if (t.companions) { <span>👥 {{ t.companions }}</span> }
                       @if (t.budget !== null && t.budget > 0) { <span>{{ formatMoney(t.budget, t.currency) }}</span> }
-                      @if (t.references.length > 0) { <span>🔗 {{ t.references.length }}</span> }
+                      @if (t.checklist && t.checklist.length > 0) {
+                        <span class="card-chk-tag" [class.complete]="isChecklistComplete(t)">
+                          ☑ {{ completedCount(t) }}/{{ t.checklist.length }} prep
+                        </span>
+                      }
+                      @if (t.references && t.references.length > 0) { <span>🔗 {{ t.references.length }}</span> }
                     </div>
                   </div>
                 }
@@ -142,7 +147,15 @@ import { ToastService } from '../../../core/services/toast.service';
     .card-dest { font-size: 0.74rem; color: var(--text-secondary); }
     .card-dates { display: flex; align-items: center; gap: 6px; font-size: 0.74rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
     .card-pill { font-size: 0.65rem; color: var(--text-muted); background: var(--bg-hover); padding: 1px 6px; border-radius: 4px; font-weight: 600; }
-    .card-meta { display: flex; gap: 8px; flex-wrap: wrap; font-size: 0.7rem; color: var(--text-muted); }
+    .card-meta { display: flex; gap: 8px; flex-wrap: wrap; font-size: 0.7rem; color: var(--text-muted); align-items: center; }
+    .card-chk-tag {
+      font-size: 0.68rem; font-weight: 600; padding: 1px 6px; border-radius: 4px;
+      background: rgba(245, 158, 11, 0.12); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.25);
+      display: inline-flex; align-items: center; gap: 3px;
+    }
+    .card-chk-tag.complete {
+      background: rgba(16, 185, 129, 0.12); color: #10b981; border-color: rgba(16, 185, 129, 0.25);
+    }
 
     /* Lane visual states for drag-and-drop */
     .lane-cards { min-height: 60px; padding: 4px; margin: -4px; border-radius: 8px; transition: background 0.15s, outline-color 0.15s; outline: 2px dashed transparent; scrollbar-width: thin; }
@@ -303,5 +316,13 @@ export class TripBoardComponent implements OnInit, OnDestroy {
   formatMoney(n: number, currency = 'INR'): string {
     const sym = currency === 'INR' ? '₹' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency + ' ';
     return `${sym}${n.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+  }
+
+  completedCount(t: Trip): number {
+    return t.checklist ? t.checklist.filter((i) => i.completed).length : 0;
+  }
+
+  isChecklistComplete(t: Trip): boolean {
+    return !!t.checklist && t.checklist.length > 0 && this.completedCount(t) === t.checklist.length;
   }
 }

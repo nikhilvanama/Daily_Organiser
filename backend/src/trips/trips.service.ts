@@ -1,7 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { FirebaseService } from '../prisma/firebase.service';
-import { CreateTripDto, TripStatus } from './dto/create-trip.dto';
+import { CreateTripDto, TripChecklistItem, TripStatus } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
 
 type TripRecord = {
@@ -18,6 +18,7 @@ type TripRecord = {
   currency: string;
   notes: string | null;
   references: string[];
+  checklist?: TripChecklistItem[];
   // taskId points to an auto-created task (type='trip') in the Tasks module.
   // Set when the trip moves to BOOKED with dates; the plan flows through to
   // the calendar and triggers habit trip-day exclusion automatically.
@@ -78,6 +79,7 @@ export class TripsService {
     return {
       ...trip,
       references: trip.references ?? [],
+      checklist: trip.checklist ?? [],
       destination: trip.destination ?? null,
       description: trip.description ?? null,
       startDate: trip.startDate ?? null,
@@ -105,6 +107,7 @@ export class TripsService {
       currency: dto.currency ?? 'INR',
       notes: dto.notes ?? null,
       references: dto.references ?? [],
+      checklist: dto.checklist ?? [],
       taskId: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

@@ -15,6 +15,13 @@ export const TRIP_COLUMNS: { value: TripStatus; label: string; color: string; ta
   { value: 'VISITED',  label: 'Visited',     color: '#10b981', tagline: 'Memories made' },
 ];
 
+export interface TripChecklistItem {
+  id: string;
+  title: string;
+  completed: boolean;
+  category?: 'tickets' | 'stay' | 'packing' | 'places' | 'general' | string;
+}
+
 export interface Trip {
   id: string;
   userId: string;
@@ -29,6 +36,7 @@ export interface Trip {
   currency: string;
   notes: string | null;
   references: string[];
+  checklist?: TripChecklistItem[];
   taskId: string | null; // set when status=BOOKED with dates
   createdAt: string;
   updatedAt: string;
@@ -46,6 +54,7 @@ export interface CreateTripDto {
   currency?: string;
   notes?: string;
   references?: string[];
+  checklist?: TripChecklistItem[];
 }
 
 export type UpdateTripDto = Partial<CreateTripDto>;

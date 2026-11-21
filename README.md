@@ -10,25 +10,25 @@ A personal productivity app for managing plans, goals, daily habits, and a calen
 
 | Feature | What it does |
 |---------|------|
-| **Dashboard** | Today's snapshot: stats, schedule, goal progress, Daily Routine widget (ring + heatmap + interactive checklist) |
-| **My Plans** | All plans — tasks, trips, journeys, meals, meetings, events, reminders, outings, health appointments, celebrations — with filters, pagination (15/page), status changes, edit/delete |
+| **Dashboard** | Today's snapshot: stats, schedule, goal progress, Daily Routine widget (ring + heatmap + interactive checklist), and the **Daily Digest** morning/evening executive briefing bar with live indicator dot |
+| **My Plans** | All plans with dual view modes: classic paginated **List View** or modern 3-lane **Kanban Board View** (To Do → In Progress → Done) with drag-and-drop & micro-actions; **Subtasks & Checklists** (`☑ 2/5`); **Smart Capture** natural-language quick add (`#trip !high`); type chips, status/priority filters |
 | **Goals** | Goals with milestones, mini-goals, progress %, drag-and-drop card reordering, per-goal link, resources, target dates |
 | **Daily Routine (Habits)** | Per-weekday habit tracker with streaks, 30-day heatmap, schedule filter chips, backfill past dates, time intervals |
 | **Journal** | One reflection entry per day with mood emoji, journaling streak, calendar date-picker with entry dots, past-entries browser |
-| **Projects (freelance)** | Project pipeline (LEAD → QUOTED → IN_PROGRESS → DELIVERED → PAID/LOST/ON_HOLD) with per-project payments, outstanding balance / monthly income / total revenue stats, live search, deadlines, progress, sample links |
-| **Trips** | Kanban board (Bucket List → Planning → Booked → Visited) with drag-and-drop and per-lane sorting. Trips with dates auto-sync to the calendar AND trigger the habit trip-day exclusion. Past trips auto-move to Visited |
+| **Projects (freelance)** | Project pipeline (LEAD → QUOTED → IN_PROGRESS → DELIVERED → PAID/LOST/ON_HOLD) with per-project payments, **Payment Pending filter chip**, interactive outstanding balance stat card, live search, deadlines, progress, sample links |
+| **Trips** | Kanban board (Bucket List → Planning → Booked → Visited) with drag-and-drop and per-lane sorting. **Trip Preparation & Packing Checklist** with categories (Tickets 🎫, Stay 🏨, Packing 🎒, Places 📍) and 1-click starter templates. Trips with dates auto-sync to the calendar AND trigger the habit trip-day exclusion |
 | **Buy List** | Kanban board (Want → Considering → Bought → Skipped) with drag-and-drop. Tracks urgency, estimated vs actual price, store, product link |
-| **Calendar** | Monthly grid showing plans + Google Calendar events plotted by date; office-hours / weekends / birthdays / leaves / ✈ trip overlays; month-picker dropdown; horizontally scrolling big-block layout on mobile that opens centered on today |
-| **Analytics** | KPI cards, daily activity chart, Weekly Review (Mon–Sun breakdown with trend bars), routine-by-weekday and activity-mix charts |
+| **Calendar** | Monthly grid showing plans + Google Calendar events plotted by date; office-hours / weekends / birthdays / leaves / ✈ trip overlays; month-picker dropdown; day summary popups; mobile-optimized view centered on today |
+| **Analytics & Retrospectives** | KPI cards, daily activity chart, Weekly Review, **Retrospective Review Mode** (Weekly & Monthly review breakdowns with category distribution and reflection metrics), routine-by-weekday and activity-mix charts |
 | **AI Assistant** | Floating Gemini-powered chat on every screen: natural-language quick-add for plans, polished journal entries from rough notes, trip creation and moves, Buy List items — slash commands (/plan /journal /trip /buy), voice input, one-tap Undo. Plus a journal agent that drafts the day's entry from your actual tasks or checked habits |
 | **Push reminders** | Web Push: 8 AM daily-routine nudge + 11 PM journal reminder (only if the day's entry is missing), IST-scheduled with catch-up delivery; enable from Profile → Notifications |
 | **Global search** | Ctrl+K overlay searching plans, goals, trips, buy-list items, projects, and journal entries at once |
 | **Themes & Appearance** | Light, Dark, and Paper (warm serif planner look); six primary colors with per-theme shades; auto day/night switching on by default |
-| **Sidebar modules** | Choose which modules appear in the sidebar nav (per device, from Profile) |
-| **PWA** | Installable on mobile with app icon and service-worker cached shell |
+| **Sidebar & Navigation** | Choose which modules appear in the sidebar nav (per device, from Profile); modern mobile navigation with **5-tab bottom bar** (Home, Plans, raised glowing AI orb, Calendar, More) and 3x3 modal grid drawer |
+| **PWA** | Installable on mobile with app icon, full-screen standalone mode, mobile topbar with logo, search, and user avatar dropdown menu |
 | **Categories** | User-defined color-coded labels shared by tasks |
 | **Google Calendar sync** | Two-way: push app plans to Google AND pull events from your subscribed Google calendars (holidays, birthdays, third-party bookings) for read-only display |
-| **Auth** | Email/password register & login, JWT access tokens + refresh-token rotation, auto-redirect on expired session, illustrated light/dark backgrounds |
+| **Auth** | Email/password register & login, JWT access tokens + refresh-token rotation, auto-redirect on expired session, custom illustrated backgrounds with midnight-navy frosted glassmorphism in dark mode |
 
 ---
 

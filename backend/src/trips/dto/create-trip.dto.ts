@@ -3,6 +3,13 @@ import { ArrayMaxSize, IsArray, IsDateString, IsEnum, IsNumber, IsOptional, IsSt
 export const TRIP_STATUSES = ['BUCKET', 'PLANNING', 'BOOKED', 'VISITED', 'CANCELLED'] as const;
 export type TripStatus = (typeof TRIP_STATUSES)[number];
 
+export interface TripChecklistItem {
+  id: string;
+  title: string;
+  completed: boolean;
+  category?: string;
+}
+
 export class CreateTripDto {
   @IsString()
   @MaxLength(160)
@@ -50,10 +57,15 @@ export class CreateTripDto {
   @MaxLength(2000)
   notes?: string;
 
-  // Inspiration links — reels, blog posts, photos.
+  // Inspiration links (legacy)
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(30)
   @IsString({ each: true })
   references?: string[];
+
+  // Trip Preparation Checklist (tickets, stay, packing, places)
+  @IsOptional()
+  @IsArray()
+  checklist?: TripChecklistItem[];
 }

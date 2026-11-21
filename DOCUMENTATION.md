@@ -27,9 +27,10 @@
    - [Appearance: themes & accent colors](#811-appearance-themes--accent-colors)
    - [Global search (Ctrl+K)](#812-global-search-ctrlk)
    - [AI Assistant (Gemini)](#813-ai-assistant-gemini)
-   - [PWA — installable app](#814-pwa--installable-app)
+   - [PWA & Mobile App Experience](#814-pwa--mobile-app-experience)
    - [Sidebar modules](#815-sidebar-modules)
    - [Push notification reminders](#816-push-notification-reminders)
+   - [Analytics & Retrospectives](#817-analytics--retrospectives)
 9. [Recurring patterns you'll see in the code](#9-recurring-patterns-youll-see-in-the-code)
 10. [Adding a new feature module](#10-adding-a-new-feature-module)
 11. [Running the project locally](#11-running-the-project-locally)
@@ -67,15 +68,15 @@ If your needs overlap, this is for you. If you need team collaboration, a differ
 
 | Module | What it does |
 |--------|------|
-| **Dashboard** | Greeting + today's snapshot: stats, schedule, goal progress, and the Daily Routine widget (progress ring + 30-day consistency heatmap + interactive habit checklist) |
-| **My Plans (Tasks)** | All scheduled items — tasks, trips, journeys, meals, meetings, events, reminders, outings, health appointments, celebrations — with type chips, status / priority filters, 15-per-page pagination, and DONE rows auto-sorted to the bottom |
+| **Dashboard** | Greeting + today's snapshot: stats, schedule, goal progress, Daily Routine widget (progress ring + 30-day consistency heatmap + interactive habit checklist), and the **Daily Digest** morning/evening executive briefing bar with live indicator dot |
+| **My Plans (Tasks)** | All scheduled items with dual view modes: classic paginated **List View** or modern 3-lane **Kanban Board View** (To Do → In Progress → Done) with drag/drop & micro-actions; **Subtasks & Checklists** (`☑ 2/5`); **Smart Capture** natural-language quick add (`#trip !high`); type chips, status/priority filters |
 | **Goals** | Long-term goals → milestones → mini-goals, with auto-calculated progress %, drag-and-drop card reordering, optional link per goal (chain icon on the card), reorderable milestones, resources list, target date |
 | **Daily Routine (Habits)** | Per-weekday recurring habits with time intervals, current streak, 30-day heatmap, schedule filter chips (Every day / Weekdays / Weekends / Mon–Sun), date navigation to backfill missed days, optimistic toggle for instant UI |
 | **Journal** | One reflection entry per day, with mood emoji, title, body, streak of consecutive days journaled, calendar date-picker with entry dots, browse-past-entries list, and a "✨ Draft from my day" button where the AI writes the entry from that day's tasks (or checked habits) for review |
-| **Projects** (freelance) | Project pipeline (LEAD → QUOTED → IN_PROGRESS → DELIVERED → PAID / LOST / ON_HOLD), per-project payments, deadlines, progress %, sample links, live search across title/client/type/description, outstanding-balance / monthly-income / total-revenue stats |
-| **Trips** | Kanban board for travel plans (Bucket List → Planning → Booked → Visited). Drag-and-drop between columns. Columns fill viewport height with internal card scrolling. Cards sorted by: Bucket List → A-Z, Planning/Booked → nearest date first, Visited → newest first. Year pill on each dated card. Trips with dates auto-sync to calendar and trigger habit trip-day exclusion. Past BOOKED trips auto-promote to Visited |
+| **Projects** (freelance) | Project pipeline (LEAD → QUOTED → IN_PROGRESS → DELIVERED → PAID / LOST / ON_HOLD), per-project payments, **Payment Pending filter chip**, interactive outstanding-balance stat card, deadlines, progress %, sample links, live search |
+| **Trips** | Kanban board for travel plans (Bucket List → Planning → Booked → Visited). Drag-and-drop between columns. **Trip Preparation & Packing Checklist** with categories (Tickets 🎫, Stay 🏨, Packing 🎒, Places 📍) and 1-click starter template packs. Trips with dates auto-sync to calendar and trigger habit trip-day exclusion. Past BOOKED trips auto-promote to Visited |
 | **Buy List** | Kanban board for things to remember to buy (Want → Considering → Bought → Skipped). Drag-and-drop between columns. Viewport-height columns with internal card scrolling. Auto-stamps "bought on" date when moved to Bought |
-| **Calendar** | Monthly grid showing plans + Google Calendar events (festivals, holidays, restaurant/movie bookings) plotted by date; weekends/birthdays/holidays/leaves/✈trip overlays. Custom month-picker dropdown (click the month title) lets you jump to any month/year without stepping through one at a time |
+| **Calendar** | Monthly grid showing plans + Google Calendar events (festivals, holidays, restaurant/movie bookings) plotted by date; weekends/birthdays/holidays/leaves/✈trip overlays; day summary popup with task details. Custom month-picker dropdown lets you jump to any month/year |
 | **Categories** | User-defined color-coded labels for grouping tasks |
 | **Google Calendar sync** | Two-way: pushes app plans to your primary Google calendar, AND pulls events from all your subscribed calendars (holidays, birthdays, third-party bookings) into the app's calendar view |
 | **Profile** | Edit display name, email, password, employment + office hours, weekend days, date of birth, plus the Appearance section (theme + primary color), Sidebar Modules (choose which modules appear in the nav), and Notifications (push reminder toggle + test) |
@@ -83,9 +84,9 @@ If your needs overlap, this is for you. If you need team collaboration, a differ
 | **Themes & Appearance** | Three themes — Light, Dark, and Paper (warm cream planner look with serif type and ruled-line texture) — six selectable primary colors with per-theme shades, auto day/night switching (on by default), all persisted per device |
 | **Global search** | Ctrl+K (or the topbar magnifier) opens an overlay that searches plans, goals, trips, buy-list items, projects, and journal entries at once, grouped by module |
 | **AI Assistant** | Floating Gemini-powered chat on every screen: natural-language quick-add for plans, polished journal entries from rough notes, trip creation, trip *moves* ("move X to booked"), and Buy List items — with slash commands (/plan /journal /trip /buy) to force the target, voice input (Web Speech API), and one-tap Undo |
-| **Analytics** | KPI cards, daily activity chart, Weekly Review (Mon–Sun breakdown of tasks / check-ins / journal days with trend bars), routine-by-weekday and activity-mix charts |
-| **PWA** | Installable on mobile (Add to Home screen): app icon, full-screen standalone mode, service-worker caching of the app shell for instant loads |
-| **Auth** | Email/password register + login, JWT access + refresh token rotation, auto-redirect on expired session, illustrated backgrounds (separate light/dark and desktop/mobile artwork) |
+| **Analytics & Retrospectives** | KPI cards, daily activity chart, Weekly Review, **Retrospective Review Mode** (Weekly & Monthly review breakdowns with category distribution and reflection metrics), routine-by-weekday and activity-mix charts |
+| **PWA & Mobile App Experience** | Installable on mobile (Add to Home screen): app icon, full-screen standalone mode, **5-tab bottom navigation bar** with raised center AI orb, **3x3 modal grid drawer** for secondary modules, and header profile avatar dropdown with quick logout |
+| **Auth** | Email/password register + login, JWT access + refresh token rotation, auto-redirect on expired session, custom illustrated backgrounds with midnight-navy frosted glassmorphism in dark mode |
 
 ### How it's organized
 
@@ -762,6 +763,20 @@ The guard checks for this decorator and skips the JWT check.
 
 A "plan" is the generic term — it can be a task, trip, train trip, dinner reservation, meeting, event, reminder, outing, health appointment, or celebration. They all share one schema with a `type` field. The full type list with icons and colors lives in the `PLAN_TYPES` constant (`core/models/task.model.ts`); the backend stores `type` as a free string, so adding a new type is a frontend-only change — chips, list, dashboard, and calendar all pick it up from the constant. The Outing (🎡 pink), Health (🩺 teal), and Celebration (🎉 rose) types share the event-style form fields (date, time, venue, priority) with their own placeholders.
 
+**Dual View Modes (List vs. Kanban Board)**:
+- **List View**: Classic paginated table view (15 per page) with DONE-last sorting, type chips, and status/priority dropdowns.
+- **Kanban Board View**: Modern 3-lane board (`To Do`, `In Progress`, `Done`) with lane counters and drag-and-drop transitions. Each card is compact and features a category pill (`✈ Trip`), priority dot indicator, clamped title, location, metadata tags, and micro-action buttons (`Start →`, `✓`, `←`, `↩ Reopen`). The view toggle sits on the right end of the filters bar (compact icon on mobile).
+
+**Subtasks & Checklists**:
+- Plans support nested subtask checklists (`{ id, title, completed }`).
+- Checklist progress (`☑ 2/5`) renders directly on both List rows and Kanban cards.
+- Full interactive checkbox editing inside the plan form modal and plan detail views.
+
+**Smart Capture (Natural Language Quick Add)**:
+- Inline natural language capture bar on the plans page.
+- Type quick notes like `"Flight to Mumbai tomorrow at 6:30am #trip !high"` or `"Dinner with team on Friday 8pm"`.
+- The parser automatically extracts the plan title, plan type (`#tag`), priority (`!urgent`, `!high`, `!med`, `!low`), date, and time, instantly saving the plan without opening full modals.
+
 **Backend** ([backend/src/tasks/](backend/src/tasks/)):
 - `TasksService.findAll(userId, filters)` — fetches tasks from Firebase, filters by userId, optionally by status/priority/type
 - `create/update/remove/findOne` — standard CRUD
@@ -769,14 +784,9 @@ A "plan" is the generic term — it can be a task, trip, train trip, dinner rese
 
 **Frontend**:
 - `TaskService` (`features/tasks/task.service.ts`) holds a `tasks$ BehaviorSubject`. Components subscribe to it.
-- `TaskListComponent` ("My Plans" page) shows the list with:
-  - Type filter chips (All / Task / Trip / Journey / Food / ...)
-  - Status + priority dropdowns
-  - **Pagination**: 15 per page, computed locally from `tasks$`
-  - **DONE-last sorting**: completed tasks sink to the bottom, sorted by date desc among themselves
-  - Edit/delete buttons + inline status dropdown
-- `TaskFormComponent` (rendered inside `ModalComponent`) handles create/edit
-- `TaskDetailComponent` (`/tasks/:id`) shows full info + a working timer
+- `TaskListComponent` ("My Plans" page) coordinates list/board toggle, filters, search, and pagination
+- `TaskFormComponent` (rendered inside `ModalComponent`) handles create/edit with subtask checklist support
+- `TaskDetailComponent` (`/tasks/:id`) shows full info, subtasks, and a working timer
 
 ### 8.2 Goals
 
@@ -906,6 +916,15 @@ The most aggregated page. It loads in parallel:
 - `GoalService.loadAll()` — first 4 active goals for the progress section
 - `HabitService.loadAll()` — all habits (for the Daily Routine widget)
 
+**Daily Digest (Morning & Evening Briefing)**:
+- Positioned directly in the hero header actions next to `+ Add Plan`.
+- Features an intelligent pulse notification dot when there are upcoming plans or pending routine habits scheduled for the day.
+- Expanding the digest reveals an executive 3-card briefing bar:
+  - **Summary Bar**: Instant counters for *Plans*, *Habits*, and *Completed Today*.
+  - **Today's Plans Card**: Fast preview of scheduled tasks with quick jump to My Plans.
+  - **Routine Habits Progress**: Interactive progress bar tracking completed routines.
+  - **Daily Focus Tip**: Motivational mindset quotes rotated daily to keep focus sharp.
+
 The Daily Routine widget on the dashboard renders:
 - **Progress ring** (SVG circle with `stroke-dasharray` animation) showing today's % completed
 - **Three pill stats**: 30-day consistency %, best current streak, total habit count
@@ -942,6 +961,10 @@ Day-end reflections. One entry per user per date, stored at `journal/<uuid>` in 
 ### 8.7 Projects (freelance tracker)
 
 A freelance pipeline: each project moves through statuses (`LEAD → QUOTED → IN_PROGRESS → DELIVERED → PAID`, or branches to `LOST` / `ON_HOLD`). Payments are recorded against the project as separate records.
+
+**Filters & Payment Tracking**:
+- **Payment Pending Filter**: A dedicated filter chip on the projects page to immediately isolate projects that have delivered or quoted work with an outstanding balance (`balance > 0`).
+- **Interactive KPI Stat Cards**: The "Outstanding Balance" summary stat card at the top acts as an interactive toggle filter — clicking it instantly applies or removes the pending-payment filter.
 
 **Schema**:
 ```
@@ -1109,7 +1132,23 @@ Cards within each lane are automatically sorted:
 
 #### Card display
 
-Each dated card shows a **year pill** (e.g. `2026`) instead of a duration — the duration was misleading for open-ended or single-day trips.
+Each dated card shows a **year pill** (e.g. `2026`) instead of a duration — the duration was misleading for open-ended or single-day trips. When checklist items exist, an interactive badge shows `☑ X/Y prep` with a green completion highlight when all prep is complete.
+
+#### Trip Preparation & Packing Checklist
+
+Trips feature an integrated preparation checklist system designed to track everything needed before and during travel:
+- **Categorized Items**: Items can be organized under:
+  - 🎫 **Tickets & Logistics** (Flights/Trains, Visas, Cabs)
+  - 🏨 **Stay & Booking** (Hotel/Resort reservations, Address saved)
+  - 🎒 **Packing List** (Clothes, Toiletries, Medications, Chargers)
+  - 📍 **Places & Itinerary** (Must-visit spots, Activity passes, Food to try)
+  - 📝 **General** (Reminders, Cash/Forex)
+- **One-Click Quick Templates**: Instant preset buttons to add standard items without manual typing:
+  - `🎫 Essentials Pack`: Flight/Train tickets, Hotel booking, ID/Passport, Charger & Power bank, Emergency cash.
+  - `🎒 Packing List`: Clothes, Toiletries kit, First-aid meds, Sunscreen & umbrella, Walking shoes.
+  - `📍 Itinerary & Spots`: Top attractions list, Activity passes, Food spots, Offline maps downloaded.
+- **Progress Tracking**: Real-time progress bar and percentage tracker (`X/Y done (%)`).
+- **Notes & Reference Links**: Reference URLs, reels, blogs, and detailed itineraries live directly inside the **Notes** textarea.
 
 **Schema**:
 ```
@@ -1118,8 +1157,9 @@ trips/<id> {
   status: BUCKET | PLANNING | BOOKED | VISITED | CANCELLED,
   startDate, endDate,
   companions, budget, currency,
-  notes, references: string[],  // inspiration links (reels, blogs)
-  taskId: string | null,        // FK to auto-created task in /tasks/*
+  notes,
+  checklist: [ { id, title, completed, category } ], // prep & packing items
+  taskId: string | null,                             // FK to auto-created task in /tasks/*
   createdAt, updatedAt
 }
 ```
@@ -1215,9 +1255,24 @@ The floating ✨ button (bottom-right, every screen) opens a chat panel that tur
 - **Mobile**: the panel becomes a full-width bottom sheet (dim backdrop, safe-area padding, 16px input to prevent zoom-on-focus); on desktop an invisible backdrop gives click-away close, and Escape closes it everywhere.
 - **The journal agent** (`POST /api/ai/journal-draft`): drafts a day's entry from what the user *actually did* — that date's tasks (titles, types, done state, times, locations), falling back to the habits checked that day when there were no tasks, with a clear error when neither exists. The prompt forbids invention and asks for honest acknowledgment of unfinished items. The draft only fills the journal form; nothing saves until the user saves.
 
-### 8.14 PWA — installable app
+### 8.14 PWA & Mobile App Experience
 
-`@angular/pwa` support: a **manifest** (name, emerald theme color, home-screen icons rendered from the app's favicon with a maskable-safe design — full-bleed gradient, glyph centered in the 80% safe zone so Android's circular mask doesn't crop it) plus the Angular **service worker** (`ngsw-config.json`) that prefetches the app shell and lazily caches assets. **API responses are deliberately not cached** — data always comes live, so nothing goes stale. The worker only registers in production builds (`registerWhenStable`), so localhost dev is unaffected. Install on Android via Chrome → ⋮ → "Add to Home screen / Install app" (iOS: Safari → Share → Add to Home Screen); updates arrive automatically on the next open after each deploy.
+`@angular/pwa` support provides a complete, installable native app experience on mobile devices:
+- **PWA Manifest & Service Worker**: Home-screen app icon, emerald theme color, standalone full-screen window, and service worker shell caching (`ngsw-config.json`) for instant startup. API calls always hit the live backend.
+- **5-Tab Mobile Navigation Bar**: A fixed mobile bottom bar featuring:
+  - 🏠 **Home** (`/dashboard`)
+  - 📋 **Plans** (`/tasks`)
+  - ✨ **AI Orb** (a raised, glowing 60px center button that launches the Gemini assistant sheet)
+  - 📅 **Calendar** (`/calendar`)
+  - ⊞ **More**
+- **3x3 Secondary Module Grid Drawer**: Tapping the **More** tab slides up a native app-style bottom sheet featuring a 3x3 grid for the 9 secondary pages:
+  - Daily Routine (`/habits`), Projects (`/projects`), Trips (`/trips`)
+  - Buy List (`/buy-list`), Goals (`/goals`), Journal (`/journal`)
+  - Analytics (`/analytics`), Categories, and Profile (`/profile`)
+- **Mobile Header Overhaul**: 
+  - Brand application logo positioned beside the title.
+  - Quick-access **Search icon button** (opens Ctrl+K search).
+  - User profile avatar circle displaying the first letter of the user's name with an interactive dropdown menu (direct links to Profile, Theme toggle, and 1-tap Logout).
 
 ### 8.15 Sidebar modules
 
@@ -1238,6 +1293,15 @@ Real Web Push (`backend/src/push/`, `web-push` + VAPID keys) — two daily remin
 **How it works**:
 - Browser subscriptions are stored per user in Firebase (`pushSubs/*`); dead endpoints (404/410 from the push service) are cleaned up automatically.
 - A scheduler ticks every minute. Each reminder has a **catch-up span** (routine 08:00–12:00, journal 23:00–24:00) instead of an exact-minute window: on free hosting the server may be asleep at the target minute, and the span means the reminder goes out late rather than never. A per-user per-day send log (`pushLog/*`) guarantees at most one delivery. The scheduler also ticks 10 seconds after boot, so the very request that *wakes* a sleeping server triggers pending reminders.
+
+### 8.17 Analytics & Retrospectives
+
+The Analytics module (`/analytics`) gives you historical insight into your productivity habits, completed plans, and trends:
+- **KPI Metrics**: Total plans completed, active streaks, routine consistency rate, and journal cadence.
+- **Retrospective Review Mode**: Toggle between **Weekly** and **Monthly** review modes to reflect on:
+  - Weekly breakdowns (Mon–Sun daily task completions, habit streaks, and journaling consistency).
+  - Category distribution and time mix across various plan types.
+  - Review reflections and key milestone achievements.
 - Payloads use the Angular service worker's native notification format with click-through URLs, an absolute-path app icon, and a dedicated monochrome badge glyph (Android renders the status-bar icon as a silhouette, so a full-color icon would show as a blob).
 - **Keep-alive**: `GET /api/push/health` is a public endpoint meant for an uptime pinger (e.g. UptimeRobot every 5 minutes) so free-tier Render never sleeps through the reminder times.
 - **Frontend**: Profile → Notifications has the enable toggle (`SwPush` subscription flow) and a test button. The service worker only runs in production builds, so the card explains that on `ng serve` instead of showing a dead toggle.
